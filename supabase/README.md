@@ -24,7 +24,7 @@ Local demo access after reset:
 - `admin@kochbuch.local`
 - `reader@kochbuch.local`
 
-These addresses are only allowlisted seed entries for local testing. They are not meant for production.
+These addresses are local demo identities for testing. They are not meant for production.
 
 ## Production bootstrap
 
@@ -32,23 +32,24 @@ Recommended approach:
 
 1. Apply migrations only.
 2. Do not run `seed.dev.sql`.
-3. Add the real admin email to `public.access_allowlist`.
-4. Let that admin sign in once via Magic Link so `sync_profile_from_allowlist()` can create or refresh `public.profiles`.
+3. Add the real admin email to `public.admin_emails`.
+4. Let that admin sign in once via Google so `sync_profile_for_current_user()` can create or refresh `public.profiles`.
 5. Import or migrate the real cookbook data through the app.
 
 Minimal production SQL example:
 
 ```sql
-insert into public.access_allowlist (email, role, is_active)
-values ('you@example.com', 'admin', true)
+insert into public.admin_emails (email)
+values ('you@example.com')
 on conflict (email) do update
-  set role = excluded.role,
-      is_active = excluded.is_active,
-      updated_at = now();
+  set updated_at = now();
 ```
+
+If you still keep `access_allowlist` for legacy reasons, it is no longer required for the normal Google login flow.
 
 ## Notes on profile sync
 
 - New `auth.users` rows are handled by the trigger in the migration.
-- Existing users that get allowlisted later are covered by `sync_profile_from_allowlist()`.
-- The client should call that RPC during login/init and fall back gracefully if the profile is still missing.
+- Existing users are covered by `sync_profile_for_current_user()`.
+- Users listed in `public.admin_emails` become `admin`.
+- All other successful Google logins become `reader`.

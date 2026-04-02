@@ -1,7 +1,7 @@
 {
   "name": "kochbuch",
   "version": "1.0.0",
-  "description": "Lokales Browser-Testsetup fuer die Kochbuch-Seite",
+  "description": "Statische Kochbuch-App mit lokalem Browser-Testsetup",
   "scripts": {
     "serve": "node server.js",
     "test": "playwright test",

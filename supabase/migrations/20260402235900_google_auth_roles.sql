@@ -1,13 +1,37 @@
 begin;
 
+create table if not exists public.admin_emails (
+  email text primary key,
+  added_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint admin_emails_email_lowercase check (email = public.normalize_email(email))
+);
+
+drop trigger if exists touch_admin_emails_updated_at on public.admin_emails;
+create trigger touch_admin_emails_updated_at
+before update on public.admin_emails
+for each row execute function public.touch_updated_at();
+
+alter table public.admin_emails enable row level security;
+
+drop policy if exists "Allow admins to inspect admin emails" on public.admin_emails;
+create policy "Allow admins to inspect admin emails"
+on public.admin_emails
+for select
+using (public.is_admin());
+
 create or replace function public.resolve_profile_role(target_user_email text)
 returns text
 language sql
-immutable
+stable
 as $$
   select case
-    when public.normalize_email(coalesce(target_user_email, '')) = 'you.com' then 'admin'
     when public.normalize_email(coalesce(target_user_email, '')) = '' then null
+    when exists (
+      select 1
+      from public.admin_emails a
+      where a.email = public.normalize_email(coalesce(target_user_email, ''))
+    ) then 'admin'
     else 'reader'
   end;
 $$;

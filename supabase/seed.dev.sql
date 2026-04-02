@@ -2,14 +2,10 @@
 -- Loaded automatically by `supabase db reset` because `config.toml`
 -- points the local CLI seed config at this file.
 
-insert into public.access_allowlist (email, role, is_active)
-values
-  ('admin@kochbuch.local', 'admin', true),
-  ('reader@kochbuch.local', 'reader', true)
+insert into public.admin_emails (email)
+values ('admin@kochbuch.local')
 on conflict (email) do update
-  set role = excluded.role,
-      is_active = excluded.is_active,
-      updated_at = now();
+  set updated_at = now();
 
 insert into public.recipes (
   title,

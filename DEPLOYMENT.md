@@ -41,6 +41,7 @@ Führe im Supabase SQL Editor zuerst die Migration aus:
 
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
 - [supabase/migrations/20260402235900_google_auth_roles.sql](./supabase/migrations/20260402235900_google_auth_roles.sql)
+- [supabase/migrations/20260403003000_admin_email_config.sql](./supabase/migrations/20260403003000_admin_email_config.sql)
 
 Danach Seed einspielen:
 
@@ -50,7 +51,8 @@ Danach Seed einspielen:
 Verifiziere anschließend:
 
 - Tabelle `profiles` wird durch Login und Trigger gefüllt.
-- `you.com` wird als `admin` geführt.
+- Deine Admin-Adresse steht in `public.admin_emails`.
+- E-Mails aus `public.admin_emails` werden als `admin` geführt.
 - Andere erfolgreiche Google-Logins werden als `reader` geführt.
 - Bucket `recipe-images` existiert.
 - RLS ist auf allen relevanten Tabellen aktiv.
@@ -59,7 +61,7 @@ Verifiziere anschließend:
 
 - `admin` ist das einzige Konto mit Schreibrechten auf Rezepte.
 - `reader`-Konten dürfen nur lesen und ihren persönlichen Zustand ändern.
-- `you.com` ist der feste Admin.
+- Admin-Rechte kommen aus der Tabelle `public.admin_emails`.
 - Jeder andere erfolgreiche Google-Login wird automatisch als `reader` synchronisiert.
 - `access_allowlist` bleibt im Schema erhalten, wird für den normalen Login aber nicht mehr genutzt.
 
@@ -67,7 +69,7 @@ Verifiziere anschließend:
 
 1. Google Provider in Supabase konfigurieren.
 2. Google OAuth Client in Google Cloud konfigurieren.
-3. Login mit `you.com` testen.
+3. Deine Admin-Adresse in `public.admin_emails` eintragen.
 4. Login mit einem beliebigen zweiten Google-Konto testen.
 5. Legacy-Migration mit dem echten Admin prüfen.
 6. Erst danach die Live-Seite als produktiv betrachten.

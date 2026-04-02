@@ -1,6 +1,6 @@
 # Kochbuch
 
-Private Familien-Kochbuch-App als statische GitHub-Pages-Seite mit Supabase als Backend.
+Statische Kochbuch-App mit GitHub Pages und Supabase.
 
 ## Was drin ist
 
@@ -36,7 +36,7 @@ npm run serve
 - Die Live-App bleibt statisch und läuft über GitHub Pages.
 - Supabase liefert Auth, gemeinsame Rezeptdaten, persönliche Nutzerdaten und Storage.
 - Google OAuth ist der einzige sichtbare Login-Weg.
-- `you.com` wird als `admin` synchronisiert, alle anderen erfolgreichen Logins als `reader`.
+- E-Mails aus `public.admin_emails` werden als `admin` synchronisiert, alle anderen erfolgreichen Logins als `reader`.
 - `admin` darf Rezepte und Migrationen verwalten, `reader` darf lesen und persönlich planen.
 - `browser-test` bleibt ein lokaler/CI-Testmodus und ist kein Live-Backend.
 
@@ -46,5 +46,6 @@ npm run serve
 - [runtime-config.js](./runtime-config.js)
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
 - [supabase/migrations/20260402235900_google_auth_roles.sql](./supabase/migrations/20260402235900_google_auth_roles.sql)
+- [supabase/migrations/20260403003000_admin_email_config.sql](./supabase/migrations/20260403003000_admin_email_config.sql)
 - [supabase/seed.sql](./supabase/seed.sql)
 - [supabase/seed.dev.sql](./supabase/seed.dev.sql)
