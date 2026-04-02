@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Kochbuch Smoke Test', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/kochbuch.html');
+    await page.goto('/index.html');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
   });
