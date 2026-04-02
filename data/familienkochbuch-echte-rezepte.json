@@ -1,0 +1,197 @@
+{
+  "app": "mein-kochbuch",
+  "schemaVersion": 3,
+  "exportedAt": "2026-04-02T21:07:41.756Z",
+  "recipes": [
+    {
+      "id": "96dc7d81-c1fe-417c-a5cd-0d0aae1ca380",
+      "createdAt": "2026-02-03T23:00:00.000Z",
+      "updatedAt": "2026-04-02T21:07:41.761Z",
+      "title": "Toskanische Suppe",
+      "baseServings": 2,
+      "prepTime": 0,
+      "cookTime": 0,
+      "tags": [],
+      "description": "Viva la Toscana! Diese Suppe ist das ultimative italienische Soulfood. Durch das Anbraten von Salsiccia-Brät mit Fenchel entsteht eine unglaubliche Tiefe. Wir pimpern das Original durch die Verwendung von kräftigem Fond statt Wasser und verpassen ihr mit einer Parmesanrinde das ultimative Umami-Upgrade. Rustikal, dickflüssig und verdammt geil.",
+      "rawIngredients": "100g Salsiccia (oder grobe Bratwurst)\n0.5 TL Fenchelsamen\n1 Prise Chiliflocken\n0.5 Stück Zwiebel\n0.5 Stange Staudensellerie\n0.5 Stück Möhre\n0.5 Stück Kartoffel (festkochend)\n150g Weiße Bohnen (Dose/Glas, abgetropft)\n400ml Gemüsefond (oder Geflügelfond für mehr Tiefe)\n50g Schwarzkohl (Cavolo Nero) oder Grünkohl\n50g Altbackenes Sauerteigbrot (in Stücken)\n2 EL Natives Olivenöl extra\nSalz\nPfeffer\nParmesan\n1 Stück Parmesanrinde (optional für den Kochvorgang)",
+      "parsedIngredients": [
+        {
+          "quantity": 100,
+          "unit": "g",
+          "name": "Salsiccia (oder grobe Bratwurst)"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "tl",
+          "name": "Fenchelsamen"
+        },
+        {
+          "quantity": 1,
+          "unit": "prise",
+          "name": "Chiliflocken"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "stück",
+          "name": "Zwiebel"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "stange",
+          "name": "Staudensellerie"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "stück",
+          "name": "Möhre"
+        },
+        {
+          "quantity": 0.5,
+          "unit": "stück",
+          "name": "Kartoffel (festkochend)"
+        },
+        {
+          "quantity": 150,
+          "unit": "g",
+          "name": "Weiße Bohnen (Dose/Glas, abgetropft)"
+        },
+        {
+          "quantity": 400,
+          "unit": "ml",
+          "name": "Gemüsefond (oder Geflügelfond für mehr Tiefe)"
+        },
+        {
+          "quantity": 50,
+          "unit": "g",
+          "name": "Schwarzkohl (Cavolo Nero) oder Grünkohl"
+        },
+        {
+          "quantity": 50,
+          "unit": "g",
+          "name": "Altbackenes Sauerteigbrot (in Stücken)"
+        },
+        {
+          "quantity": 2,
+          "unit": "el",
+          "name": "Natives Olivenöl extra"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Salz"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Pfeffer"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Parmesan"
+        },
+        {
+          "quantity": 1,
+          "unit": "stück",
+          "name": "Parmesanrinde (optional für den Kochvorgang)"
+        }
+      ],
+      "instructions": "Das Aroma-Fundament: Drücke das Wurstbrät (Salsiccia oder Bratwurst) aus der Pelle direkt in einen Topf. Brate es zusammen mit 1 EL Olivenöl, den Fenchelsamen und den Chiliflocken bei mittlerer Hitze ca. 5 Minuten goldbraun an. Zerdrücke das Brät dabei mit einem Holzlöffel in grobe Stücke – wir wollen Textur!\n\nDie Gemüse-Basis: Gib die gewürfelten Zwiebeln, Sellerie, Möhren und Kartoffeln zum Fleisch. Lass alles bei schwacher Hitze für etwa 10–15 Minuten sanft mitdünsten. Das Gemüse soll weich werden und die Aromen des Bratfetts aufsaugen.\n\nDer Umami-Sud: Gib die weißen Bohnen (mit etwas ihrer Flüssigkeit) und den Fond hinzu. Jetzt kommt der Profi-Move: Wirf die Parmesanrinde mit in den Topf. Alles zum Kochen bringen.\n\nDas Herzstück: Zupfe die Blätter des Schwarzkohls (oder Grünkohls) von den harten Stielen und schneide sie grob. Gib den Kohl zusammen mit den grob gezupften Brotstücken in die Suppe.\n\nSlow-Cooking: Lass die Suppe bei kleiner Hitze ca. 20–30 Minuten sanft köcheln. Das Brot löst sich teilweise auf und bindet die Suppe zu einer herrlich dicken, rustikalen Konsistenz.\n\nDer Abschluß: Entferne die Parmesanrinde. Schmecke alles mit Meersalz und frisch gemahlenem schwarzem Pfeffer ab. Rühre kurz vor dem Servieren das restliche native Olivenöl unter – das gibt den seidigen Glanz.",
+      "plating": "Die Basis: Schöpfe die Suppe in tiefe, am besten vorgewärmte Teller. Achte darauf, dass jeder eine gute Mischung aus Bohnen, Kohl und den Salsiccia-Stücken bekommt.\n\nDer Goldrand: Träufle einen extra Faden deines besten Olivenöls in einer Kreisbewegung über die Suppe.\n\nDas Topping: Reibe großzügig frischen Parmesan direkt über den heißen Dampf. Ein paar extra Chiliflocken oder ein kleiner Zweig frischer Thymian obenauf setzen den optischen Akzent.\n\nDer Servier-Tipp: Serviere dazu eine extra Scheibe des gerösteten Sauerteigbrots, um auch den letzten Rest der dicken Sauce aufzusaugen.",
+      "tips": "Der Umami-Hack: Wirf beim Köcheln eine alte Parmesanrinde mit in den Topf. Sie gibt eine unbeschreibliche Tiefe ab, die du mit Salz allein nie erreichst (vor dem Servieren rausfischen).\n\nDie Textur-Geheimnis: Zerdrücke einen kleinen Teil der weißen Bohnen mit einer Gabel, bevor du sie in die Suppe gibst. Das macht die Suppe auf natürliche Weise wunderbar cremig und dickflüssig.\n\nSalsiccia-Tipp: Wenn du keine Salsiccia bekommst, nimm normale grobe Bratwurst und mörsere die Fenchelsamen vorher leicht an, damit sie ihr volles Aroma entfalten.\n\nDas Finish: Das Auge isst mit! Richte die Suppe in tiefen Tellern an, gib einen großzügigen Faden deines besten Olivenöls darüber und reibe den Parmesan erst ganz frisch am Tisch direkt über den heißen Dampf.\n\nTiming: Wenn der Kohl zu zäh wirkt, massiere ihn vorher kurz mit etwas Salz – das bricht die Zellstruktur auf und macht ihn schneller zart.",
+      "imagePath": null,
+      "externalImageUrl": null
+    },
+    {
+      "id": "e0d56ba8-f988-4640-b006-a135bac93e78",
+      "createdAt": "2026-02-03T23:00:00.000Z",
+      "updatedAt": "2026-04-02T21:07:41.761Z",
+      "title": "Lauwarmer Linsensalat „Green & Creamy“",
+      "baseServings": 2,
+      "prepTime": 0,
+      "cookTime": 0,
+      "tags": [],
+      "description": "Der „Green & Creamy“ Linsensalat ist ein modernes Spiel mit Kontrasten, das einfache Zutaten auf Fine-Dining-Niveau hebt.\n\nDer Geschmack: Erdige Linsen treffen auf die sommerliche Frische von Zitrone und Minze.\n\nDie Textur: Ein Wechselspiel aus dem extremen Crunch der kurz gebratenen Zuckerschoten, gerösteten Pistazien und dem flüssig-cremigen Kern der Burrata.\n\nDer Clou: Warme, im Ofen karamellisierte Cherrytomaten liefern die nötige süß-saure Tiefe (Umami), die das Gericht perfekt abrundet.\n\nEin leichtes, optisch beeindruckendes Gericht, das beweist, dass \"frisch & gesund\" verdammt luxuriös schmecken kann.",
+      "rawIngredients": "Die Basis:\n\n1 Packung Linsen (ca. 230g Abtropfgewicht, siehe Foto)\n\n200g-250g Zuckerschoten (frisch)\n\n2 Kugeln Burrata (beste Qualität, z.B. Büffelburrata)\n\nDer Pimp (Pesto & Toppings):\n\n250g Cherrytomaten (am besten an der Rispe)\n\n50g Pistazienkerne (geröstet & gesalzen)\n\n1 Bio-Zitrone (Abrieb & Saft)\n\n1 Bund frische Minze & 1/2 Bund Basilikum\n\n1 kleine Schalotte & 1 Zehe Knoblauch\n\nHochwertiges Olivenöl, Butter, Honig\n\nGewürze: Grobes Meersalz, schwarzer Pfeffer, Chili-Flocken (Pul Biber)",
+      "parsedIngredients": [
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Die Basis:"
+        },
+        {
+          "quantity": 1,
+          "unit": "pck",
+          "name": "Linsen (ca. 230g Abtropfgewicht, siehe Foto)"
+        },
+        {
+          "quantity": 200,
+          "unit": "g",
+          "name": "-250g Zuckerschoten (frisch)"
+        },
+        {
+          "quantity": 2,
+          "unit": "kugeln",
+          "name": "Burrata (beste Qualität, z.B. Büffelburrata)"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Der Pimp (Pesto & Toppings):"
+        },
+        {
+          "quantity": 250,
+          "unit": "g",
+          "name": "Cherrytomaten (am besten an der Rispe)"
+        },
+        {
+          "quantity": 50,
+          "unit": "g",
+          "name": "Pistazienkerne (geröstet & gesalzen)"
+        },
+        {
+          "quantity": 1,
+          "unit": "bio",
+          "name": "-Zitrone (Abrieb & Saft)"
+        },
+        {
+          "quantity": 1,
+          "unit": "bund",
+          "name": "frische Minze & 1/2 Bund Basilikum"
+        },
+        {
+          "quantity": 1,
+          "unit": "kleine",
+          "name": "Schalotte & 1 Zehe Knoblauch"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Hochwertiges Olivenöl, Butter, Honig"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Gewürze: Grobes Meersalz, schwarzer Pfeffer, Chili-Flocken (Pul Biber)"
+        }
+      ],
+      "instructions": "1. Die „Süße Basis“ (Ofen-Tomaten)\nHeize den Ofen auf 200°C Ober-/Unterhitze vor. Leg die Tomaten in eine kleine Form, beträufle sie mit reichlich Olivenöl, einer Prise Salz und 1 TL Honig.\n\nZeit: 15–20 Min. im Ofen, bis sie schrumpelig werden und aufplatzen. Den Saft in der Form unbedingt aufbewahren!\n\n2. Das „Flüssige Gold“ (Pistazien-Minz-Pesto)\nWährend die Tomaten rösten: Hacke die Pistazien, Minze und Basilikum grob (oder nutze einen Mörser). Vermische das Ganze mit 4–5 EL Olivenöl, dem Saft einer halben Zitrone und dem kompletten Zitronenabrieb.\n\nProfi-Tipp: Nicht zu fein mixen! Wir wollen „Crunch“ und Struktur, kein Babybrei. Schmecke es mit einer Prise Salz und Chili ab.\n\n3. Das Fundament (Die Linsen)\nSpüle die Linsen in einem Sieb unter kaltem Wasser extrem gründlich ab, bis kein Schaum mehr entsteht. Lass sie gut abtropfen.\n\nPimp: Würfle die Schalotte fein und dünste sie in einer Pfanne mit etwas Olivenöl glasig. Gib die Linsen nur kurz dazu, um sie lauwarm werden zu lassen. Schalte die Hitze ab und rühre 1 EL von deinem Pesto unter die Linsen.\n\n4. Der Star (Die Zuckerschoten)\nSchneide die Schoten schräg in ca. 1cm breite Streifen. Erhitze eine Pfanne mit einem Klecks Butter. Brate die Schoten bei hoher Hitze für exakt 2 Minuten.\n\nWichtig: Sie müssen knallgrün bleiben und beim Draufbeißen „knacken“. Am Ende mit einem Spritzer Zitrone und Salz ablöschen.",
+      "plating": "Das Bett: Verteile die lauwarmen Linsen flach auf zwei großen Tellern.\n\nDas Grün: Streue die heißen Zuckerschoten-Streifen locker über die Linsen.\n\nDas Zentrum: Setze die Burrata in die Mitte. Ritze sie mit einem scharfen Messer kreuzweise ein und biege sie leicht auf, sodass der cremige Kern sichtbar wird.\n\nDas Finish: Löffle die Rösttomaten samt ihrem warmen Öl über das gesamte Gericht. Verteile das restliche Pistazien-Pesto großzügig darüber.\n\nLetzter Schliff: Eine Prise grobes Meersalz und frisch gemahlener Pfeffer direkt auf den Käse.",
+      "tips": "\nTemperatur-Kontrast: Die Linsen und Schoten sollten warm sein, die Burrata „Zimmertemperatur“. Nimm den Käse also schon 30 Min. vorher aus dem Kühlschrank. Wenn er eiskalt ist, tötet das den Geschmack.\n\nSäure-Management: Die Zitrone im Pesto ist der Schlüssel. Sie bricht die Fettigkeit der Burrata auf und macht das Gericht erst richtig „frisch“.\n\nTextur-Balance: Wenn du merkst, dass die Linsen zu weich sind, lass die Zuckerschoten fast roh. Der Kontrast zwischen weich/cremig (Linsen/Burrata) und knackig/fest (Schoten/Pistazien) macht das Essen spannend.",
+      "imagePath": null,
+      "externalImageUrl": null
+    }
+  ],
+  "personalState": {
+    "recipeState": [],
+    "weekPlan": {
+      "Mo": [],
+      "Di": [],
+      "Mi": [],
+      "Do": [],
+      "Fr": [],
+      "Sa": [],
+      "So": []
+    }
+  }
+}

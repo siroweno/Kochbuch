@@ -228,6 +228,45 @@ test.describe('Privates Familien-Kochbuch', () => {
     await context.close();
   });
 
+  test('Admin kann Legacy-JSON mit numerischen Rezept-IDs importieren', async ({ browser }, testInfo) => {
+    const importContext = await browser.newContext();
+    const importPage = await importContext.newPage();
+    await loginViaUi(importPage, 'admin@kochbuch.local');
+
+    await importCookbook(importPage, [
+      {
+        id: 1775135603783,
+        title: 'Toskanische Suppe',
+        ingredients: '1 Zwiebel\n2 Karotten\n400 g Bohnen',
+        instructions: 'Alles zusammen kochen und abschmecken.',
+        tags: ['Suppe', 'Familie'],
+        createdAt: '02.04.2026',
+      },
+      {
+        id: 1775133491637,
+        title: 'Lauwarmer Linsensalat „Green & Creamy“',
+        ingredients: '250 g Linsen\n1 Gurke\nJoghurt',
+        instructions: 'Linsen kochen, mischen und lauwarm servieren.',
+        tags: ['Salat'],
+        createdAt: '02.04.2026',
+      },
+    ]);
+
+    await expect(importPage.locator('.recipe-card').filter({ hasText: 'Toskanische Suppe' })).toHaveCount(1);
+    await expect(importPage.locator('.recipe-card').filter({ hasText: 'Lauwarmer Linsensalat „Green & Creamy“' })).toHaveCount(1);
+
+    const exportedContent = await exportCookbook(importPage, testInfo);
+    const importedRecipeIds = exportedContent.recipes
+      .filter((recipe) => ['Toskanische Suppe', 'Lauwarmer Linsensalat „Green & Creamy“'].includes(recipe.title))
+      .map((recipe) => recipe.id);
+    expect(importedRecipeIds).toHaveLength(2);
+    importedRecipeIds.forEach((id) => {
+      expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+
+    await importContext.close();
+  });
+
   test('Admin kann schemaVersion 3 export wieder importieren', async ({ browser, request }, testInfo) => {
     const createContext = await browser.newContext();
     const createPage = await createContext.newPage();

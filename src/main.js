@@ -700,14 +700,26 @@ function askDelete(recipeId, trigger = null) {
 
 async function confirmDelete() {
   if (!pendingDeleteId) return;
-  await waitForAppReady();
-  await repository.deleteRecipe(pendingDeleteId);
-  pendingDeleteId = null;
-  deleteConfirm.classList.remove('visible');
-  syncBodyScrollLock();
-  if (lastDeleteTrigger?.isConnected) lastDeleteTrigger.focus();
-  lastDeleteTrigger = null;
-  await refreshAppData({ silent: true });
+  const recipeId = pendingDeleteId;
+  const previousLabel = confirmDeleteBtn.textContent;
+  confirmDeleteBtn.disabled = true;
+  confirmDeleteBtn.textContent = 'Loesche...';
+
+  try {
+    await waitForAppReady();
+    await repository.deleteRecipe(recipeId);
+    pendingDeleteId = null;
+    deleteConfirm.classList.remove('visible');
+    syncBodyScrollLock();
+    if (lastDeleteTrigger?.isConnected) lastDeleteTrigger.focus();
+    lastDeleteTrigger = null;
+    await refreshAppData({ silent: true });
+  } catch (error) {
+    alert(`Loeschen fehlgeschlagen: ${error.message}`);
+  } finally {
+    confirmDeleteBtn.disabled = false;
+    confirmDeleteBtn.textContent = previousLabel;
+  }
 }
 
 function cancelDelete() {

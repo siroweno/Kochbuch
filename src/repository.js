@@ -4,9 +4,11 @@ import {
   buildRecipeViewModels,
   createEmptyWeekPlan,
   extractLegacyPersonalState,
+  generateId,
   getTitleKey,
   isDataUrl,
   isExternalImageUrl,
+  isUuid,
   normalizeImportPayload,
   normalizeRecipeRecord,
   normalizeUserRecipeStateRecord,
@@ -571,9 +573,19 @@ export function createCookbookRepository({ config, authService }) {
           continue;
         }
 
+        const sourceKey = String(rawRecipe.id ?? normalizedRecipe.id);
+        if (!isUuid(normalizedRecipe.id)) {
+          normalizedRecipe.id = generateId();
+        }
+
         const titleKey = getTitleKey(normalizedRecipe.title);
         const existing = knownTitles.get(titleKey);
-        const sourceKey = String(rawRecipe.id ?? normalizedRecipe.id);
+        const recipeToSave = isUuid(normalizedRecipe.id)
+          ? normalizedRecipe
+          : {
+            ...normalizedRecipe,
+            id: generateId(),
+          };
 
         if (existing) {
           duplicateRecipes += 1;
@@ -586,19 +598,19 @@ export function createCookbookRepository({ config, authService }) {
           continue;
         }
 
-        if (normalizedRecipe.legacyImageDataUrl) {
-          const upload = await driver.uploadImageDataUrl(normalizedRecipe.legacyImageDataUrl, `${normalizedRecipe.title}.jpg`);
-          normalizedRecipe.imagePath = upload.imagePath;
-          normalizedRecipe.externalImageUrl = null;
+        if (recipeToSave.legacyImageDataUrl) {
+          const upload = await driver.uploadImageDataUrl(recipeToSave.legacyImageDataUrl, `${recipeToSave.title}.jpg`);
+          recipeToSave.imagePath = upload.imagePath;
+          recipeToSave.externalImageUrl = null;
         }
 
-        await driver.saveRecipeRecord(normalizedRecipe);
-        workingRecipes.push(normalizedRecipe);
-        knownTitles.set(titleKey, normalizedRecipe);
-        mappedRecipeIdBySource.set(sourceKey, normalizedRecipe.id);
+        await driver.saveRecipeRecord(recipeToSave);
+        workingRecipes.push(recipeToSave);
+        knownTitles.set(titleKey, recipeToSave);
+        mappedRecipeIdBySource.set(sourceKey, recipeToSave.id);
         importedPersonalState.push({
           sourceRecipeId: sourceKey,
-          title: normalizedRecipe.title,
+          title: recipeToSave.title,
           ...extractLegacyPersonalState(rawRecipe),
         });
         importedRecipes += 1;

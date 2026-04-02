@@ -1,0 +1,82 @@
+{
+  "app": "mein-kochbuch",
+  "schemaVersion": 3,
+  "exportedAt": "2026-04-02T21:10:00.000Z",
+  "recipes": [
+    {
+      "id": "72f8d4b1-b3f8-4f22-a1e9-3b1c9a7d5e21",
+      "createdAt": "2026-01-03T23:00:00.000Z",
+      "updatedAt": "2026-04-02T20:28:52.767Z",
+      "title": "Legacy Suppe",
+      "baseServings": 2,
+      "prepTime": 0,
+      "cookTime": 0,
+      "tags": [
+        "Suppe",
+        "Altbestand"
+      ],
+      "description": "",
+      "rawIngredients": "300 ml Brühe\n1 Karotte\n200 g Kartoffeln",
+      "parsedIngredients": [
+        {
+          "quantity": 300,
+          "unit": "ml",
+          "name": "Brühe"
+        },
+        {
+          "quantity": 200,
+          "unit": "g",
+          "name": "Kartoffeln"
+        }
+      ],
+      "instructions": "Alles kochen lassen",
+      "plating": "",
+      "tips": "",
+      "imageUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7X8J0AAAAASUVORK5CYII="
+    },
+    {
+      "id": "50479cb1-d4e9-4b25-a4d8-4a9e607b93fb",
+      "createdAt": "2026-04-02T20:28:53.635Z",
+      "updatedAt": "2026-04-02T20:28:53.636Z",
+      "title": "Import Pasta",
+      "baseServings": 2,
+      "prepTime": 0,
+      "cookTime": 0,
+      "tags": [
+        "Import",
+        "Test"
+      ],
+      "description": "",
+      "rawIngredients": "200 g Pasta\n1 Zwiebel\n2 EL Olivenoel",
+      "parsedIngredients": [
+        {
+          "quantity": 200,
+          "unit": "g",
+          "name": "Pasta"
+        },
+        {
+          "quantity": 2,
+          "unit": "el",
+          "name": "Olivenoel"
+        }
+      ],
+      "instructions": "Kochen und vermengen",
+      "plating": "",
+      "tips": "",
+      "imagePath": null,
+      "externalImageUrl": null
+    }
+  ],
+  "personalState": {
+    "recipeState": [],
+    "weekPlan": {
+      "Mo": [],
+      "Di": [],
+      "Mi": [],
+      "Do": [],
+      "Fr": [],
+      "Sa": [],
+      "So": []
+    }
+  }
+}

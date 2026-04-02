@@ -41,6 +41,8 @@ const UNIT_ALIASES = {
   splitter: 'splitter',
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export function createEmptyWeekPlan() {
   return { Mo: [], Di: [], Mi: [], Do: [], Fr: [], Sa: [], So: [] };
 }
@@ -176,6 +178,10 @@ export function generateId() {
   }
 
   return `recipe-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+export function isUuid(value) {
+  return UUID_PATTERN.test(String(value || '').trim());
 }
 
 export function getPlanEntrySignature(entry) {
