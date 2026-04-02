@@ -55,15 +55,15 @@ let inflightRefreshPromise = null;
 const authBar = document.getElementById('authBar');
 const authBarName = document.getElementById('authBarName');
 const authBarMeta = document.getElementById('authBarMeta');
-const changePasswordBtn = document.getElementById('changePasswordBtn');
 const signOutBtn = document.getElementById('signOutBtn');
 const loginPanel = document.getElementById('loginPanel');
-const loginForm = document.getElementById('loginForm');
-const loginEmail = document.getElementById('loginEmail');
-const loginPassword = document.getElementById('loginPassword');
-const magicLinkBtn = document.getElementById('magicLinkBtn');
-const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+const loginIntro = document.getElementById('loginIntro');
+const googleLoginActions = document.getElementById('googleLoginActions');
+const googleLoginBtn = document.getElementById('googleLoginBtn');
+const browserTestLoginForm = document.getElementById('browserTestLoginForm');
+const browserTestEmail = document.getElementById('browserTestEmail');
 const loginMessage = document.getElementById('loginMessage');
+const authHint = document.getElementById('authHint');
 const loadingPanel = document.getElementById('loadingPanel');
 const accessPanel = document.getElementById('accessPanel');
 const accessMessage = document.getElementById('accessMessage');
@@ -200,13 +200,20 @@ function renderAuthShell(snapshot) {
   latestAuthSnapshot = snapshot;
 
   authBar.classList.toggle('visible', snapshot.accessState === 'signed_in' || snapshot.accessState === 'no_access');
-  changePasswordBtn.style.display = snapshot.accessState === 'signed_in' && config.backend === 'supabase' ? '' : 'none';
   authBarName.textContent = snapshot.sessionUser?.email || 'Nicht angemeldet';
   authBarMeta.textContent = snapshot.profile
     ? `${snapshot.profile.role === 'admin' ? 'Admin' : 'Reader'} · ${config.backend === 'browser-test' ? 'Browser-Test' : 'Supabase'}`
     : config.backend === 'browser-test' ? 'Browser-Test' : 'Supabase';
   loginMessage.textContent = snapshot.message || '';
-  accessMessage.textContent = snapshot.message || 'Diese E-Mail ist noch nicht freigeschaltet.';
+  accessMessage.textContent = snapshot.message || 'Dein Profil konnte gerade nicht geladen werden.';
+  loginIntro.textContent = config.backend === 'browser-test'
+    ? 'Browser-Test-Modus: Gib eine beliebige Test-E-Mail ein. admin@kochbuch.local wird als Admin angemeldet, alle anderen als Reader.'
+    : 'Melde dich mit Google an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.';
+  authHint.textContent = config.backend === 'browser-test'
+    ? 'Dieser Test-Login ist nur lokal für Playwright und die Entwicklung sichtbar.'
+    : 'Google ist der einzige sichtbare Login-Weg. Nach dem ersten Login bleibt deine Session auch auf mehreren Geräten parallel nutzbar.';
+  setVisible(googleLoginActions, config.backend !== 'browser-test');
+  setVisible(browserTestLoginForm, config.backend === 'browser-test');
 
   setVisible(loginPanel, snapshot.accessState === 'signed_out');
   setVisible(loadingPanel, snapshot.accessState === 'loading');
@@ -1016,65 +1023,37 @@ async function handleRecipeSubmit(event) {
   await refreshAppData({ silent: true });
 }
 
-loginForm.addEventListener('submit', async (event) => {
+googleLoginBtn.addEventListener('click', async () => {
+  try {
+    googleLoginBtn.disabled = true;
+    await authService.signInWithGoogle();
+    renderAuthShell(authService.getSnapshot());
+  } catch (error) {
+    googleLoginBtn.disabled = false;
+    loginMessage.textContent = error.message || 'Google-Login fehlgeschlagen.';
+  }
+});
+
+browserTestLoginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   try {
-    await authService.signInWithPassword(loginEmail.value, loginPassword.value);
+    await authService.signInForBrowserTest(browserTestEmail.value);
     const snapshot = authService.getSnapshot();
     renderAuthShell(snapshot);
     if (snapshot.accessState === 'signed_in') {
-      loginPassword.value = '';
       await waitForAppReady();
       await refreshAppData({ silent: true });
     }
   } catch (error) {
-    loginMessage.textContent = error.message || 'Login fehlgeschlagen.';
-  }
-});
-
-magicLinkBtn.addEventListener('click', async () => {
-  try {
-    await authService.requestMagicLink(loginEmail.value);
-    renderAuthShell(authService.getSnapshot());
-  } catch (error) {
-    loginMessage.textContent = error.message || 'Magic Link konnte nicht gesendet werden.';
-  }
-});
-
-resetPasswordBtn.addEventListener('click', async () => {
-  try {
-    await authService.requestPasswordReset(loginEmail.value);
-    renderAuthShell(authService.getSnapshot());
-  } catch (error) {
-    loginMessage.textContent = error.message || 'Passwort-Link konnte nicht gesendet werden.';
-  }
-});
-
-changePasswordBtn.addEventListener('click', async () => {
-  const nextPassword = window.prompt('Neues Passwort eingeben (mindestens 6 Zeichen):', '');
-  if (nextPassword === null) return;
-
-  const confirmPassword = window.prompt('Neues Passwort wiederholen:', '');
-  if (confirmPassword === null) return;
-
-  if (nextPassword !== confirmPassword) {
-    alert('Die Passwörter stimmen nicht überein.');
-    return;
-  }
-
-  try {
-    await authService.updatePassword(nextPassword);
-    renderAuthShell(authService.getSnapshot());
-    alert('Passwort gespeichert. Ab jetzt kannst du dich mit E-Mail und Passwort anmelden.');
-  } catch (error) {
-    alert(`Passwort konnte nicht gespeichert werden: ${error.message}`);
+    loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
   }
 });
 
 signOutBtn.addEventListener('click', async () => {
   await authService.signOut();
   renderAuthShell(authService.getSnapshot());
-  loginPassword.value = '';
+  browserTestEmail.value = '';
+  googleLoginBtn.disabled = false;
   recipes = [];
   weekPlan = createEmptyWeekPlan();
   renderRecipes();
@@ -1372,12 +1351,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (snapshot.accessState === 'signed_in') {
     await refreshAppData({ silent: true });
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
-    loginEmail.value = 'admin@kochbuch.local';
-    loginPassword.value = 'testpasswort';
+    browserTestEmail.value = 'admin@kochbuch.local';
   }
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);
   if (legacySnapshot.hasLegacyData && snapshot.accessState !== 'signed_in') {
-    loginMessage.textContent = 'Lokale Kochbuchdaten gefunden. Nach dem Login kann die Einmal-Migration gestartet werden.';
+    loginMessage.textContent = config.backend === 'browser-test'
+      ? 'Lokale Kochbuchdaten gefunden. Nach dem Test-Login kann die Einmal-Migration gestartet werden.'
+      : 'Lokale Kochbuchdaten gefunden. Nach dem Google-Login kann die Einmal-Migration gestartet werden.';
   }
 });

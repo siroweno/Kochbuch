@@ -125,6 +125,14 @@
       width: 100%;
     }
 
+    .test-login-panel {
+      display: none;
+    }
+
+    .test-login-panel.visible {
+      display: flex;
+    }
+
     .auth-form input {
       flex: 1;
       min-width: 240px;
@@ -1358,23 +1366,20 @@
         <strong id="authBarName">Angemeldet</strong>
         <span id="authBarMeta"></span>
       </div>
-      <button class="btn-secondary" id="changePasswordBtn" type="button">Passwort ändern</button>
       <button class="btn-secondary" id="signOutBtn" type="button">Abmelden</button>
     </div>
 
     <section class="auth-panel" id="loginPanel">
       <h2>Privates Familien-Kochbuch</h2>
-      <p>Melde dich am besten mit E-Mail und Passwort an. Magic Link bleibt als Fallback für die erste Einrichtung oder falls du dein Passwort vergessen hast.</p>
-      <form class="auth-form" id="loginForm" autocomplete="on">
-        <input type="email" id="loginEmail" name="username" placeholder="deine@email.de" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <input type="password" id="loginPassword" name="password" placeholder="Passwort" autocomplete="current-password">
-        <div class="auth-actions">
-          <button class="btn-primary" id="loginSubmitBtn" type="submit">Mit Passwort anmelden</button>
-          <button class="btn-secondary" id="magicLinkBtn" type="button">Magic Link senden</button>
-          <button class="btn-secondary" id="resetPasswordBtn" type="button">Passwort-Link senden</button>
-        </div>
+      <p id="loginIntro">Melde dich mit Google an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
+      <div class="auth-actions" id="googleLoginActions">
+        <button class="btn-primary" id="googleLoginBtn" type="button">Mit Google anmelden</button>
+      </div>
+      <form class="auth-form test-login-panel" id="browserTestLoginForm" autocomplete="on">
+        <input type="email" id="browserTestEmail" name="username" placeholder="admin@kochbuch.local" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button class="btn-primary" id="browserTestLoginBtn" type="submit">Test-Login</button>
       </form>
-      <p class="auth-hint">Tipp: Nach dem ersten Login kannst du oben ein Passwort setzen und dich dann auf mehreren Geräten gleichzeitig normal anmelden.</p>
+      <p class="auth-hint" id="authHint">Google ist der einzige sichtbare Login-Weg. Nach dem ersten Login bleibt deine Session auch auf mehreren Geräten parallel nutzbar.</p>
       <p id="loginMessage" style="margin-top:12px; margin-bottom:0;"></p>
     </section>
 
@@ -1385,7 +1390,7 @@
 
     <section class="status-panel" id="accessPanel">
       <h2>Kein Zugriff</h2>
-      <p id="accessMessage">Diese E-Mail ist noch nicht freigeschaltet.</p>
+      <p id="accessMessage">Dein Profil konnte gerade nicht geladen werden.</p>
     </section>
 
     <section class="status-panel" id="configPanel">

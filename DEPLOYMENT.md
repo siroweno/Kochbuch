@@ -26,6 +26,12 @@ In Supabase müssen diese Werte gepflegt werden:
 
 - `Site URL`: die exakte GitHub-Pages-URL
 - `Redirect URLs`: dieselbe URL plus die `index.html`-Variante
+- `Authentication > Providers > Google`: aktivieren und Google Client ID / Secret setzen
+
+In Google Cloud muss ein Web OAuth Client angelegt werden:
+
+- `Authorized JavaScript origins`: mindestens `https://siroweno.github.io`
+- `Authorized redirect URI`: exakt die Supabase-Callback-URL aus dem Google-Provider-Screen des Projekts
 
 Für lokale Tests sind diese Werte im Repo bereits auf `http://127.0.0.1:4173` und `http://localhost:4173` vorbereitet.
 
@@ -34,32 +40,35 @@ Für lokale Tests sind diese Werte im Repo bereits auf `http://127.0.0.1:4173` u
 Führe im Supabase SQL Editor zuerst die Migration aus:
 
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
+- [supabase/migrations/20260402235900_google_auth_roles.sql](./supabase/migrations/20260402235900_google_auth_roles.sql)
 
-Danach Seed und Allowlist einspielen:
+Danach Seed einspielen:
 
 - [supabase/seed.sql](./supabase/seed.sql)
 - Für lokale Demo-Daten nutzt die Supabase-CLI stattdessen automatisch [supabase/seed.dev.sql](./supabase/seed.dev.sql)
 
 Verifiziere anschließend:
 
-- Tabelle `access_allowlist` enthält die aktiven Leser und den Admin.
 - Tabelle `profiles` wird durch Login und Trigger gefüllt.
+- `you.com` wird als `admin` geführt.
+- Andere erfolgreiche Google-Logins werden als `reader` geführt.
 - Bucket `recipe-images` existiert.
 - RLS ist auf allen relevanten Tabellen aktiv.
 
-## 5. Allowlist-Betrieb
+## 5. Rollenbetrieb
 
 - `admin` ist das einzige Konto mit Schreibrechten auf Rezepte.
 - `reader`-Konten dürfen nur lesen und ihren persönlichen Zustand ändern.
-- Neue Personen werden in Supabase über die Allowlist freigeschaltet.
-- Wenn jemand keinen Zugriff haben soll, wird der Allowlist-Eintrag deaktiviert oder entfernt.
+- `you.com` ist der feste Admin.
+- Jeder andere erfolgreiche Google-Login wird automatisch als `reader` synchronisiert.
+- `access_allowlist` bleibt im Schema erhalten, wird für den normalen Login aber nicht mehr genutzt.
 
 ## 6. Live-Rollout
 
-1. Echte Familien-E-Mails in die Allowlist eintragen.
-2. Magic-Link-Login mit einem `admin`-Konto testen.
-3. Magic-Link-Login mit einem `reader`-Konto testen.
-4. Eine nicht freigeschaltete E-Mail testen.
+1. Google Provider in Supabase konfigurieren.
+2. Google OAuth Client in Google Cloud konfigurieren.
+3. Login mit `you.com` testen.
+4. Login mit einem beliebigen zweiten Google-Konto testen.
 5. Legacy-Migration mit dem echten Admin prüfen.
 6. Erst danach die Live-Seite als produktiv betrachten.
 
@@ -70,6 +79,8 @@ Prüfe auf der GitHub-Pages-URL:
 - `admin` kann ein Rezept anlegen, bearbeiten und löschen.
 - `reader` sieht die Rezepte und kann Favoriten setzen.
 - `reader` kann Wochenplan, Portionswahl und „zuletzt gekocht“ nur für sich selbst ändern.
+- Google-Login funktioniert auf Desktop sowie iPhone/iPad.
+- Abmelden auf Gerät A meldet Gerät B nicht mit ab.
 - Änderungen an zentralen Rezepten sind nach Reload für andere Nutzer sichtbar.
 - Bilder lassen sich anzeigen.
 - Legacy-Migration funktioniert genau einmal.
@@ -85,8 +96,8 @@ Prüfe auf der GitHub-Pages-URL:
 Vor einem echten Rollout sollte Folgendes grün sein:
 
 - Playwright-Suite komplett grün
-- Magic-Link-Login für Admin und Reader
-- Unknown-Mail ohne Zugriff
+- Google-Login für Admin
+- Google-Login für einen beliebigen Reader
 - Live-Storage-Upload geprüft
 - Legacy-Migration geprüft
 - Mobile-Ansicht kurz gegengeprüft

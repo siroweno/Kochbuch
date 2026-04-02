@@ -6,6 +6,7 @@ const { randomUUID } = require('crypto');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.PORT || 4173);
 const ROOT_DIR = __dirname;
+const ADMIN_TEST_EMAIL = 'admin@kochbuch.local';
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -29,10 +30,6 @@ function normalizeEmail(email) {
 
 function createDefaultState() {
   return {
-    allowlist: {
-      'admin@kochbuch.local': { role: 'admin', isActive: true },
-      'reader@kochbuch.local': { role: 'reader', isActive: true },
-    },
     usersByEmail: {},
     sessions: {},
     recipes: [],
@@ -58,14 +55,13 @@ function getUserFromSession(request) {
 }
 
 function getProfileForEmail(email) {
-  const entry = browserTestState.allowlist[normalizeEmail(email)];
-  if (!entry || entry.isActive === false) return null;
-  const user = browserTestState.usersByEmail[normalizeEmail(email)];
+  const normalizedEmail = normalizeEmail(email);
+  const user = browserTestState.usersByEmail[normalizedEmail];
   if (!user) return null;
   return {
     id: user.id,
     email: user.email,
-    role: entry.role,
+    role: normalizedEmail === ADMIN_TEST_EMAIL ? 'admin' : 'reader',
     is_active: true,
   };
 }
@@ -181,16 +177,6 @@ function normalizeRecipePayload(recipe) {
 function applySeed(seed) {
   if (!seed || typeof seed !== 'object') return;
 
-  if (seed.allowlist && typeof seed.allowlist === 'object') {
-    browserTestState.allowlist = Object.entries(seed.allowlist).reduce((next, [email, value]) => {
-      next[normalizeEmail(email)] = {
-        role: value.role || 'reader',
-        isActive: value.isActive !== false,
-      };
-      return next;
-    }, {});
-  }
-
   if (Array.isArray(seed.recipes)) {
     browserTestState.recipes = seed.recipes.map((recipe) => normalizeRecipePayload(recipe));
   }
@@ -228,12 +214,10 @@ async function handleBrowserTestApi(request, response, pathname) {
 
     writeJson(response, 200, {
       sessionToken,
-      accessState: profile ? 'signed_in' : 'no_access',
+      accessState: 'signed_in',
       sessionUser: { id: user.id, email: user.email },
       profile,
-      message: profile
-        ? 'Im Browser-Test-Backend wurdest du direkt angemeldet.'
-        : 'Diese E-Mail steht nicht auf der Allowlist.',
+      message: 'Im Browser-Test-Backend wurdest du direkt angemeldet.',
     });
     return true;
   }
@@ -260,10 +244,10 @@ async function handleBrowserTestApi(request, response, pathname) {
 
     const profile = getProfileForEmail(session.email);
     writeJson(response, 200, {
-      accessState: profile ? 'signed_in' : 'no_access',
+      accessState: profile ? 'signed_in' : 'signed_out',
       sessionUser: { id: session.userId, email: session.email },
       profile,
-      message: profile ? '' : 'Diese E-Mail steht nicht auf der Allowlist.',
+      message: profile ? '' : 'Session konnte nicht zugeordnet werden.',
     });
     return true;
   }

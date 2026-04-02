@@ -115,13 +115,18 @@ export function createAuthService(config) {
     return normalizeProfile(data);
   }
 
-  async function syncProfileFromAllowlistViaRpc() {
+  async function syncProfileViaRpc() {
     if (config.backend !== 'supabase' || !supabase) return { attempted: false, available: false, synced: false };
 
     try {
-      const { error } = await supabase.rpc('sync_profile_from_allowlist');
-      if (error) {
-        return { attempted: true, available: false, synced: false, error };
+      const { error } = await supabase.rpc('sync_profile_for_current_user');
+      if (!error) {
+        return { attempted: true, available: true, synced: true };
+      }
+
+      const fallback = await supabase.rpc('sync_profile_from_allowlist');
+      if (fallback.error) {
+        return { attempted: true, available: false, synced: false, error: fallback.error };
       }
       return { attempted: true, available: true, synced: true };
     } catch (error) {
@@ -141,7 +146,7 @@ export function createAuthService(config) {
       return;
     }
 
-    const syncResult = await syncProfileFromAllowlistViaRpc();
+    const syncResult = await syncProfileViaRpc();
     let profile = null;
 
     try {
@@ -164,8 +169,8 @@ export function createAuthService(config) {
         profile: null,
         canAdmin: false,
         message: syncResult.available
-          ? 'Deine E-Mail ist noch nicht freigeschaltet.'
-          : 'Kein aktives Profil gefunden. Falls die Allowlist gerade geändert wurde, versuche es gleich noch einmal.',
+          ? 'Dein Profil konnte nicht vorbereitet werden.'
+          : 'Kein aktives Profil gefunden. Falls die Rollen-Migration gerade noch nicht aktiv ist, versuche es gleich noch einmal.',
       });
       return;
     }
@@ -285,44 +290,56 @@ export function createAuthService(config) {
       return cloneSnapshot(snapshot);
     },
 
-    async requestMagicLink(email) {
+    async signInForBrowserTest(email) {
       const normalizedEmail = String(email || '').trim().toLowerCase();
       if (!normalizedEmail) {
         throw new Error('Bitte gib eine E-Mail-Adresse ein.');
       }
 
-      if (config.backend === 'browser-test') {
-        const requestVersion = beginBrowserTestRequest();
-        const response = await fetch(`${config.browserTestBasePath}/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: normalizedEmail }),
-        });
-        const payload = await parseJsonResponse(response);
-        if (!isLatestBrowserTestRequest(requestVersion)) {
-          return cloneSnapshot(snapshot);
-        }
-        sessionToken = payload.sessionToken || '';
-        if (sessionToken) {
-          window.localStorage.setItem(BROWSER_TEST_SESSION_KEY, sessionToken);
-        }
-        const profile = normalizeProfile(payload.profile);
-        setSnapshot({
-          accessState: payload.accessState || (profile ? 'signed_in' : 'no_access'),
-          sessionUser: payload.sessionUser || null,
-          profile,
-          canAdmin: profile?.role === 'admin',
-          message: payload.message || 'Im Browser-Test-Backend wurdest du direkt angemeldet.',
-        });
-        return cloneSnapshot(snapshot);
+      if (config.backend !== 'browser-test') {
+        throw new Error('Test-Login ist nur im Browser-Test-Modus verfügbar.');
       }
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: normalizedEmail,
+      const requestVersion = beginBrowserTestRequest();
+      const response = await fetch(`${config.browserTestBasePath}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      const payload = await parseJsonResponse(response);
+      if (!isLatestBrowserTestRequest(requestVersion)) {
+        return cloneSnapshot(snapshot);
+      }
+      sessionToken = payload.sessionToken || '';
+      if (sessionToken) {
+        window.localStorage.setItem(BROWSER_TEST_SESSION_KEY, sessionToken);
+      }
+      const profile = normalizeProfile(payload.profile);
+      setSnapshot({
+        accessState: payload.accessState || (profile ? 'signed_in' : 'no_access'),
+        sessionUser: payload.sessionUser || null,
+        profile,
+        canAdmin: profile?.role === 'admin',
+        message: payload.message || 'Im Browser-Test-Backend wurdest du direkt angemeldet.',
+      });
+      return cloneSnapshot(snapshot);
+    },
+
+    async signInWithGoogle() {
+      if (config.backend === 'browser-test') {
+        throw new Error('Google-Login ist im Browser-Test-Modus nicht verfügbar.');
+      }
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
         options: {
-          emailRedirectTo: config.redirectTo,
+          redirectTo: config.redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
         },
       });
 
@@ -331,8 +348,19 @@ export function createAuthService(config) {
       }
 
       setSnapshot({
+        accessState: 'loading',
+        message: 'Google-Login wird vorbereitet...',
+      });
+      return cloneSnapshot(snapshot);
+    },
+
+    async requestMagicLink(email) {
+      if (config.backend === 'browser-test') {
+        return this.signInForBrowserTest(email);
+      }
+      setSnapshot({
         accessState: 'signed_out',
-        message: 'Magic Link wurde verschickt. Öffne die E-Mail und kehre danach hierher zurück.',
+        message: 'Magic Link ist in diesem Build nicht mehr aktiv. Bitte nutze Google-Login.',
       });
       return cloneSnapshot(snapshot);
     },
@@ -350,20 +378,9 @@ export function createAuthService(config) {
       }
 
       if (config.backend === 'browser-test') {
-        return this.requestMagicLink(normalizedEmail);
+        return this.signInForBrowserTest(normalizedEmail);
       }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: normalizedEmail,
-        password: normalizedPassword,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      await handleSupabaseSession(data.user || data.session?.user || null, 'Erfolgreich angemeldet.');
-      return cloneSnapshot(snapshot);
+      throw new Error('Passwort-Login ist in diesem Build nicht aktiv. Bitte nutze Google-Login.');
     },
 
     async requestPasswordReset(email) {
@@ -372,24 +389,9 @@ export function createAuthService(config) {
         throw new Error('Bitte gib eine E-Mail-Adresse ein.');
       }
 
-      if (config.backend === 'browser-test') {
-        setSnapshot({
-          message: 'Im Browser-Test-Modus ist kein Passwort-Reset notwendig.',
-        });
-        return cloneSnapshot(snapshot);
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: config.redirectTo,
-      });
-
-      if (error) {
-        throw error;
-      }
-
       setSnapshot({
         accessState: 'signed_out',
-        message: 'Passwort-Link wurde verschickt. Öffne die E-Mail und setze danach hier in der App ein neues Passwort.',
+        message: 'Passwort-Reset ist in diesem Build nicht aktiv. Bitte nutze Google-Login.',
       });
       return cloneSnapshot(snapshot);
     },
@@ -400,22 +402,9 @@ export function createAuthService(config) {
         throw new Error('Das Passwort muss mindestens 6 Zeichen lang sein.');
       }
 
-      if (config.backend === 'browser-test') {
-        setSnapshot({
-          message: 'Im Browser-Test-Modus wurde das Passwort simuliert aktualisiert.',
-        });
-        return cloneSnapshot(snapshot);
-      }
-
-      const { data, error } = await supabase.auth.updateUser({
-        password: normalizedPassword,
+      setSnapshot({
+        message: 'Passwort-Aenderung ist in diesem Build nicht aktiv. Bitte nutze Google-Login.',
       });
-
-      if (error) {
-        throw error;
-      }
-
-      await handleSupabaseSession(data.user || snapshot.sessionUser, 'Passwort wurde aktualisiert.');
       return cloneSnapshot(snapshot);
     },
 
@@ -469,7 +458,7 @@ export function createAuthService(config) {
         return { attempted: false, available: false, synced: false };
       }
 
-      return syncProfileFromAllowlistViaRpc();
+      return syncProfileViaRpc();
     },
 
     getSnapshot() {

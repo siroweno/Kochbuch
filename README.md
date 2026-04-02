@@ -35,7 +35,8 @@ npm run serve
 
 - Die Live-App bleibt statisch und läuft über GitHub Pages.
 - Supabase liefert Auth, gemeinsame Rezeptdaten, persönliche Nutzerdaten und Storage.
-- Magic Links sind der einzige Login-Weg.
+- Google OAuth ist der einzige sichtbare Login-Weg.
+- `you.com` wird als `admin` synchronisiert, alle anderen erfolgreichen Logins als `reader`.
 - `admin` darf Rezepte und Migrationen verwalten, `reader` darf lesen und persönlich planen.
 - `browser-test` bleibt ein lokaler/CI-Testmodus und ist kein Live-Backend.
 
@@ -44,5 +45,6 @@ npm run serve
 - [DEPLOYMENT.md](./DEPLOYMENT.md)
 - [runtime-config.js](./runtime-config.js)
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
+- [supabase/migrations/20260402235900_google_auth_roles.sql](./supabase/migrations/20260402235900_google_auth_roles.sql)
 - [supabase/seed.sql](./supabase/seed.sql)
 - [supabase/seed.dev.sql](./supabase/seed.dev.sql)

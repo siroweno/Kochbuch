@@ -14,8 +14,8 @@ async function resetBrowserTestBackend(request, seed) {
 
 async function loginViaUi(page, email, { expectSignedIn = true } = {}) {
   await page.goto(APP_PATH);
-  await page.locator('#loginEmail').fill(email);
-  await page.getByRole('button', { name: 'Magic Link senden' }).click();
+  await page.locator('#browserTestEmail').fill(email);
+  await page.getByRole('button', { name: 'Test-Login' }).click();
   await expect(page.locator('#authBarName')).toHaveText(email);
   if (expectSignedIn) {
     await expect(page.locator('#appShell')).not.toHaveClass(/app-shell-hidden/);
@@ -115,7 +115,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     await resetBrowserTestBackend(request);
   });
 
-  test('trennt Admin-, Reader- und Unknown-Login sauber', async ({ browser }) => {
+  test('ordnet Admin und beliebige Reader-Logins automatisch zu', async ({ browser }) => {
     const adminSession = await openLoggedInPage(browser, 'admin@kochbuch.local');
     await expect(adminSession.page.locator('#toggleFormBtn')).toBeVisible();
     await expect(adminSession.page.locator('#importBtn')).toBeVisible();
@@ -128,12 +128,13 @@ test.describe('Privates Familien-Kochbuch', () => {
     await expect(readerSession.page.locator('#exportBtn')).toBeHidden();
     await readerSession.context.close();
 
-    const unknownContext = await browser.newContext();
-    const unknownPage = await unknownContext.newPage();
-    await loginViaUi(unknownPage, 'unknown@kochbuch.local', { expectSignedIn: false });
-    await expect(unknownPage.getByText(/Kein Zugriff/i)).toBeVisible();
-    await expect(unknownPage.locator('#appShell')).toHaveClass(/app-shell-hidden/);
-    await unknownContext.close();
+    const anyReaderContext = await browser.newContext();
+    const anyReaderPage = await anyReaderContext.newPage();
+    await loginViaUi(anyReaderPage, 'anyone@example.com');
+    await expect(anyReaderPage.locator('#toggleFormBtn')).toBeHidden();
+    await expect(anyReaderPage.locator('#importBtn')).toBeHidden();
+    await expect(anyReaderPage.locator('#exportBtn')).toBeHidden();
+    await anyReaderContext.close();
   });
 
   test('Admin kann Shared Recipe CRUD ausfuehren', async ({ browser }) => {
