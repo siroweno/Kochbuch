@@ -11,7 +11,8 @@ Diese App ist für GitHub Pages + Supabase gedacht. Kein Next.js, kein SSR, kein
 ## 2. Runtime-Config
 
 - Die produktive Konfiguration läuft über `window.__KOCHBUCH_CONFIG__`.
-- In diesem Repo ist das aktuell in [app-config.local.js](./app-config.local.js) hinterlegt.
+- In diesem Repo liegt die öffentliche Live-Konfiguration in [runtime-config.js](./runtime-config.js).
+- Der Dateiname ist bewusst produktiv und nicht lokal: GitHub Pages lädt diese Datei direkt aus dem Repo.
 - Für die Live-Seite müssen folgende Werte gesetzt sein:
   - `backend: 'supabase'`
   - `supabaseUrl`
@@ -37,6 +38,7 @@ Führe im Supabase SQL Editor zuerst die Migration aus:
 Danach Seed und Allowlist einspielen:
 
 - [supabase/seed.sql](./supabase/seed.sql)
+- Für lokale Demo-Daten nutzt die Supabase-CLI stattdessen automatisch [supabase/seed.dev.sql](./supabase/seed.dev.sql)
 
 Verifiziere anschließend:
 
@@ -58,7 +60,8 @@ Verifiziere anschließend:
 2. Magic-Link-Login mit einem `admin`-Konto testen.
 3. Magic-Link-Login mit einem `reader`-Konto testen.
 4. Eine nicht freigeschaltete E-Mail testen.
-5. Erst danach die Live-Seite als produktiv betrachten.
+5. Legacy-Migration mit dem echten Admin prüfen.
+6. Erst danach die Live-Seite als produktiv betrachten.
 
 ## 7. Manuelle Live-Abnahme
 

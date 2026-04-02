@@ -1206,16 +1206,78 @@
 
     @media (max-width: 768px) {
       .auth-bar { align-items: flex-start; flex-direction: column; }
+      .auth-bar .btn-secondary { width: 100%; }
       .auth-form { flex-direction: column; align-items: stretch; }
+      .controls { align-items: stretch; }
+      #searchInput,
+      #sortSelect,
+      #toggleFavoritesBtn,
+      #toggleFormBtn,
+      .backup-controls,
+      .backup-controls .btn-secondary { width: 100%; }
+      .backup-controls { flex-wrap: wrap; }
+      .week-planner { padding: 18px 16px; }
       .modal-header, .modal-controls, .modal-body { padding: 20px; }
       .modal-header h1 { font-size: 28px; }
       .modal-section h2 { font-size: 20px; }
       .container { padding: 18px 16px 28px; }
       .collection-summary { grid-template-columns: 1fr; }
-      .planner-summary { grid-template-columns: 1fr 1fr; }
+      .planner-summary { grid-template-columns: 1fr; }
       .empty-start { padding: 24px 20px; }
       .empty-start-copy h2 { font-size: 28px; }
       .form-container { padding: 24px 20px; }
+      .image-input-row { flex-direction: column; }
+      .image-input-row button { width: 100%; }
+      .card-footer { flex-direction: column; }
+      .card-actions { align-self: flex-end; }
+      .modal-controls { align-items: stretch; }
+      .modal-controls select,
+      .modal-cooked { width: 100%; }
+      .modal-status { margin-left: 0; width: 100%; }
+      .day-recipe-chip { flex-direction: column; }
+      .chip-field {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .chip-slot-select,
+      .chip-servings-select {
+        flex: 1;
+        min-width: 0;
+      }
+      .chip-actions {
+        flex-direction: row;
+        justify-content: flex-end;
+      }
+      .chip-cooked,
+      .chip-remove {
+        min-width: 32px;
+        min-height: 32px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 38px; }
+      .subtitle { font-size: 15px; }
+      .container { padding: 16px 12px 24px; }
+      #searchInput { min-width: 0; }
+      .recipe-grid { grid-template-columns: 1fr; gap: 18px; }
+      .week-planner { padding: 16px 12px; }
+      .planner-layout { gap: 18px; }
+      .modal { padding: 10px; }
+      .modal.visible { padding-top: 20px; }
+      .modal-edit {
+        top: 12px;
+        right: 96px;
+        padding: 7px 12px;
+      }
+      .modal-close {
+        top: 12px;
+        right: 12px;
+      }
+      .modal-favorite {
+        top: 12px;
+        right: 52px;
+      }
     }
 
     /* ── Delete Confirmation Modal ── */

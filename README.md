@@ -9,6 +9,7 @@ Private Familien-Kochbuch-App als statische GitHub-Pages-Seite mit Supabase als 
 - `server.js` dient dem lokalen Browser-Test-Backend.
 - `supabase/` enthält Migration, Policies, Seed und lokale Supabase-Config.
 - `tests/kochbuch.smoke.spec.js` deckt Login, Rechte, Migration und Export/Import ab.
+- `runtime-config.js` ist die öffentliche Laufzeitkonfiguration für GitHub Pages.
 
 ## Schnellstart
 
@@ -36,10 +37,12 @@ npm run serve
 - Supabase liefert Auth, gemeinsame Rezeptdaten, persönliche Nutzerdaten und Storage.
 - Magic Links sind der einzige Login-Weg.
 - `admin` darf Rezepte und Migrationen verwalten, `reader` darf lesen und persönlich planen.
+- `browser-test` bleibt ein lokaler/CI-Testmodus und ist kein Live-Backend.
 
 ## Wichtige Dateien
 
 - [DEPLOYMENT.md](./DEPLOYMENT.md)
-- [app-config.local.js](./app-config.local.js)
+- [runtime-config.js](./runtime-config.js)
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
 - [supabase/seed.sql](./supabase/seed.sql)
+- [supabase/seed.dev.sql](./supabase/seed.dev.sql)
