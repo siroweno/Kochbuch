@@ -55,10 +55,14 @@ let inflightRefreshPromise = null;
 const authBar = document.getElementById('authBar');
 const authBarName = document.getElementById('authBarName');
 const authBarMeta = document.getElementById('authBarMeta');
+const changePasswordBtn = document.getElementById('changePasswordBtn');
 const signOutBtn = document.getElementById('signOutBtn');
 const loginPanel = document.getElementById('loginPanel');
 const loginForm = document.getElementById('loginForm');
 const loginEmail = document.getElementById('loginEmail');
+const loginPassword = document.getElementById('loginPassword');
+const magicLinkBtn = document.getElementById('magicLinkBtn');
+const resetPasswordBtn = document.getElementById('resetPasswordBtn');
 const loginMessage = document.getElementById('loginMessage');
 const loadingPanel = document.getElementById('loadingPanel');
 const accessPanel = document.getElementById('accessPanel');
@@ -196,6 +200,7 @@ function renderAuthShell(snapshot) {
   latestAuthSnapshot = snapshot;
 
   authBar.classList.toggle('visible', snapshot.accessState === 'signed_in' || snapshot.accessState === 'no_access');
+  changePasswordBtn.style.display = snapshot.accessState === 'signed_in' && config.backend === 'supabase' ? '' : 'none';
   authBarName.textContent = snapshot.sessionUser?.email || 'Nicht angemeldet';
   authBarMeta.textContent = snapshot.profile
     ? `${snapshot.profile.role === 'admin' ? 'Admin' : 'Reader'} · ${config.backend === 'browser-test' ? 'Browser-Test' : 'Supabase'}`
@@ -1014,10 +1019,11 @@ async function handleRecipeSubmit(event) {
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   try {
-    await authService.requestMagicLink(loginEmail.value);
+    await authService.signInWithPassword(loginEmail.value, loginPassword.value);
     const snapshot = authService.getSnapshot();
     renderAuthShell(snapshot);
     if (snapshot.accessState === 'signed_in') {
+      loginPassword.value = '';
       await waitForAppReady();
       await refreshAppData({ silent: true });
     }
@@ -1026,9 +1032,49 @@ loginForm.addEventListener('submit', async (event) => {
   }
 });
 
+magicLinkBtn.addEventListener('click', async () => {
+  try {
+    await authService.requestMagicLink(loginEmail.value);
+    renderAuthShell(authService.getSnapshot());
+  } catch (error) {
+    loginMessage.textContent = error.message || 'Magic Link konnte nicht gesendet werden.';
+  }
+});
+
+resetPasswordBtn.addEventListener('click', async () => {
+  try {
+    await authService.requestPasswordReset(loginEmail.value);
+    renderAuthShell(authService.getSnapshot());
+  } catch (error) {
+    loginMessage.textContent = error.message || 'Passwort-Link konnte nicht gesendet werden.';
+  }
+});
+
+changePasswordBtn.addEventListener('click', async () => {
+  const nextPassword = window.prompt('Neues Passwort eingeben (mindestens 6 Zeichen):', '');
+  if (nextPassword === null) return;
+
+  const confirmPassword = window.prompt('Neues Passwort wiederholen:', '');
+  if (confirmPassword === null) return;
+
+  if (nextPassword !== confirmPassword) {
+    alert('Die Passwörter stimmen nicht überein.');
+    return;
+  }
+
+  try {
+    await authService.updatePassword(nextPassword);
+    renderAuthShell(authService.getSnapshot());
+    alert('Passwort gespeichert. Ab jetzt kannst du dich mit E-Mail und Passwort anmelden.');
+  } catch (error) {
+    alert(`Passwort konnte nicht gespeichert werden: ${error.message}`);
+  }
+});
+
 signOutBtn.addEventListener('click', async () => {
   await authService.signOut();
   renderAuthShell(authService.getSnapshot());
+  loginPassword.value = '';
   recipes = [];
   weekPlan = createEmptyWeekPlan();
   renderRecipes();
@@ -1327,6 +1373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await refreshAppData({ silent: true });
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
     loginEmail.value = 'admin@kochbuch.local';
+    loginPassword.value = 'testpasswort';
   }
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);

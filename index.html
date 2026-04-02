@@ -118,6 +118,13 @@
       align-items: center;
     }
 
+    .auth-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
     .auth-form input {
       flex: 1;
       min-width: 240px;
@@ -128,6 +135,13 @@
       font-family: 'Lora', serif;
       background-color: #fff;
       color: #3d2817;
+    }
+
+    .auth-hint {
+      margin-top: 12px;
+      margin-bottom: 0;
+      color: #7a6248;
+      font-size: 14px;
     }
 
     .status-panel strong {
@@ -1208,6 +1222,7 @@
       .auth-bar { align-items: flex-start; flex-direction: column; }
       .auth-bar .btn-secondary { width: 100%; }
       .auth-form { flex-direction: column; align-items: stretch; }
+      .auth-actions { flex-direction: column; }
       .controls { align-items: stretch; }
       #searchInput,
       #sortSelect,
@@ -1343,16 +1358,23 @@
         <strong id="authBarName">Angemeldet</strong>
         <span id="authBarMeta"></span>
       </div>
+      <button class="btn-secondary" id="changePasswordBtn" type="button">Passwort ändern</button>
       <button class="btn-secondary" id="signOutBtn" type="button">Abmelden</button>
     </div>
 
     <section class="auth-panel" id="loginPanel">
       <h2>Privates Familien-Kochbuch</h2>
-      <p>Melde dich per Magic Link an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
+      <p>Melde dich am besten mit E-Mail und Passwort an. Magic Link bleibt als Fallback für die erste Einrichtung oder falls du dein Passwort vergessen hast.</p>
       <form class="auth-form" id="loginForm">
         <input type="email" id="loginEmail" placeholder="deine@email.de" autocomplete="email">
-        <button class="btn-primary" id="loginSubmitBtn" type="submit">Magic Link senden</button>
+        <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password">
+        <div class="auth-actions">
+          <button class="btn-primary" id="loginSubmitBtn" type="submit">Mit Passwort anmelden</button>
+          <button class="btn-secondary" id="magicLinkBtn" type="button">Magic Link senden</button>
+          <button class="btn-secondary" id="resetPasswordBtn" type="button">Passwort-Link senden</button>
+        </div>
       </form>
+      <p class="auth-hint">Tipp: Nach dem ersten Login kannst du oben ein Passwort setzen und dich dann auf mehreren Geräten gleichzeitig normal anmelden.</p>
       <p id="loginMessage" style="margin-top:12px; margin-bottom:0;"></p>
     </section>
 

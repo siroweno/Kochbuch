@@ -337,6 +337,88 @@ export function createAuthService(config) {
       return cloneSnapshot(snapshot);
     },
 
+    async signInWithPassword(email, password) {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      const normalizedPassword = String(password || '');
+
+      if (!normalizedEmail) {
+        throw new Error('Bitte gib eine E-Mail-Adresse ein.');
+      }
+
+      if (!normalizedPassword) {
+        throw new Error('Bitte gib dein Passwort ein.');
+      }
+
+      if (config.backend === 'browser-test') {
+        return this.requestMagicLink(normalizedEmail);
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password: normalizedPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await handleSupabaseSession(data.user || data.session?.user || null, 'Erfolgreich angemeldet.');
+      return cloneSnapshot(snapshot);
+    },
+
+    async requestPasswordReset(email) {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      if (!normalizedEmail) {
+        throw new Error('Bitte gib eine E-Mail-Adresse ein.');
+      }
+
+      if (config.backend === 'browser-test') {
+        setSnapshot({
+          message: 'Im Browser-Test-Modus ist kein Passwort-Reset notwendig.',
+        });
+        return cloneSnapshot(snapshot);
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: config.redirectTo,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setSnapshot({
+        accessState: 'signed_out',
+        message: 'Passwort-Link wurde verschickt. Öffne die E-Mail und setze danach hier in der App ein neues Passwort.',
+      });
+      return cloneSnapshot(snapshot);
+    },
+
+    async updatePassword(password) {
+      const normalizedPassword = String(password || '');
+      if (normalizedPassword.length < 6) {
+        throw new Error('Das Passwort muss mindestens 6 Zeichen lang sein.');
+      }
+
+      if (config.backend === 'browser-test') {
+        setSnapshot({
+          message: 'Im Browser-Test-Modus wurde das Passwort simuliert aktualisiert.',
+        });
+        return cloneSnapshot(snapshot);
+      }
+
+      const { data, error } = await supabase.auth.updateUser({
+        password: normalizedPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      await handleSupabaseSession(data.user || snapshot.sessionUser, 'Passwort wurde aktualisiert.');
+      return cloneSnapshot(snapshot);
+    },
+
     async signOut() {
       if (config.backend === 'browser-test') {
         const requestVersion = beginBrowserTestRequest();
@@ -369,7 +451,7 @@ export function createAuthService(config) {
       }
 
       if (supabase) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
       }
 
       setSnapshot({
