@@ -1365,9 +1365,9 @@
     <section class="auth-panel" id="loginPanel">
       <h2>Privates Familien-Kochbuch</h2>
       <p>Melde dich am besten mit E-Mail und Passwort an. Magic Link bleibt als Fallback für die erste Einrichtung oder falls du dein Passwort vergessen hast.</p>
-      <form class="auth-form" id="loginForm">
-        <input type="email" id="loginEmail" placeholder="deine@email.de" autocomplete="email">
-        <input type="password" id="loginPassword" placeholder="Passwort" autocomplete="current-password">
+      <form class="auth-form" id="loginForm" autocomplete="on">
+        <input type="email" id="loginEmail" name="username" placeholder="deine@email.de" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <input type="password" id="loginPassword" name="password" placeholder="Passwort" autocomplete="current-password">
         <div class="auth-actions">
           <button class="btn-primary" id="loginSubmitBtn" type="submit">Mit Passwort anmelden</button>
           <button class="btn-secondary" id="magicLinkBtn" type="button">Magic Link senden</button>
