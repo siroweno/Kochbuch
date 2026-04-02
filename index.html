@@ -49,6 +49,100 @@
       margin: 0 auto;
     }
 
+    .auth-shell {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 26px;
+    }
+
+    .auth-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border: 1px solid #e1cdb6;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 8px 26px rgba(75, 52, 31, 0.06);
+    }
+
+    .auth-bar.visible { display: flex; }
+
+    .auth-bar-copy {
+      display: grid;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .auth-bar-copy strong {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+    }
+
+    .auth-bar-copy span {
+      color: #8b7355;
+      font-size: 13px;
+    }
+
+    .auth-panel,
+    .status-panel {
+      display: none;
+      padding: 20px 22px;
+      border-radius: 10px;
+      border: 1px solid #e1cdb6;
+      background: rgba(255,255,255,0.92);
+      box-shadow: 0 10px 30px rgba(75, 52, 31, 0.06);
+    }
+
+    .auth-panel.visible,
+    .status-panel.visible { display: block; }
+
+    .auth-panel h2,
+    .status-panel h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .auth-panel p,
+    .status-panel p {
+      color: #6b5842;
+      margin-bottom: 16px;
+    }
+
+    .auth-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .auth-form input {
+      flex: 1;
+      min-width: 240px;
+      padding: 12px 18px;
+      border: 1px solid #d4a574;
+      border-radius: 4px;
+      font-size: 15px;
+      font-family: 'Lora', serif;
+      background-color: #fff;
+      color: #3d2817;
+    }
+
+    .status-panel strong {
+      font-family: 'Playfair Display', serif;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .status-panel small {
+      color: #8b7355;
+    }
+
+    .app-shell-hidden { display: none; }
+    .admin-hidden { display: none !important; }
+
     /* ── Controls bar ── */
     .controls {
       display: flex;
@@ -1111,6 +1205,8 @@
     }
 
     @media (max-width: 768px) {
+      .auth-bar { align-items: flex-start; flex-direction: column; }
+      .auth-form { flex-direction: column; align-items: stretch; }
       .modal-header, .modal-controls, .modal-body { padding: 20px; }
       .modal-header h1 { font-size: 28px; }
       .modal-section h2 { font-size: 20px; }
@@ -1179,6 +1275,44 @@
     <p class="subtitle">Deine Rezepte, deine Sammlung</p>
   </header>
 
+  <div class="auth-shell">
+    <div class="auth-bar" id="authBar">
+      <div class="auth-bar-copy">
+        <strong id="authBarName">Angemeldet</strong>
+        <span id="authBarMeta"></span>
+      </div>
+      <button class="btn-secondary" id="signOutBtn" type="button">Abmelden</button>
+    </div>
+
+    <section class="auth-panel" id="loginPanel">
+      <h2>Privates Familien-Kochbuch</h2>
+      <p>Melde dich per Magic Link an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
+      <form class="auth-form" id="loginForm">
+        <input type="email" id="loginEmail" placeholder="deine@email.de" autocomplete="email">
+        <button class="btn-primary" id="loginSubmitBtn" type="submit">Magic Link senden</button>
+      </form>
+      <p id="loginMessage" style="margin-top:12px; margin-bottom:0;"></p>
+    </section>
+
+    <section class="status-panel" id="loadingPanel">
+      <h2>App wird vorbereitet</h2>
+      <p>Authentifizierung und Kochbuchdaten werden geladen.</p>
+    </section>
+
+    <section class="status-panel" id="accessPanel">
+      <h2>Kein Zugriff</h2>
+      <p id="accessMessage">Diese E-Mail ist noch nicht freigeschaltet.</p>
+    </section>
+
+    <section class="status-panel" id="configPanel">
+      <h2>Supabase-Konfiguration fehlt</h2>
+      <p>Lege eine lokale oder deployte Laufzeitkonfiguration an, damit Auth, Datenbank und Storage verbunden werden können.</p>
+      <small>Erwartet wird <code>window.__KOCHBUCH_CONFIG__</code> mit Supabase-URL und Anon-Key.</small>
+    </section>
+  </div>
+
+  <div id="appShell" class="app-shell-hidden">
+
   <!-- Controls -->
   <div class="controls">
     <input type="text" id="searchInput" placeholder="Rezepte durchsuchen — Titel, Zutaten, Tags …">
@@ -1193,8 +1327,9 @@
       <option value="favorites">Favoriten zuerst</option>
     </select>
     <button class="btn-ghost filter-toggle" id="toggleFavoritesBtn" type="button" aria-pressed="false">Nur Favoriten</button>
-    <button class="btn-primary" id="toggleFormBtn">+ Neues Rezept</button>
-    <div class="backup-controls">
+    <button class="btn-primary" id="toggleFormBtn" type="button" data-admin-only>+ Neues Rezept</button>
+    <div class="backup-controls" data-admin-only>
+      <button class="btn-secondary" id="migrateLocalBtn" type="button">Lokale Daten migrieren</button>
       <button class="btn-secondary" id="exportBtn">Exportieren</button>
       <button class="btn-secondary" id="importBtn">Importieren</button>
       <input type="file" id="importFile" accept=".json">
@@ -1232,7 +1367,7 @@
   </div>
 
   <!-- Add / Edit Form -->
-  <div class="form-container" id="formContainer">
+  <div class="form-container" id="formContainer" data-admin-only>
     <h2 id="formTitle">Neues Rezept</h2>
     <form id="recipeForm">
       <div class="form-intro">
@@ -1338,6 +1473,7 @@
   </div>
   <div class="recipe-grid" id="recipeGrid"></div>
 
+  </div><!-- /appShell -->
 </div><!-- /container -->
 
 <!-- Recipe Detail Modal -->
@@ -1345,7 +1481,7 @@
   <div class="modal-content">
     <button class="modal-close" id="modalCloseBtn" type="button" aria-label="Rezept schließen">✕</button>
     <button class="modal-favorite" id="modalFavoriteBtn" type="button" aria-pressed="false" aria-label="Zu Favoriten hinzufügen">♡</button>
-    <button class="modal-edit" id="modalEditBtn" type="button">Bearbeiten</button>
+    <button class="modal-edit" id="modalEditBtn" type="button" data-admin-only>Bearbeiten</button>
 
     <img class="modal-image" id="modalImage" src="" alt="" style="display:none;">
 
@@ -1412,1586 +1548,8 @@
   </div>
 </div>
 
-<script>
-  // ── Constants ─────────────────────────────────────────────
-  const QUANTITY_PATTERN = /^([\d.,]+)\s*([a-zäöü°\/]*)/i;
-  const UNIT_ALIASES = {
-    'g':'g','gramm':'g','kg':'kg','kilo':'kg',
-    'ml':'ml','milliliter':'ml','l':'l','liter':'l',
-    'el':'el','eßlöffel':'el','esslöffel':'el',
-    'tl':'tl','teelöffel':'tl',
-    'stück':'stück','st':'stück','stk':'stück','piece':'stück',
-    'prise':'prise','pck':'pck','packung':'pck',
-    'dose':'dose','tasse':'tasse','schale':'schale',
-    'becher':'becher','blatt':'blatt','zweig':'zweig',
-    'zehe':'zehe','splitter':'splitter',
-  };
-
-  const DAYS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
-  const SERVING_OPTIONS = [1,2,3,4,5,6,8,10,12];
-  const EXPORT_SCHEMA_VERSION = 2;
-  const MEAL_SLOTS = [
-    { id: 'fruehstueck', label: 'Fruehstueck', short: 'Frueh' },
-    { id: 'mittag', label: 'Mittag', short: 'Mittag' },
-    { id: 'abend', label: 'Abend', short: 'Abend' },
-    { id: 'snack', label: 'Snack', short: 'Snack' },
-  ];
-
-  // ── State ─────────────────────────────────────────────────
-  let recipes = [];
-  let currentModalRecipe = null;
-  let currentModalServings = null;
-  let editingRecipeId = null;
-  let activeTagFilter = null;
-  let favoriteFilterActive = false;
-  let pendingDeleteId = null;
-  let activeDayPicker = null;
-  let activeDayPickerSlot = 'abend';
-  let weekPlan = createEmptyWeekPlan();
-  let fullShoppingList = '';
-  let lastModalTrigger = null;
-  let lastDeleteTrigger = null;
-
-  // ── DOM refs ──────────────────────────────────────────────
-  const toggleFormBtn    = document.getElementById('toggleFormBtn');
-  const toggleFavoritesBtn = document.getElementById('toggleFavoritesBtn');
-  const formContainer    = document.getElementById('formContainer');
-  const recipeForm       = document.getElementById('recipeForm');
-  const recipeGrid       = document.getElementById('recipeGrid');
-  const collectionSummary = document.getElementById('collectionSummary');
-  const searchInput      = document.getElementById('searchInput');
-  const sortSelect       = document.getElementById('sortSelect');
-  const titleInput       = document.getElementById('title');
-  const servingsInput    = document.getElementById('servings');
-  const prepTimeInput    = document.getElementById('prepTime');
-  const cookTimeInput    = document.getElementById('cookTime');
-  const tagsInput        = document.getElementById('tags');
-  const imageUrlInput    = document.getElementById('imageUrl');
-  const imageFileInput   = document.getElementById('imageFile');
-  const imagePreview     = document.getElementById('imagePreview');
-  const previewImg       = document.getElementById('previewImg');
-  const ingredientsInput = document.getElementById('ingredients');
-  const instructionsInput= document.getElementById('instructions');
-  const platingInput     = document.getElementById('plating');
-  const tipsInput        = document.getElementById('tips');
-  const descriptionInput = document.getElementById('description');
-  const exportBtn        = document.getElementById('exportBtn');
-  const importBtn        = document.getElementById('importBtn');
-  const importFile       = document.getElementById('importFile');
-  const uploadImageBtn   = document.getElementById('uploadImageBtn');
-  const togglePlannerBtn = document.getElementById('togglePlannerBtn');
-  const weekPlanner      = document.getElementById('weekPlanner');
-  const plannerSummary   = document.getElementById('plannerSummary');
-  const daysGrid         = document.getElementById('daysGrid');
-  const shoppingList     = document.getElementById('shoppingList');
-  const shoppingSearchInput = document.getElementById('shoppingSearchInput');
-  const exportShoppingBtn   = document.getElementById('exportShoppingBtn');
-  const clearPlanBtn        = document.getElementById('clearPlanBtn');
-  const tagFilterPill       = document.getElementById('tagFilterPill');
-  const tagFilterLabel      = document.getElementById('tagFilterLabel');
-  const clearTagFilterBtn   = document.getElementById('clearTagFilterBtn');
-  const recipeCount         = document.getElementById('recipeCount');
-  const recipeModal         = document.getElementById('recipeModal');
-  const modalCloseBtn       = document.getElementById('modalCloseBtn');
-  const modalFavoriteBtn    = document.getElementById('modalFavoriteBtn');
-  const modalEditBtn        = document.getElementById('modalEditBtn');
-  const modalCookedBtn      = document.getElementById('modalCookedBtn');
-  const modalCookedStatus   = document.getElementById('modalCookedStatus');
-  const modalServingsSelect = document.getElementById('modalServings');
-  const deleteConfirm       = document.getElementById('deleteConfirm');
-  const confirmDeleteBtn    = document.getElementById('confirmDeleteBtn');
-  const cancelDeleteBtn     = document.getElementById('cancelDeleteBtn');
-
-  const REQUIRED_FIELDS = new Map([
-    [titleInput, 'Bitte gib einen Rezeptnamen ein.'],
-    [ingredientsInput, 'Bitte trage mindestens eine Zutat ein.'],
-    [instructionsInput, 'Bitte trage eine Zubereitung ein.'],
-  ]);
-
-  // ── Persistence ───────────────────────────────────────────
-  function createEmptyWeekPlan() {
-    return { Mo:[], Di:[], Mi:[], Do:[], Fr:[], Sa:[], So:[] };
-  }
-
-  function normalizeMultilineText(value) {
-    return String(value || '')
-      .split('\n')
-      .map(line => line.replace(/\s+$/g, ''))
-      .join('\n')
-      .trim();
-  }
-
-  function normalizeIngredientsSource(value) {
-    if (Array.isArray(value)) {
-      return value
-        .map(item => {
-          if (typeof item === 'string') return item.trim();
-          if (!item || typeof item !== 'object') return '';
-          return [
-            item.quantity,
-            item.unit,
-            item.name,
-          ].filter(Boolean).join(' ').trim();
-        })
-        .filter(Boolean)
-        .join('\n');
-    }
-
-    return String(value || '');
-  }
-
-  function isValidMealSlot(slot) {
-    return MEAL_SLOTS.some(item => item.id === slot);
-  }
-
-  function getMealSlotLabel(slot, short = false) {
-    const match = MEAL_SLOTS.find(item => item.id === slot) || MEAL_SLOTS[2];
-    return short ? match.short : match.label;
-  }
-
-  function renderMealSlotOptions(selected, compact = false) {
-    return MEAL_SLOTS.map(slot =>
-      `<option value="${slot.id}"${slot.id === selected ? ' selected' : ''}>${compact ? slot.short : slot.label}</option>`
-    ).join('');
-  }
-
-  function isValidDateString(value) {
-    return Boolean(value) && !Number.isNaN(new Date(value).getTime());
-  }
-
-  function isSameCalendarDay(a, b) {
-    return a.getFullYear() === b.getFullYear()
-      && a.getMonth() === b.getMonth()
-      && a.getDate() === b.getDate();
-  }
-
-  function getCookedTimestamp(recipe) {
-    return isValidDateString(recipe.lastCookedAt)
-      ? new Date(recipe.lastCookedAt).getTime()
-      : 0;
-  }
-
-  function formatLastCooked(recipe, variant = 'long') {
-    if (!isValidDateString(recipe.lastCookedAt)) return '';
-
-    const cookedAt = new Date(recipe.lastCookedAt);
-    const formattedDate = cookedAt.toLocaleDateString('de-DE');
-
-    if (isSameCalendarDay(cookedAt, new Date())) {
-      return variant === 'short' ? 'Heute gekocht' : 'Heute gekocht';
-    }
-
-    return variant === 'short'
-      ? `Zuletzt ${formattedDate}`
-      : `Zuletzt gekocht am ${formattedDate}`;
-  }
-
-  function normalizeCreatedAt(value, fallbackId) {
-    if (typeof value === 'number' || isValidDateString(value)) {
-      return new Date(value).toLocaleDateString('de-DE');
-    }
-
-    const text = String(value || '').trim();
-    return text || new Date(fallbackId).toLocaleDateString('de-DE');
-  }
-
-  function getUniqueRecipeId(preferredId, usedIds = new Set()) {
-    const numericPreferred = Number(preferredId);
-    if (Number.isFinite(numericPreferred) && numericPreferred > 0 && !usedIds.has(numericPreferred)) {
-      return numericPreferred;
-    }
-
-    let candidate = Date.now();
-    while (usedIds.has(candidate)) {
-      candidate += 1;
-    }
-    return candidate;
-  }
-
-  function getTitleKey(title) {
-    return String(title || '').trim().toLocaleLowerCase('de-DE');
-  }
-
-  function getPlanEntrySignature(entry) {
-    return `${entry.recipeId}|${entry.slot}|${entry.servings}`;
-  }
-
-  function parseIngredientsText(value) {
-    return normalizeMultilineText(value)
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean)
-      .map(line => parseIngredient(line));
-  }
-
-  function normalizeTags(value) {
-    if (Array.isArray(value)) {
-      return value
-        .map(tag => String(tag || '').trim())
-        .filter(Boolean);
-    }
-    return String(value || '')
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(Boolean);
-  }
-
-  function normalizeRecipe(recipe, options = {}) {
-    const usedIds = options.usedIds || new Set();
-    const rawIngredients = normalizeMultilineText(
-      recipe.rawIngredients || normalizeIngredientsSource(recipe.ingredients)
-    );
-    const parsedIngredients = Array.isArray(recipe.parsedIngredients) && recipe.parsedIngredients.length
-      ? recipe.parsedIngredients
-          .filter(ing => ing && String(ing.name || '').trim())
-          .map(ing => ({
-            quantity: ing.quantity === null || ing.quantity === undefined || Number.isNaN(Number(ing.quantity))
-              ? null
-              : Number(ing.quantity),
-            unit: ing.unit ? String(ing.unit).trim() : null,
-            name: String(ing.name || '').trim(),
-          }))
-      : parseIngredientsText(rawIngredients);
-
-    const id = getUniqueRecipeId(recipe.id, usedIds);
-    usedIds.add(id);
-
-    return {
-      id,
-      createdAt: normalizeCreatedAt(recipe.createdAt, id),
-      title: String(recipe.title || '').trim(),
-      baseServings: SERVING_OPTIONS.includes(parseInt(recipe.baseServings, 10))
-        ? parseInt(recipe.baseServings, 10)
-        : 2,
-      prepTime: Math.max(0, parseInt(recipe.prepTime, 10) || 0),
-      cookTime: Math.max(0, parseInt(recipe.cookTime, 10) || 0),
-      tags: normalizeTags(recipe.tags),
-      imageUrl: String(recipe.imageUrl || '').trim(),
-      description: String(recipe.description || recipe.summary || '').trim(),
-      parsedIngredients,
-      rawIngredients,
-      instructions: normalizeMultilineText(recipe.instructions || recipe.method || recipe.steps || ''),
-      plating: normalizeMultilineText(recipe.plating || recipe.serving || ''),
-      tips: normalizeMultilineText(recipe.tips || recipe.notes || ''),
-      favorite: Boolean(recipe.favorite),
-      lastCookedAt: isValidDateString(recipe.lastCookedAt) ? new Date(recipe.lastCookedAt).toISOString() : null,
-    };
-  }
-
-  function normalizeWeekPlanEntry(entry) {
-    const recipeId = Number(
-      typeof entry === 'object' && entry !== null
-        ? entry.recipeId ?? entry.id
-        : entry
-    );
-
-    if (!recipeId) return null;
-
-    const recipe = recipes.find(item => item.id === recipeId);
-    if (!recipe) return null;
-
-    const servings = parseInt(
-      typeof entry === 'object' && entry !== null ? entry.servings : null,
-      10
-    );
-
-    return {
-      recipeId,
-      servings: SERVING_OPTIONS.includes(servings) ? servings : recipe.baseServings,
-      slot: isValidMealSlot(typeof entry === 'object' && entry !== null ? entry.slot : '')
-        ? entry.slot
-        : 'abend',
-    };
-  }
-
-  function loadRecipes() {
-    const saved = localStorage.getItem('cookbook_recipes');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const usedIds = new Set();
-        recipes = Array.isArray(parsed)
-          ? parsed.map(recipe => normalizeRecipe(recipe, { usedIds })).filter(recipe => recipe.title)
-          : [];
-      } catch(e) {
-        recipes = [];
-      }
-    }
-  }
-  function saveRecipes() {
-    localStorage.setItem('cookbook_recipes', JSON.stringify(recipes));
-  }
-  function loadWeekPlan() {
-    const saved = localStorage.getItem('cookbook_weekplan');
-    if (saved) {
-      try { weekPlan = { Mo:[],Di:[],Mi:[],Do:[],Fr:[],Sa:[],So:[], ...JSON.parse(saved) }; }
-      catch(e) {}
-    }
-    weekPlan = DAYS.reduce((plan, day) => {
-      const entries = Array.isArray(weekPlan[day]) ? weekPlan[day] : [];
-      plan[day] = entries
-        .map(normalizeWeekPlanEntry)
-        .filter(Boolean);
-      return plan;
-    }, createEmptyWeekPlan());
-  }
-  function saveWeekPlan() {
-    localStorage.setItem('cookbook_weekplan', JSON.stringify(weekPlan));
-  }
-
-  // ── Ingredient parsing + scaling ──────────────────────────
-  function parseIngredient(line) {
-    const match = line.match(QUANTITY_PATTERN);
-    if (!match) return { quantity: null, unit: null, name: line.trim() };
-    let quantity = parseFloat(match[1].replace(',', '.'));
-    let unit = match[2].toLowerCase().trim();
-    let name = line.substring(match[0].length).trim();
-    if (unit) unit = UNIT_ALIASES[unit] || unit;
-    return { quantity, unit, name };
-  }
-
-  function scaleIngredient(ing, fromServings, toServings) {
-    if (ing.quantity === null || ing.quantity === undefined) return ing.name;
-    const factor = toServings / fromServings;
-    let q = Math.round(ing.quantity * factor * 10) / 10;
-    if (q === Math.floor(q)) q = Math.floor(q);
-    return `${q}${ing.unit ? ' ' + ing.unit : ''} ${ing.name}`;
-  }
-
-  // ── Image helpers ─────────────────────────────────────────
-  function resizeImage(file, callback) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const MAX_W = 600, MAX_H = 400;
-        let w = img.width, h = img.height;
-        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
-        if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        callback(canvas.toDataURL('image/jpeg', 0.75));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  uploadImageBtn.addEventListener('click', () => imageFileInput.click());
-
-  imageFileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    resizeImage(file, (dataUrl) => {
-      imageUrlInput.value = dataUrl;
-      previewImg.src = dataUrl;
-      imagePreview.style.display = 'block';
-    });
-    imageFileInput.value = '';
-  });
-
-  imageUrlInput.addEventListener('input', () => {
-    const val = imageUrlInput.value.trim();
-    if (val) {
-      previewImg.src = val;
-      imagePreview.style.display = 'block';
-    } else if (!val) {
-      imagePreview.style.display = 'none';
-    }
-  });
-
-  // ── Filtering + helpers ───────────────────────────────────
-  function getMainCategory(recipe) {
-    return (recipe.tags && recipe.tags[0]) || '';
-  }
-
-  function compareTitles(a, b) {
-    return a.title.localeCompare(b.title, 'de', { sensitivity: 'base' });
-  }
-
-  function openRecipeForm() {
-    formContainer.classList.add('visible');
-    toggleFormBtn.textContent = '✕ Abbrechen';
-    titleInput.focus();
-  }
-
-  function closeRecipeForm() {
-    formContainer.classList.remove('visible');
-    toggleFormBtn.textContent = '+ Neues Rezept';
-    resetForm();
-  }
-
-  function updateFavoriteFilterButton() {
-    toggleFavoritesBtn.classList.toggle('active', favoriteFilterActive);
-    toggleFavoritesBtn.setAttribute('aria-pressed', String(favoriteFilterActive));
-  }
-
-  function updateTagFilterPill() {
-    tagFilterPill.classList.toggle('visible', Boolean(activeTagFilter));
-    if (activeTagFilter) {
-      tagFilterLabel.textContent = activeTagFilter;
-    }
-  }
-
-  function setTagFilter(tag) {
-    if (activeTagFilter === tag) {
-      clearTagFilter();
-      return;
-    }
-    activeTagFilter = tag;
-    updateTagFilterPill();
-    renderRecipes();
-  }
-
-  function clearTagFilter() {
-    activeTagFilter = null;
-    updateTagFilterPill();
-    renderRecipes();
-  }
-
-  function toggleFavoritesFilter() {
-    favoriteFilterActive = !favoriteFilterActive;
-    updateFavoriteFilterButton();
-    renderRecipes();
-  }
-
-  // ── Rendering: recipe grid ────────────────────────────────
-  function getFilteredSorted() {
-    const q = searchInput.value.toLowerCase().trim();
-    let list = recipes.filter(r => {
-      if (q) {
-        const inTitle = r.title.toLowerCase().includes(q);
-        const inDesc  = (r.description||'').toLowerCase().includes(q);
-        const inIngr  = (r.rawIngredients||'').toLowerCase().includes(q);
-        const inTags  = (r.tags||[]).some(t => t.toLowerCase().includes(q));
-        const inInstr = (r.instructions||'').toLowerCase().includes(q);
-        if (!inTitle && !inDesc && !inIngr && !inTags && !inInstr) return false;
-      }
-      if (activeTagFilter) {
-        if (!(r.tags||[]).some(t => t.toLowerCase() === activeTagFilter.toLowerCase())) return false;
-      }
-      if (favoriteFilterActive && !r.favorite) return false;
-      return true;
-    });
-
-    const sort = sortSelect.value;
-    list.sort((a, b) => {
-      if (sort === 'az') return a.title.localeCompare(b.title, 'de');
-      if (sort === 'za') return b.title.localeCompare(a.title, 'de');
-      if (sort === 'category') {
-        const categoryCompare = getMainCategory(a).localeCompare(getMainCategory(b), 'de', { sensitivity: 'base' });
-        if (categoryCompare !== 0) return categoryCompare;
-        return compareTitles(a, b);
-      }
-      if (sort === 'recent') {
-        const timeCompare = getCookedTimestamp(b) - getCookedTimestamp(a);
-        if (timeCompare !== 0) return timeCompare;
-        if (getCookedTimestamp(a) === 0 && getCookedTimestamp(b) === 0) return compareTitles(a, b);
-        if (getCookedTimestamp(a) === 0) return 1;
-        if (getCookedTimestamp(b) === 0) return -1;
-        return compareTitles(a, b);
-      }
-      if (sort === 'favorites') {
-        const favoriteCompare = Number(b.favorite) - Number(a.favorite);
-        if (favoriteCompare !== 0) return favoriteCompare;
-        return compareTitles(a, b);
-      }
-      if (sort === 'time') {
-        const ta = (a.prepTime||0) + (a.cookTime||0);
-        const tb = (b.prepTime||0) + (b.cookTime||0);
-        if (ta === 0 && tb === 0) return 0;
-        if (ta === 0) return 1;
-        if (tb === 0) return -1;
-        return ta - tb;
-      }
-      if (sort === 'oldest') return (a.id||0) - (b.id||0);
-      // newest (default)
-      return (b.id||0) - (a.id||0);
-    });
-    return list;
-  }
-
-  function formatTime(recipe) {
-    const prep = parseInt(recipe.prepTime) || 0;
-    const cook = parseInt(recipe.cookTime) || 0;
-    const total = prep + cook;
-    if (!total) return '';
-    return total + ' Min';
-  }
-
-  function renderPlannerServingOptions(selected) {
-    return SERVING_OPTIONS.map(value =>
-      `<option value="${value}"${value === selected ? ' selected' : ''}>${value} P.</option>`
-    ).join('');
-  }
-
-  function renderRecipes() {
-    const list = getFilteredSorted();
-    updateFavoriteFilterButton();
-    updateTagFilterPill();
-    renderCollectionSummary();
-
-    recipeCount.textContent = list.length === recipes.length
-      ? `${recipes.length} Rezept${recipes.length !== 1 ? 'e' : ''}`
-      : `${list.length} von ${recipes.length} Rezepten`;
-
-    if (list.length === 0) {
-      const hasActiveFilters = Boolean(searchInput.value.trim() || activeTagFilter || favoriteFilterActive);
-      recipeGrid.innerHTML = recipes.length === 0 && !hasActiveFilters
-        ? `<section class="empty-start">
-            <div class="empty-start-copy">
-              <h2>Dein Kochbuch beginnt hier</h2>
-              <p>Starte mit einem ersten Rezept, halte Mengen sauber fest und baue dir nach und nach eine Sammlung auf, die sich auch im Alltag schnell benutzen laesst.</p>
-            </div>
-            <div class="empty-start-actions">
-              <button type="button" class="btn-primary" data-action="open-form">Erstes Rezept anlegen</button>
-              <button type="button" class="btn-ghost" data-action="open-import">Rezepte importieren</button>
-            </div>
-            <div class="empty-start-steps">
-              <div class="empty-step">
-                <strong>1. Titel und Tags</strong>
-                <p>So benennst du Rezepte so, wie du spaeter wirklich danach suchen wuerdest.</p>
-              </div>
-              <div class="empty-step">
-                <strong>2. Zutaten pro Zeile</strong>
-                <p>Das macht Skalierung und Einkaufsliste verlaesslich, statt nur dekorativ.</p>
-              </div>
-              <div class="empty-step">
-                <strong>3. Planner nutzen</strong>
-                <p>Rezepte lassen sich fuer konkrete Portionen und Mahlzeiten-Slots in die Woche legen.</p>
-              </div>
-            </div>
-          </section>`
-        : `<div class="empty-state">${
-            hasActiveFilters
-              ? 'Keine Rezepte passen zu Suche oder Filtern.'
-              : 'Keine Rezepte gefunden.'
-          }</div>`;
-      return;
-    }
-
-    recipeGrid.innerHTML = list.map(recipe => {
-      const tags = recipe.tags || [];
-      const timeStr = formatTime(recipe);
-      const servings = recipe.baseServings || 2;
-
-      const tagsHtml = tags.map(t =>
-        `<button type="button" class="tag${activeTagFilter && t.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
-          data-action="filter-tag" data-tag="${encodeURIComponent(t)}" aria-pressed="${String(activeTagFilter && t.toLowerCase() === activeTagFilter.toLowerCase())}">${escapeHtml(t)}</button>`
-      ).join('');
-
-      const metaItems = [];
-      if (timeStr) metaItems.push(`<span class="meta-item"><span class="meta-icon">◷</span>${timeStr}</span>`);
-      metaItems.push(`<span class="meta-item">${servings} Pers.</span>`);
-      if (recipe.lastCookedAt) metaItems.push(`<span class="meta-item">${escapeHtml(formatLastCooked(recipe, 'short'))}</span>`);
-
-      const imageHtml = recipe.imageUrl
-        ? `<img class="card-image" src="${escapeAttribute(recipe.imageUrl)}" alt="${escapeAttribute(recipe.title)}" loading="lazy" onerror="this.style.display='none'">`
-        : `<div class="card-image-placeholder">✦</div>`;
-
-      return `
-        <article class="recipe-card">
-          <button type="button" class="recipe-card-main" data-action="open-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} öffnen">
-            ${imageHtml}
-            <div class="card-body">
-              <div class="card-title">${escapeHtml(recipe.title)}</div>
-              <div class="card-meta">${metaItems.join('')}</div>
-              ${recipe.description ? `<p class="card-description">${escapeHtml(recipe.description)}</p>` : ''}
-            </div>
-          </button>
-          <div class="card-footer">
-            <div class="card-tags">${tagsHtml}</div>
-            <div class="card-actions">
-              <button type="button" class="icon-btn favorite-btn${recipe.favorite ? ' active' : ''}" data-action="toggle-favorite" data-recipe-id="${recipe.id}" aria-pressed="${String(recipe.favorite)}" aria-label="${recipe.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${recipe.favorite ? '♥' : '♡'}</button>
-              <button type="button" class="icon-btn delete-btn" data-action="delete-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} löschen">✕</button>
-            </div>
-          </div>
-        </article>`;
-    }).join('');
-  }
-
-  function syncBodyScrollLock() {
-    const shouldLock = recipeModal.classList.contains('visible') || deleteConfirm.classList.contains('visible');
-    document.body.style.overflow = shouldLock ? 'hidden' : '';
-  }
-
-  function refreshPlannerViews() {
-    if (weekPlanner.style.display === 'block') {
-      renderWeekPlanner();
-      updatePlannerShoppingList();
-    }
-  }
-
-  function getWeekPlanEntries() {
-    return DAYS.flatMap(day => weekPlan[day]);
-  }
-
-  function getPlannerStats() {
-    const entries = getWeekPlanEntries();
-    const favoriteEntries = entries.filter(entry => recipes.find(recipe => recipe.id === entry.recipeId)?.favorite).length;
-    const plannedDays = DAYS.filter(day => weekPlan[day].length > 0).length;
-    const uniqueRecipes = new Set(entries.map(entry => entry.recipeId)).size;
-
-    return {
-      entries: entries.length,
-      favoriteEntries,
-      plannedDays,
-      uniqueRecipes,
-    };
-  }
-
-  function getExportPayload() {
-    return {
-      app: 'mein-kochbuch',
-      schemaVersion: EXPORT_SCHEMA_VERSION,
-      exportedAt: new Date().toISOString(),
-      recipes,
-      weekPlan,
-    };
-  }
-
-  function normalizeImportPayload(payload) {
-    if (Array.isArray(payload)) {
-      return { recipes: payload, weekPlan: null };
-    }
-
-    if (payload && typeof payload === 'object' && Array.isArray(payload.recipes)) {
-      return {
-        recipes: payload.recipes,
-        weekPlan: payload.weekPlan && typeof payload.weekPlan === 'object' ? payload.weekPlan : null,
-      };
-    }
-
-    return null;
-  }
-
-  function mergeImportedWeekPlan(importedWeekPlan, importIdMap = new Map()) {
-    if (!importedWeekPlan || typeof importedWeekPlan !== 'object') {
-      return { importedEntries: 0, skippedEntries: 0 };
-    }
-
-    let importedEntries = 0;
-    let skippedEntries = 0;
-    const existingByDay = DAYS.reduce((acc, day) => {
-      acc[day] = new Set((weekPlan[day] || []).map(getPlanEntrySignature));
-      return acc;
-    }, {});
-
-    DAYS.forEach(day => {
-      const rawEntries = Array.isArray(importedWeekPlan[day]) ? importedWeekPlan[day] : [];
-      rawEntries.forEach(rawEntry => {
-        const sourceId = Number(
-          typeof rawEntry === 'object' && rawEntry !== null
-            ? rawEntry.recipeId ?? rawEntry.id
-            : rawEntry
-        );
-
-        const mappedId = Number.isFinite(sourceId) && importIdMap.has(sourceId)
-          ? importIdMap.get(sourceId)
-          : sourceId;
-
-        const normalizedEntry = normalizeWeekPlanEntry({
-          ...(typeof rawEntry === 'object' && rawEntry !== null ? rawEntry : {}),
-          recipeId: mappedId,
-        });
-
-        if (!normalizedEntry) {
-          skippedEntries += 1;
-          return;
-        }
-
-        const signature = getPlanEntrySignature(normalizedEntry);
-        if (existingByDay[day].has(signature)) {
-          skippedEntries += 1;
-          return;
-        }
-
-        weekPlan[day].push(normalizedEntry);
-        existingByDay[day].add(signature);
-        importedEntries += 1;
-      });
-    });
-
-    return { importedEntries, skippedEntries };
-  }
-
-  function importCookbookPayload(payload) {
-    const normalizedPayload = normalizeImportPayload(payload);
-    if (!normalizedPayload) {
-      throw new Error('Ungültiges Dateiformat');
-    }
-
-    const usedIds = new Set(recipes.map(recipe => recipe.id));
-    const knownTitles = new Map(recipes.map(recipe => [getTitleKey(recipe.title), recipe]));
-    const importIdMap = new Map();
-    const newRecipes = [];
-    let duplicateRecipes = 0;
-    let invalidRecipes = 0;
-
-    normalizedPayload.recipes.forEach(rawRecipe => {
-      if (!rawRecipe || typeof rawRecipe !== 'object') {
-        invalidRecipes += 1;
-        return;
-      }
-
-      const sourceId = Number(rawRecipe.id);
-      const normalized = normalizeRecipe(rawRecipe, { usedIds });
-      if (!normalized.title) {
-        invalidRecipes += 1;
-        return;
-      }
-
-      const titleKey = getTitleKey(normalized.title);
-      if (knownTitles.has(titleKey)) {
-        duplicateRecipes += 1;
-        const existingRecipe = knownTitles.get(titleKey);
-        if (Number.isFinite(sourceId) && sourceId > 0) {
-          importIdMap.set(sourceId, existingRecipe.id);
-        }
-        return;
-      }
-
-      knownTitles.set(titleKey, normalized);
-      newRecipes.push(normalized);
-      if (Number.isFinite(sourceId) && sourceId > 0) {
-        importIdMap.set(sourceId, normalized.id);
-      }
-    });
-
-    recipes = [...newRecipes, ...recipes];
-
-    const plannerMerge = mergeImportedWeekPlan(normalizedPayload.weekPlan, importIdMap);
-
-    saveRecipes();
-    saveWeekPlan();
-    renderRecipes();
-    refreshPlannerViews();
-
-    return {
-      importedRecipes: newRecipes.length,
-      duplicateRecipes,
-      invalidRecipes,
-      importedPlannerEntries: plannerMerge.importedEntries,
-      skippedPlannerEntries: plannerMerge.skippedEntries,
-    };
-  }
-
-  function renderCollectionSummary() {
-    const totalRecipes = recipes.length;
-    const favoriteRecipes = recipes.filter(recipe => recipe.favorite).length;
-    const cookedRecipes = recipes.filter(recipe => recipe.lastCookedAt).length;
-    const plannerStats = getPlannerStats();
-
-    collectionSummary.innerHTML = `
-      <div class="summary-card">
-        <strong>Rezepte im Regal</strong>
-        <div class="summary-card-value">${totalRecipes}</div>
-        <p>${totalRecipes ? 'Suche, Tags und Sortierung greifen ueber die ganze Sammlung.' : 'Lege dein erstes Rezept an oder importiere eine vorhandene Sammlung.'}</p>
-      </div>
-      <div class="summary-card">
-        <strong>Favoriten</strong>
-        <div class="summary-card-value">${favoriteRecipes}</div>
-        <p>${favoriteRecipes ? 'Lieblingsrezepte lassen sich separat filtern und stehen im Picker weiter oben.' : 'Markiere alltagstaugliche Rezepte mit dem Herz fuer schnellere Planung.'}</p>
-      </div>
-      <div class="summary-card">
-        <strong>Wochenplan</strong>
-        <div class="summary-card-value">${plannerStats.entries}</div>
-        <p>${plannerStats.entries ? `${plannerStats.plannedDays} Tage sind belegt, ${plannerStats.favoriteEntries} Eintraege davon sind Favoriten.` : 'Plane Mahlzeiten mit Portionen und Slot direkt in die Woche ein.'}</p>
-      </div>
-      <div class="summary-card">
-        <strong>Schon gekocht</strong>
-        <div class="summary-card-value">${cookedRecipes}</div>
-        <p>${cookedRecipes ? 'Zuletzt gekochte Rezepte tauchen in Karte, Sortierung und Picker direkt wieder auf.' : 'Markiere im Modal oder Planner, was du heute gekocht hast.'}</p>
-      </div>
-    `;
-  }
-
-  function renderPlannerSummary() {
-    const stats = getPlannerStats();
-    plannerSummary.innerHTML = `
-      <div class="summary-card">
-        <strong>Geplante Mahlzeiten</strong>
-        <div class="summary-card-value">${stats.entries}</div>
-        <p>${stats.entries ? `${stats.uniqueRecipes} verschiedene Rezepte sind diese Woche im Umlauf.` : 'Noch leer: oeffne einen Tag und trage ein Rezept direkt in einen Slot ein.'}</p>
-      </div>
-      <div class="summary-card">
-        <strong>Belegte Tage</strong>
-        <div class="summary-card-value">${stats.plannedDays}</div>
-        <p>${stats.plannedDays ? 'Portionen und Slots bleiben pro Eintrag gespeichert.' : 'Ideal fuer wiederkehrende Wochenmuster oder spontane Planung.'}</p>
-      </div>
-      <div class="summary-card">
-        <strong>Favoriten im Plan</strong>
-        <div class="summary-card-value">${stats.favoriteEntries}</div>
-        <p>${stats.favoriteEntries ? 'Favoriten stehen im Picker zuerst und landen dadurch schneller im Alltag.' : 'Herzrezepte helfen besonders, wenn es schnell gehen soll.'}</p>
-      </div>
-    `;
-  }
-
-  function markRecipeCooked(recipeId) {
-    const recipe = recipes.find(item => item.id === recipeId);
-    if (!recipe) return;
-
-    recipe.lastCookedAt = new Date().toISOString();
-    saveRecipes();
-    renderRecipes();
-    refreshPlannerViews();
-
-    if (currentModalRecipe && currentModalRecipe.id === recipeId) {
-      currentModalRecipe = recipe;
-      renderRecipeModal();
-    }
-  }
-
-  function toggleFavorite(recipeId) {
-    const recipe = recipes.find(item => item.id === recipeId);
-    if (!recipe) return;
-
-    recipe.favorite = !recipe.favorite;
-    saveRecipes();
-    renderRecipes();
-    refreshPlannerViews();
-
-    if (currentModalRecipe && currentModalRecipe.id === recipeId) {
-      currentModalRecipe = recipe;
-      renderRecipeModal();
-    }
-  }
-
-  // ── Delete confirmation ───────────────────────────────────
-  function askDelete(id, trigger = null) {
-    const recipe = recipes.find(item => item.id === id);
-    if (!recipe) return;
-    pendingDeleteId = id;
-    lastDeleteTrigger = trigger || document.activeElement;
-    document.getElementById('deleteConfirmName').textContent = `"${recipe.title}"`;
-    deleteConfirm.classList.add('visible');
-    syncBodyScrollLock();
-    cancelDeleteBtn.focus();
-  }
-
-  function confirmDelete() {
-    if (!pendingDeleteId) return;
-    recipes = recipes.filter(r => r.id !== pendingDeleteId);
-    DAYS.forEach(d => {
-      weekPlan[d] = weekPlan[d].filter(entry => entry.recipeId !== pendingDeleteId);
-    });
-    saveRecipes();
-    saveWeekPlan();
-    if (currentModalRecipe && currentModalRecipe.id === pendingDeleteId) {
-      closeRecipeModal({ restoreFocus: false });
-    }
-    pendingDeleteId = null;
-    deleteConfirm.classList.remove('visible');
-    syncBodyScrollLock();
-    if (lastDeleteTrigger && lastDeleteTrigger.isConnected) lastDeleteTrigger.focus();
-    lastDeleteTrigger = null;
-    renderRecipes();
-    refreshPlannerViews();
-  }
-
-  function cancelDelete() {
-    pendingDeleteId = null;
-    deleteConfirm.classList.remove('visible');
-    syncBodyScrollLock();
-    if (lastDeleteTrigger && lastDeleteTrigger.isConnected) lastDeleteTrigger.focus();
-    lastDeleteTrigger = null;
-  }
-
-  function updateRequiredFieldValidity(input) {
-    const message = REQUIRED_FIELDS.get(input);
-    if (!message) return true;
-
-    const hasContent = normalizeMultilineText(input.value).length > 0;
-    input.setCustomValidity(hasContent ? '' : message);
-    return hasContent;
-  }
-
-  function validateRecipeForm() {
-    let firstInvalid = null;
-
-    REQUIRED_FIELDS.forEach((message, input) => {
-      const valid = updateRequiredFieldValidity(input);
-      if (!valid && !firstInvalid) {
-        firstInvalid = input;
-      }
-    });
-
-    if (firstInvalid) {
-      firstInvalid.reportValidity();
-      firstInvalid.focus();
-      return false;
-    }
-
-    return true;
-  }
-
-  // ── Form handling ─────────────────────────────────────────
-  toggleFormBtn.addEventListener('click', () => {
-    if (formContainer.classList.contains('visible')) {
-      closeRecipeForm();
-      return;
-    }
-
-    openRecipeForm();
-  });
-
-  function resetForm() {
-    recipeForm.reset();
-    servingsInput.value = '2';
-    imagePreview.style.display = 'none';
-    document.getElementById('formTitle').textContent = 'Neues Rezept';
-    editingRecipeId = null;
-    REQUIRED_FIELDS.forEach((message, input) => input.setCustomValidity(''));
-  }
-
-  recipeForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!validateRecipeForm()) return;
-
-    const rawIngredients = normalizeMultilineText(ingredientsInput.value);
-    const existing = editingRecipeId ? recipes.find(recipe => recipe.id === editingRecipeId) : null;
-
-    const data = normalizeRecipe({
-      ...existing,
-      id: existing ? existing.id : Date.now(),
-      createdAt: existing ? existing.createdAt : new Date().toLocaleDateString('de-DE'),
-      title: titleInput.value.trim(),
-      baseServings: parseInt(servingsInput.value, 10),
-      prepTime: parseInt(prepTimeInput.value, 10) || 0,
-      cookTime: parseInt(cookTimeInput.value, 10) || 0,
-      tags: normalizeTags(tagsInput.value),
-      imageUrl: imageUrlInput.value.trim(),
-      description: descriptionInput.value.trim(),
-      parsedIngredients: parseIngredientsText(rawIngredients),
-      rawIngredients,
-      instructions: normalizeMultilineText(instructionsInput.value),
-      plating: normalizeMultilineText(platingInput.value),
-      tips: normalizeMultilineText(tipsInput.value),
-      favorite: existing ? existing.favorite : false,
-    });
-
-    if (editingRecipeId) {
-      const idx = recipes.findIndex(r => r.id === editingRecipeId);
-      if (idx !== -1) {
-        recipes[idx] = data;
-      }
-      editingRecipeId = null;
-    } else {
-      recipes.unshift(data);
-    }
-
-    saveRecipes();
-    resetForm();
-    closeRecipeForm();
-    renderRecipes();
-    refreshPlannerViews();
-  });
-
-  // ── Recipe modal ──────────────────────────────────────────
-  function renderRecipeModal() {
-    if (!currentModalRecipe) return;
-    const r = currentModalRecipe;
-    const displayServings = currentModalServings || r.baseServings;
-
-    const modalImage = document.getElementById('modalImage');
-    if (r.imageUrl) {
-      modalImage.src = r.imageUrl;
-      modalImage.style.display = 'block';
-    } else {
-      modalImage.style.display = 'none';
-    }
-
-    document.getElementById('modalTitle').textContent = r.title;
-    document.getElementById('modalDate').textContent = r.createdAt || '';
-
-    const meta = document.getElementById('modalHeaderMeta');
-    const parts = [];
-    (r.tags||[]).forEach(t => {
-      parts.push(`<span class="modal-tag">${escapeHtml(t)}</span>`);
-    });
-    const prep = parseInt(r.prepTime)||0;
-    const cook = parseInt(r.cookTime)||0;
-    if (prep || cook) {
-      let timeStr = '';
-      if (prep && cook) timeStr = `${prep} Min Vorbereitung · ${cook} Min Kochen`;
-      else if (prep) timeStr = `${prep} Min Vorbereitung`;
-      else timeStr = `${cook} Min Kochen`;
-      parts.push(`<span class="modal-meta-item">◷ ${timeStr}</span>`);
-    }
-    meta.innerHTML = parts.join('');
-
-    modalFavoriteBtn.textContent = r.favorite ? '♥' : '♡';
-    modalFavoriteBtn.classList.toggle('active', r.favorite);
-    modalFavoriteBtn.setAttribute('aria-pressed', String(r.favorite));
-    modalFavoriteBtn.setAttribute('aria-label', r.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen');
-    modalCookedBtn.classList.toggle('active', isValidDateString(r.lastCookedAt) && isSameCalendarDay(new Date(r.lastCookedAt), new Date()));
-    modalCookedStatus.textContent = formatLastCooked(r, 'long');
-
-    modalServingsSelect.value = String(displayServings);
-
-    const descSection = document.getElementById('descriptionSectionModal');
-    if (r.description) {
-      descSection.style.display = 'block';
-      document.getElementById('modalDescription').textContent = r.description;
-    } else {
-      descSection.style.display = 'none';
-    }
-
-    let ingHtml = '';
-    if (r.parsedIngredients && r.parsedIngredients.length) {
-      ingHtml = r.parsedIngredients.map(ing => {
-        const scaled = scaleIngredient(ing, r.baseServings, displayServings);
-        return `<div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(scaled)}</span></div>`;
-      }).join('');
-    } else if (r.rawIngredients) {
-      ingHtml = r.rawIngredients.split('\n').filter(l=>l.trim()).map(l =>
-        `<div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(l.trim())}</span></div>`
-      ).join('');
-    }
-    document.getElementById('modalIngredients').innerHTML = ingHtml;
-
-    document.getElementById('modalInstructions').textContent = r.instructions || '';
-
-    const platingWrapper = document.getElementById('modalPlatingWrapper');
-    if (r.plating) {
-      platingWrapper.style.display = 'block';
-      document.getElementById('modalPlating').textContent = r.plating;
-    } else {
-      platingWrapper.style.display = 'none';
-    }
-
-    const tipsSection = document.getElementById('tipsSectionModal');
-    if (r.tips) {
-      document.getElementById('modalTips').textContent = r.tips;
-      tipsSection.style.display = 'block';
-    } else {
-      tipsSection.style.display = 'none';
-    }
-  }
-
-  function openRecipeModal(recipeId, options = {}) {
-    const recipe = recipes.find(r => r.id === recipeId);
-    if (!recipe) return;
-
-    currentModalRecipe = recipe;
-    currentModalServings = SERVING_OPTIONS.includes(parseInt(options.servings, 10))
-      ? parseInt(options.servings, 10)
-      : recipe.baseServings;
-    lastModalTrigger = options.trigger || document.activeElement;
-    renderRecipeModal();
-    recipeModal.classList.add('visible');
-    syncBodyScrollLock();
-    modalCloseBtn.focus();
-  }
-
-  function closeRecipeModal(options = {}) {
-    const { restoreFocus = true } = options;
-    recipeModal.classList.remove('visible');
-    syncBodyScrollLock();
-    currentModalRecipe = null;
-    currentModalServings = null;
-    if (restoreFocus && lastModalTrigger && lastModalTrigger.isConnected) {
-      lastModalTrigger.focus();
-    }
-    lastModalTrigger = null;
-  }
-
-  function updateModalServings() {
-    if (!currentModalRecipe) return;
-    currentModalServings = parseInt(modalServingsSelect.value, 10);
-    renderRecipeModal();
-  }
-
-  recipeModal.addEventListener('click', (e) => {
-    if (e.target === recipeModal) closeRecipeModal();
-  });
-
-  function editRecipeModal() {
-    if (!currentModalRecipe) return;
-    const r = currentModalRecipe;
-    closeRecipeModal({ restoreFocus: false });
-    editingRecipeId = r.id;
-    REQUIRED_FIELDS.forEach((message, input) => input.setCustomValidity(''));
-
-    titleInput.value = r.title;
-    servingsInput.value = r.baseServings;
-    prepTimeInput.value = r.prepTime || '';
-    cookTimeInput.value = r.cookTime || '';
-    tagsInput.value = (r.tags||[]).join(', ');
-    imageUrlInput.value = r.imageUrl || '';
-    if (r.imageUrl) {
-      previewImg.src = r.imageUrl;
-      imagePreview.style.display = 'block';
-    } else {
-      imagePreview.style.display = 'none';
-    }
-    descriptionInput.value = r.description || '';
-    ingredientsInput.value = r.rawIngredients || '';
-    instructionsInput.value = r.instructions || '';
-    platingInput.value = r.plating || '';
-    tipsInput.value = r.tips || '';
-
-    document.getElementById('formTitle').textContent = `Bearbeiten: ${r.title}`;
-    formContainer.classList.add('visible');
-    toggleFormBtn.textContent = '✕ Abbrechen';
-    titleInput.focus();
-  }
-
-  // ── Week planner ──────────────────────────────────────────
-  togglePlannerBtn.addEventListener('click', () => {
-    const open = weekPlanner.style.display === 'none';
-    weekPlanner.style.display = open ? 'block' : 'none';
-    togglePlannerBtn.setAttribute('aria-expanded', String(open));
-    if (open) {
-      renderPlannerSummary();
-      renderWeekPlanner();
-      updatePlannerShoppingList();
-    }
-  });
-
-  function getPlannerCandidates(query = '') {
-    const q = query.trim().toLowerCase();
-    return recipes
-      .filter(recipe => {
-        if (!q) return true;
-        return recipe.title.toLowerCase().includes(q) || (recipe.tags || []).some(tag => tag.toLowerCase().includes(q));
-      })
-      .sort((a, b) => {
-        const favoriteCompare = Number(b.favorite) - Number(a.favorite);
-        if (favoriteCompare !== 0) return favoriteCompare;
-        const cookedCompare = getCookedTimestamp(b) - getCookedTimestamp(a);
-        if (cookedCompare !== 0) return cookedCompare;
-        return compareTitles(a, b);
-      });
-  }
-
-  function renderDayPickerItems(day, query = '') {
-    const matches = getPlannerCandidates(query);
-    if (!matches.length) {
-      return `<div class="day-picker-item" aria-disabled="true" style="color:#a0826d;font-style:italic;">${query ? 'Keine Treffer' : 'Keine Rezepte'}</div>`;
-    }
-
-    return matches.map(recipe => `
-      <button type="button" class="day-picker-item" data-action="add-to-day" data-day="${day}" data-recipe-id="${recipe.id}">
-        ${escapeHtml(recipe.title)}
-        <span class="day-picker-item-meta">${[
-          recipe.favorite ? 'Favorit' : '',
-          formatLastCooked(recipe, 'short'),
-          `${recipe.baseServings} Pers. Standard`,
-          `Slot ${getMealSlotLabel(activeDayPickerSlot, true)}`
-        ].filter(Boolean).join(' · ')}</span>
-      </button>
-    `).join('');
-  }
-
-  function renderWeekPlanner() {
-    renderPlannerSummary();
-    daysGrid.innerHTML = DAYS.map(day => {
-      const entries = (weekPlan[day] || [])
-        .map((entry, idx) => ({ entry, idx, recipe: recipes.find(x => x.id === entry.recipeId) }))
-        .filter(item => item.recipe);
-
-      const slotSections = MEAL_SLOTS.map(slot => {
-        const slotEntries = entries.filter(item => item.entry.slot === slot.id);
-        if (!slotEntries.length) return '';
-
-        const chips = slotEntries.map(({ entry, idx, recipe }) => `
-          <div class="day-recipe-chip">
-            <div class="chip-main">
-              <button type="button" class="chip-name" data-action="open-recipe" data-recipe-id="${recipe.id}" data-modal-servings="${entry.servings}" title="${escapeAttribute(recipe.title)}">${escapeHtml(recipe.title)}</button>
-              <div class="chip-controls">
-                <div class="chip-field">
-                  <span>Slot</span>
-                  <label class="sr-only" for="chip-slot-${day}-${idx}">Mahlzeiten-Slot für ${escapeHtml(recipe.title)}</label>
-                  <select id="chip-slot-${day}-${idx}" class="chip-slot-select" data-action="plan-slot" data-day="${day}" data-index="${idx}" aria-label="Mahlzeiten-Slot für ${escapeAttribute(recipe.title)}">
-                    ${renderMealSlotOptions(entry.slot, true)}
-                  </select>
-                </div>
-                <div class="chip-field">
-                  <span>Port.</span>
-                  <label class="sr-only" for="chip-servings-${day}-${idx}">Portionen für ${escapeHtml(recipe.title)}</label>
-                  <select id="chip-servings-${day}-${idx}" class="chip-servings-select" data-action="plan-serving" data-day="${day}" data-index="${idx}" aria-label="Portionen für ${escapeAttribute(recipe.title)}">
-                    ${renderPlannerServingOptions(entry.servings)}
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="chip-actions">
-              <button type="button" class="chip-cooked${formatLastCooked(recipe, 'short') ? ' active' : ''}" data-action="mark-cooked" data-recipe-id="${recipe.id}" title="${escapeAttribute(formatLastCooked(recipe, 'long') || 'Heute gekocht markieren')}" aria-label="${escapeAttribute(recipe.title)} als gekocht markieren">✓</button>
-              <button type="button" class="chip-remove" data-action="remove-plan-entry" data-day="${day}" data-index="${idx}" title="Entfernen" aria-label="${escapeAttribute(recipe.title)} aus ${day} entfernen">×</button>
-            </div>
-          </div>
-        `).join('');
-
-        return `<div class="day-slot-section">
-          <div class="day-slot-label">${slot.label}</div>
-          ${chips}
-        </div>`;
-      }).join('');
-
-      const pickerOpen = activeDayPicker === day;
-      const pickerSearch = pickerOpen ? `
-        <div class="day-picker-toolbar">
-          <label for="picker-slot-${day}">Eintragen als</label>
-          <select class="day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
-            ${renderMealSlotOptions(activeDayPickerSlot)}
-          </select>
-        </div>
-        <input class="day-picker-search" type="text" placeholder="Suchen …" id="picker-search-${day}" data-day-picker-search="${day}">
-      ` : '';
-      const pickerItems = pickerOpen ? renderDayPickerItems(day) : '';
-
-      return `
-        <div class="day-column" data-day-column="${day}">
-          <div class="day-name">${day}</div>
-          ${slotSections || '<div class="day-empty">Noch nichts geplant</div>'}
-          <div class="day-add-wrapper">
-            <button type="button" class="day-add-btn" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(pickerOpen)}" aria-controls="picker-${day}">+ Rezept</button>
-            <div class="day-picker ${pickerOpen?'open':''}" id="picker-${day}">
-              ${pickerSearch}
-              <div id="picker-list-${day}">${pickerItems}</div>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-  }
-
-  function toggleDayPicker(day) {
-    if (activeDayPicker === day) {
-      activeDayPicker = null;
-    } else {
-      activeDayPicker = day;
-      activeDayPickerSlot = 'abend';
-    }
-    renderWeekPlanner();
-    if (activeDayPicker) {
-      const inp = document.getElementById(`picker-search-${day}`);
-      if (inp) setTimeout(() => inp.focus(), 50);
-    }
-  }
-
-  function filterDayPicker(day, query) {
-    const list = document.getElementById(`picker-list-${day}`);
-    if (!list) return;
-    list.innerHTML = renderDayPickerItems(day, query);
-  }
-
-  function addToDay(day, recipeId) {
-    const recipe = recipes.find(item => item.id === recipeId);
-    if (!recipe) return;
-    weekPlan[day].push({
-      recipeId,
-      servings: recipe.baseServings,
-      slot: activeDayPickerSlot,
-    });
-    activeDayPicker = null;
-    saveWeekPlan();
-    renderWeekPlanner();
-    updatePlannerShoppingList();
-  }
-
-  function removeFromDay(day, index) {
-    weekPlan[day].splice(index, 1);
-    saveWeekPlan();
-    renderWeekPlanner();
-    updatePlannerShoppingList();
-  }
-
-  function updatePlanEntryServings(day, index, servings) {
-    if (!weekPlan[day] || !weekPlan[day][index]) return;
-    if (!SERVING_OPTIONS.includes(servings)) return;
-    weekPlan[day][index].servings = servings;
-    saveWeekPlan();
-    updatePlannerShoppingList();
-  }
-
-  function updatePlanEntrySlot(day, index, slot) {
-    if (!weekPlan[day] || !weekPlan[day][index]) return;
-    if (!isValidMealSlot(slot)) return;
-    weekPlan[day][index].slot = slot;
-    saveWeekPlan();
-    renderWeekPlanner();
-  }
-
-  clearPlanBtn.addEventListener('click', () => {
-    if (!DAYS.some(d => weekPlan[d].length > 0)) return;
-    weekPlan = createEmptyWeekPlan();
-    saveWeekPlan();
-    renderWeekPlanner();
-    updatePlannerShoppingList();
-  });
-
-  function updatePlannerShoppingList() {
-    const ingredientMap = {};
-    const allEntries = DAYS.flatMap(d => weekPlan[d]);
-
-    allEntries.forEach(entry => {
-      const recipe = recipes.find(r => r.id === entry.recipeId);
-      if (!recipe || !recipe.parsedIngredients) return;
-      const servings = entry.servings || recipe.baseServings;
-
-      recipe.parsedIngredients.forEach(ing => {
-        if (ing.quantity === null || ing.quantity === undefined) {
-          const key = ing.name.toLowerCase();
-          if (!ingredientMap[key]) ingredientMap[key] = { name: ing.name, quantity: null, unit: null };
-        } else {
-          const scaled = ing.quantity * (servings / recipe.baseServings);
-          const key = `${ing.unit||'stück'}:${ing.name.toLowerCase()}`;
-          if (!ingredientMap[key]) ingredientMap[key] = { name: ing.name, quantity: 0, unit: ing.unit };
-          ingredientMap[key].quantity += scaled;
-        }
-      });
-    });
-
-    let text = '';
-    Object.values(ingredientMap).forEach(item => {
-      if (item.quantity !== null && item.quantity !== undefined) {
-        let q = Math.round(item.quantity * 10) / 10;
-        if (q === Math.floor(q)) q = Math.floor(q);
-        text += `${q}${item.unit ? ' ' + item.unit : ''} ${item.name}\n`;
-      } else {
-        text += `${item.name}\n`;
-      }
-    });
-
-    fullShoppingList = text;
-    shoppingList.textContent = text || '';
-    shoppingSearchInput.value = '';
-  }
-
-  shoppingSearchInput.addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase();
-    if (!q) { shoppingList.textContent = fullShoppingList; return; }
-    const filtered = fullShoppingList.split('\n').filter(l => l.toLowerCase().includes(q)).join('\n');
-    shoppingList.textContent = filtered || '(Keine Treffer)';
-  });
-
-  exportShoppingBtn.addEventListener('click', () => {
-    const text = shoppingList.textContent;
-    if (!text.trim()) return;
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `einkaufsliste_${new Date().toISOString().split('T')[0]}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  // ── Export / Import ───────────────────────────────────────
-  exportBtn.addEventListener('click', () => {
-    const data = JSON.stringify(getExportPayload(), null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kochbuch_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  importBtn.addEventListener('click', () => importFile.click());
-
-  importFile.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const parsed = JSON.parse(ev.target.result);
-        const summary = importCookbookPayload(parsed);
-
-        let msg = `${summary.importedRecipes} Rezept${summary.importedRecipes !== 1 ? 'e' : ''} importiert.`;
-        if (summary.duplicateRecipes > 0) msg += ` ${summary.duplicateRecipes} Duplikat${summary.duplicateRecipes !== 1 ? 'e' : ''} übersprungen.`;
-        if (summary.invalidRecipes > 0) msg += ` ${summary.invalidRecipes} ungültig${summary.invalidRecipes !== 1 ? 'e' : ''} Eintrag${summary.invalidRecipes !== 1 ? 'e' : ''} ignoriert.`;
-        if (summary.importedPlannerEntries > 0 || summary.skippedPlannerEntries > 0) {
-          msg += ` Wochenplan: ${summary.importedPlannerEntries} Eintrag${summary.importedPlannerEntries !== 1 ? 'e' : ''} übernommen`;
-          if (summary.skippedPlannerEntries > 0) {
-            msg += `, ${summary.skippedPlannerEntries} übersprungen`;
-          }
-          msg += '.';
-        }
-        alert(msg);
-      } catch(err) {
-        alert('Fehler beim Importieren: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    importFile.value = '';
-  });
-
-  // ── Search + sort ─────────────────────────────────────────
-  searchInput.addEventListener('input', renderRecipes);
-  sortSelect.addEventListener('change', renderRecipes);
-  toggleFavoritesBtn.addEventListener('click', toggleFavoritesFilter);
-  clearTagFilterBtn.addEventListener('click', clearTagFilter);
-  modalCloseBtn.addEventListener('click', () => closeRecipeModal());
-  modalFavoriteBtn.addEventListener('click', () => {
-    if (currentModalRecipe) toggleFavorite(currentModalRecipe.id);
-  });
-  modalCookedBtn.addEventListener('click', () => {
-    if (currentModalRecipe) markRecipeCooked(currentModalRecipe.id);
-  });
-  modalEditBtn.addEventListener('click', editRecipeModal);
-  modalServingsSelect.addEventListener('change', updateModalServings);
-  confirmDeleteBtn.addEventListener('click', confirmDelete);
-  cancelDeleteBtn.addEventListener('click', cancelDelete);
-  deleteConfirm.addEventListener('click', (e) => {
-    if (e.target === deleteConfirm) cancelDelete();
-  });
-
-  REQUIRED_FIELDS.forEach((message, input) => {
-    input.addEventListener('input', () => updateRequiredFieldValidity(input));
-    input.addEventListener('blur', () => updateRequiredFieldValidity(input));
-  });
-
-  document.addEventListener('input', (e) => {
-    if (e.target.matches('[data-day-picker-search]')) {
-      filterDayPicker(e.target.dataset.dayPickerSearch, e.target.value);
-    }
-  });
-
-  document.addEventListener('change', (e) => {
-    if (e.target.matches('[data-day-picker-slot]')) {
-      activeDayPickerSlot = isValidMealSlot(e.target.value) ? e.target.value : 'abend';
-      const day = e.target.dataset.dayPickerSlot;
-      const list = document.getElementById(`picker-list-${day}`);
-      if (list) list.innerHTML = renderDayPickerItems(day, document.getElementById(`picker-search-${day}`)?.value || '');
-      return;
-    }
-
-    if (e.target.matches('[data-action="plan-serving"]')) {
-      updatePlanEntryServings(
-        e.target.dataset.day,
-        parseInt(e.target.dataset.index, 10),
-        parseInt(e.target.value, 10)
-      );
-      return;
-    }
-
-    if (e.target.matches('[data-action="plan-slot"]')) {
-      updatePlanEntrySlot(
-        e.target.dataset.day,
-        parseInt(e.target.dataset.index, 10),
-        e.target.value
-      );
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    const actionTarget = e.target.closest('[data-action]');
-
-    if (actionTarget) {
-      const { action } = actionTarget.dataset;
-
-      if (action === 'filter-tag') {
-        setTagFilter(decodeURIComponent(actionTarget.dataset.tag));
-        return;
-      }
-
-      if (action === 'open-recipe') {
-        openRecipeModal(
-          parseInt(actionTarget.dataset.recipeId, 10),
-          {
-            servings: parseInt(actionTarget.dataset.modalServings, 10),
-            trigger: actionTarget,
-          }
-        );
-        return;
-      }
-
-      if (action === 'toggle-favorite') {
-        toggleFavorite(parseInt(actionTarget.dataset.recipeId, 10));
-        return;
-      }
-
-      if (action === 'mark-cooked') {
-        markRecipeCooked(parseInt(actionTarget.dataset.recipeId, 10));
-        return;
-      }
-
-      if (action === 'delete-recipe') {
-        askDelete(parseInt(actionTarget.dataset.recipeId, 10), actionTarget);
-        return;
-      }
-
-      if (action === 'toggle-day-picker') {
-        toggleDayPicker(actionTarget.dataset.day);
-        return;
-      }
-
-      if (action === 'add-to-day') {
-        addToDay(actionTarget.dataset.day, parseInt(actionTarget.dataset.recipeId, 10));
-        return;
-      }
-
-      if (action === 'remove-plan-entry') {
-        removeFromDay(actionTarget.dataset.day, parseInt(actionTarget.dataset.index, 10));
-        return;
-      }
-
-      if (action === 'open-form') {
-        openRecipeForm();
-        return;
-      }
-
-      if (action === 'open-import') {
-        importFile.click();
-        return;
-      }
-    }
-
-    if (activeDayPicker && !e.target.closest('.day-add-wrapper')) {
-      activeDayPicker = null;
-      renderWeekPlanner();
-    }
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
-
-    if (deleteConfirm.classList.contains('visible')) {
-      cancelDelete();
-      return;
-    }
-
-    if (recipeModal.classList.contains('visible')) {
-      closeRecipeModal();
-      return;
-    }
-
-    if (activeDayPicker) {
-      activeDayPicker = null;
-      renderWeekPlanner();
-    }
-  });
-
-  // ── XSS prevention ───────────────────────────────────────
-  function escapeHtml(text) {
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
-  }
-
-  function escapeAttribute(text) {
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-
-  // ── Init ──────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    loadRecipes();
-    loadWeekPlan();
-    saveRecipes();
-    saveWeekPlan();
-    renderRecipes();
-    togglePlannerBtn.setAttribute('aria-expanded', 'false');
-  });
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./runtime-config.js"></script>
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>

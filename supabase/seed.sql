@@ -1,0 +1,16 @@
+-- Production bootstrap checklist.
+-- This file is intentionally safe by default and does not insert demo users
+-- or sample recipes. Use `seed.dev.sql` for local/demo data.
+--
+-- Recommended production bootstrap:
+-- 1. Add your real admin email to `public.access_allowlist`.
+-- 2. Let that admin sign in once via Magic Link so `profiles` can sync.
+-- 3. Import or migrate your actual cookbook data from the app.
+--
+-- Example statement for a real deployment, to be edited before use:
+-- insert into public.access_allowlist (email, role, is_active)
+-- values ('you@example.com', 'admin', true)
+-- on conflict (email) do update
+--   set role = excluded.role,
+--       is_active = excluded.is_active,
+--       updated_at = now();

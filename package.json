@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "description": "Lokales Browser-Testsetup fuer die Kochbuch-Seite",
   "scripts": {
-    "serve": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "serve": "node server.js",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:status": "npx supabase status",
+    "supabase:db:reset": "npx supabase db reset",
+    "supabase:db:push": "npx supabase db push"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +19,8 @@
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.59.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1"
   }
 }
