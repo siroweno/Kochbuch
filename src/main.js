@@ -1,4 +1,3 @@
-import './styles.css';
 import { loadRuntimeConfig } from './bootstrap/runtime-config.js';
 import { createAppServices } from './bootstrap/app.js';
 import { createUiState } from './ui/state-controller.js';
