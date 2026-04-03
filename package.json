@@ -9,6 +9,7 @@
     "test:supabase:browser": "playwright test --config tests/supabase/playwright.config.js --grep @browser",
     "test:supabase:contracts": "playwright test --config tests/supabase/playwright.config.js --grep @contracts",
     "test:supabase:local": "playwright test --config tests/supabase/local.playwright.config.js",
+    "test:supabase:local:managed": "node scripts/run-supabase-local-tests.js",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "supabase:start": "npx supabase start",

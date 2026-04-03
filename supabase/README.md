@@ -26,6 +26,27 @@ Local demo access after reset:
 
 These addresses are local demo identities for testing. They are not meant for production.
 
+## Managed local integration test
+
+If Docker and the Supabase CLI are available, you can run the full local integration flow in one step:
+
+```bash
+npm run test:supabase:local:managed
+```
+
+That command will:
+
+- start the local Supabase stack
+- run `supabase db reset --yes`
+- read `API_URL`, `ANON_KEY` and `SERVICE_ROLE_KEY` from `supabase status -o env`
+- execute `tests/supabase/kochbuch.local.spec.js` with the required environment variables
+
+If you prefer to run the suite manually, export the local values from `supabase status -o env` first and then run:
+
+```bash
+npm run test:supabase:local
+```
+
 ## Production bootstrap
 
 Recommended approach:

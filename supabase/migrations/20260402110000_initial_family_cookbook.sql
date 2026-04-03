@@ -239,7 +239,6 @@ alter table public.profiles enable row level security;
 alter table public.recipes enable row level security;
 alter table public.user_recipe_state enable row level security;
 alter table public.user_week_plan enable row level security;
-alter table storage.objects enable row level security;
 
 drop policy if exists "Allow admins to inspect access allowlist" on public.access_allowlist;
 create policy "Allow admins to inspect access allowlist"

@@ -1,65 +1,15 @@
-const fs = require('fs');
 const { test, expect } = require('@playwright/test');
-
-const APP_PATH = '/index.html?backend=browser-test';
-const RESET_ENDPOINT = '/api/browser-test/reset';
-
-async function resetBrowserTestBackend(request, seed) {
-  const response = await request.post(
-    RESET_ENDPOINT,
-    seed ? { data: { seed } } : undefined,
-  );
-  expect(response.ok(), 'browser-test backend reset failed').toBeTruthy();
-}
-
-async function loginViaUi(page, email, { expectSignedIn = true } = {}) {
-  await page.goto(APP_PATH);
-  await page.locator('#browserTestEmail').fill(email);
-  await page.getByRole('button', { name: 'Test-Login' }).click();
-  await expect(page.locator('#authBarName')).toHaveText(email);
-  if (expectSignedIn) {
-    await expect(page.locator('#appShell')).not.toHaveClass(/app-shell-hidden/);
-    await expect(page.locator('#collectionSummary')).toBeVisible();
-  } else {
-    await expect(page.locator('#accessPanel')).toBeVisible();
-  }
-}
-
-async function openLoggedInPage(browser, email) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await loginViaUi(page, email);
-  return { context, page };
-}
-
-async function createRecipeViaUi(page, recipe) {
-  await page.getByRole('button', { name: /\+ Neues Rezept/ }).click();
-  await page.getByLabel('Rezeptname *').fill(recipe.title);
-  await page.getByLabel('Tags (kommagetrennt)').fill(recipe.tags || '');
-  await page.getByLabel('Zutaten *').fill(recipe.ingredients);
-  await page.getByLabel('Zubereitung *').fill(recipe.instructions);
-
-  if (recipe.description) {
-    await page.getByLabel('Beschreibung (optional)').fill(recipe.description);
-  }
-
-  await page.getByRole('button', { name: 'Rezept speichern' }).click();
-  await expect(page.locator('.recipe-card').filter({ hasText: recipe.title })).toHaveCount(1);
-}
-
-async function openPlanner(page) {
-  await page.getByRole('button', { name: 'Wochenplaner & Einkaufsliste' }).click();
-  await expect(page.locator('#weekPlanner')).toBeVisible();
-}
-
-async function addPlannedRecipe(page, day, recipeTitle) {
-  await page.locator(`[data-action="toggle-day-picker"][data-day="${day}"]`).click();
-  await expect(page.locator(`[data-day-picker-slot="${day}"]`)).toBeVisible();
-  await page.locator(`[data-day-picker-slot="${day}"]`).selectOption('fruehstueck');
-  await page.locator(`[data-action="add-to-day"][data-day="${day}"]`)
-    .filter({ hasText: recipeTitle })
-    .click();
-}
+const {
+  addPlannedRecipe,
+  createRecipeViaUi,
+  dragPlannedRecipeToSlot,
+  exportCookbook,
+  importCookbook,
+  loginViaUi,
+  openLoggedInPage,
+  openPlanner,
+  resetBrowserTestBackend,
+} = require('./support/browser-test-helpers.js');
 
 async function seedLegacyLocalStorage(page) {
   await page.addInitScript(() => {
@@ -86,31 +36,6 @@ async function seedLegacyLocalStorage(page) {
       So: [],
     }));
   });
-}
-
-async function exportCookbook(page, testInfo) {
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: /^Exportieren$/ }).click();
-  const download = await downloadPromise;
-  const exportPath = testInfo.outputPath(`kochbuch-export-${Date.now()}.json`);
-  await download.saveAs(exportPath);
-  return JSON.parse(fs.readFileSync(exportPath, 'utf8'));
-}
-
-async function importCookbook(page, payload, { mode = 'restore' } = {}) {
-  const selectors = mode === 'additive'
-    ? { button: '#recipeImportBtn', input: '#recipeImportFile' }
-    : { button: '#restoreImportBtn', input: '#restoreImportFile' };
-  const dialogPromise = page.waitForEvent('dialog');
-  await page.locator(selectors.button).click();
-  await page.locator(selectors.input).setInputFiles({
-    name: 'kochbuch-import.json',
-    mimeType: 'application/json',
-    buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
-  });
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toMatch(/(importiert|wiederhergestellt|ergänzt)/i);
-  await dialog.accept();
 }
 
 test.describe('Privates Familien-Kochbuch', () => {
@@ -380,6 +305,48 @@ test.describe('Privates Familien-Kochbuch', () => {
     await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${initialPlanEntryId}"]`)).toHaveCount(1);
     await expect(adminSession.page.locator('[data-action="plan-serving"][data-day="Fr"]').first()).toHaveValue('2');
     await expect(adminSession.page.locator('[data-action="plan-slot"][data-day="Fr"]').first()).toHaveValue('abend');
+
+    await adminSession.context.close();
+  });
+
+  test('Planner-Einträge lassen sich per Drag-and-drop verschieben und bleiben stabil', async ({ browser }) => {
+    const adminSession = await openLoggedInPage(browser, 'admin@kochbuch.local');
+    await adminSession.page.setViewportSize({ width: 1440, height: 1200 });
+
+    await createRecipeViaUi(adminSession.page, {
+      title: 'Drag Pasta',
+      tags: 'Pasta, Alltag',
+      ingredients: '200 g Pasta\n1 Zwiebel\n2 EL Öl',
+      instructions: 'Kochen, schwenken, servieren',
+    });
+
+    await openPlanner(adminSession.page);
+    await addPlannedRecipe(adminSession.page, 'Di', 'Drag Pasta');
+    await adminSession.page.locator('[data-action="plan-slot"][data-day="Di"]').first().selectOption('abend');
+
+    const sourceChip = adminSession.page.locator('[data-day-column="Di"] .day-recipe-chip').first();
+    const planEntryId = await sourceChip.getAttribute('data-plan-entry-id');
+    expect(planEntryId).toBeTruthy();
+
+    await dragPlannedRecipeToSlot(adminSession.page, {
+      sourcePlanEntryId: planEntryId,
+      sourceDay: 'Di',
+      targetDay: 'Mi',
+      targetSlot: 'abend',
+      targetPosition: 0,
+    });
+
+    await expect(adminSession.page.locator('[data-day-column="Di"] .day-recipe-chip')).toHaveCount(0);
+    await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${planEntryId}"]`)).toHaveCount(1);
+    await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${planEntryId}"]`)).toHaveAttribute('data-day', 'Mi');
+    await expect(adminSession.page.locator('[data-action="plan-slot"][data-day="Mi"]').first()).toHaveValue('abend');
+
+    await adminSession.page.reload();
+    await adminSession.page.waitForLoadState('networkidle');
+    await expect(adminSession.page.locator('#authBarName')).toHaveText('admin@kochbuch.local');
+    await openPlanner(adminSession.page);
+    await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${planEntryId}"]`)).toHaveCount(1);
+    await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${planEntryId}"]`)).toHaveAttribute('data-day', 'Mi');
 
     await adminSession.context.close();
   });

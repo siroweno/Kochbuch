@@ -95,7 +95,9 @@ export function bindAppEvents({
   document.addEventListener('pointermove', handlers.onDocumentPointerMove);
   document.addEventListener('pointerup', handlers.onDocumentPointerUp);
   document.addEventListener('pointercancel', handlers.onDocumentPointerCancel);
+  document.addEventListener('pointerover', handlers.onDocumentPointerOver);
   document.addEventListener('mousemove', handlers.onDocumentMouseMove);
+  document.addEventListener('mouseover', handlers.onDocumentMouseOver);
   document.addEventListener('mouseup', handlers.onDocumentMouseUp);
   window.addEventListener('focus', handlers.onWindowFocus);
   authService.onAuthStateChange(handlers.onAuthStateChange);

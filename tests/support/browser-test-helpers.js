@@ -99,6 +99,43 @@ async function addPlannedRecipe(page, day, recipeTitle) {
     .click();
 }
 
+async function dragPlannedRecipeToSlot(page, {
+  sourcePlanEntryId,
+  sourceDay,
+  targetDay,
+  targetSlot = 'abend',
+  targetPosition = 0,
+}) {
+  const dragHandle = sourcePlanEntryId
+    ? page.locator(`.day-recipe-chip[data-plan-entry-id="${sourcePlanEntryId}"] [data-action="start-plan-drag"]`).first()
+    : page.locator(`[data-day-column="${sourceDay}"] [data-action="start-plan-drag"]`).first();
+  await expect(dragHandle).toBeVisible();
+
+  const handleBox = await dragHandle.boundingBox();
+  expect(handleBox, 'expected planner drag handle bounding box').toBeTruthy();
+
+  const targetSlotSection = page.locator(
+    `[data-day-column="${targetDay}"] [data-slot-section="${targetSlot}"]`,
+  ).first();
+  await targetSlotSection.scrollIntoViewIfNeeded();
+
+  await page.mouse.move(handleBox.x + (handleBox.width / 2), handleBox.y + (handleBox.height / 2));
+  await page.mouse.down();
+  const dropZone = page.locator(
+    `[data-drop-day="${targetDay}"][data-drop-slot="${targetSlot}"][data-drop-position="${targetPosition}"]`,
+  ).first();
+  await expect(page.locator('#weekPlanner')).toHaveClass(/planner-drag-active/);
+  await expect(dropZone).toBeVisible();
+  await expect(dropZone).toHaveClass(/visible/);
+
+  const dropBox = await dropZone.boundingBox();
+  expect(dropBox, 'expected planner drop zone bounding box').toBeTruthy();
+
+  await page.mouse.move(dropBox.x + (dropBox.width / 2), dropBox.y + (dropBox.height / 2), { steps: 12 });
+  await expect(dropZone).toHaveClass(/is-target/);
+  await page.mouse.up();
+}
+
 async function exportCookbook(page, testInfo) {
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: /^Exportieren$/ }).click();
@@ -168,4 +205,5 @@ module.exports = {
   openPlanner,
   resetBrowserTestBackend,
   importCookbookViaButton,
+  dragPlannedRecipeToSlot,
 };

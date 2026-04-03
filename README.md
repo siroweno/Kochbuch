@@ -25,7 +25,13 @@ npm install
 npm test
 ```
 
-3. Lokales Test-Backend starten:
+3. Lokale Supabase-Integration vollständig gegen den Local-Stack prüfen:
+
+```bash
+npm run test:supabase:local:managed
+```
+
+4. Lokales Test-Backend starten:
 
 ```bash
 npm run serve

@@ -920,6 +920,13 @@ function clearDragPreviewClasses() {
   document.querySelectorAll('.day-recipe-chip.is-dragging').forEach((element) => element.classList.remove('is-dragging'));
 }
 
+function setDropZonesVisible(visible) {
+  weekPlanner.classList.toggle('planner-drag-active', visible);
+  document.querySelectorAll('.chip-drop-zone').forEach((element) => {
+    element.classList.toggle('visible', visible);
+  });
+}
+
 function highlightDropTarget(planEntryId, over) {
   clearDragPreviewClasses();
   if (planEntryId) {
@@ -937,11 +944,9 @@ function cancelPendingDrag() {
     window.clearTimeout(state.dragState.holdTimer);
   }
   clearDragPreviewClasses();
+  setDropZonesVisible(false);
   state.dragState = null;
   state.plannerDraftWeekPlan = null;
-  if (state.plannerOpen) {
-    renderPlanner();
-  }
 }
 
 function startPlanDrag({ planEntryId, day, index, pointerId, pointerType, clientX, clientY }) {
@@ -958,25 +963,21 @@ function startPlanDrag({ planEntryId, day, index, pointerId, pointerType, client
     over: null,
   };
   state.plannerDraftWeekPlan = cloneWeekPlan(state.weekPlan);
-  renderPlanner();
+  setDropZonesVisible(true);
   highlightDropTarget(planEntryId, null);
 }
 
 function updateDragTarget(clientX, clientY) {
   if (!state.dragState?.active) return;
 
-  const element = document.elementFromPoint(clientX, clientY)?.closest?.('[data-drop-zone]');
-  if (!element) {
+  const over = getDropTargetAtPoint(clientX, clientY);
+  if (!over) {
     state.dragState.over = null;
     highlightDropTarget(state.dragState.planEntryId, null);
     return;
   }
 
-  state.dragState.over = {
-    day: element.dataset.dropDay,
-    slot: element.dataset.dropSlot,
-    position: Number.parseInt(element.dataset.dropPosition, 10),
-  };
+  state.dragState.over = over;
   highlightDropTarget(state.dragState.planEntryId, state.dragState.over);
 
   const edgeThreshold = 72;
@@ -987,9 +988,8 @@ function updateDragTarget(clientX, clientY) {
   }
 }
 
-function getDropTargetAtPoint(clientX, clientY) {
-  const pointElement = document.elementFromPoint(clientX, clientY);
-  const dropZone = pointElement?.closest?.('[data-drop-zone]');
+function getDropTargetFromElement(element) {
+  const dropZone = element?.closest?.('[data-drop-zone]');
   if (dropZone) {
     return {
       day: dropZone.dataset.dropDay,
@@ -997,6 +997,22 @@ function getDropTargetAtPoint(clientX, clientY) {
       position: Number.parseInt(dropZone.dataset.dropPosition, 10),
     };
   }
+
+  const slotSection = element?.closest?.('[data-slot-section]');
+  const dayColumn = element?.closest?.('[data-day-column]');
+  if (!slotSection || !dayColumn) return null;
+
+  return {
+    day: dayColumn.dataset.dayColumn,
+    slot: slotSection.dataset.slotSection,
+    position: Number.parseInt(slotSection.dataset.slotEntryCount || '0', 10),
+  };
+}
+
+function getDropTargetAtPoint(clientX, clientY) {
+  const pointElement = document.elementFromPoint(clientX, clientY);
+  const directTarget = getDropTargetFromElement(pointElement);
+  if (directTarget) return directTarget;
 
   const dayColumn = pointElement?.closest?.('[data-day-column]');
   if (!dayColumn) return null;
@@ -1035,6 +1051,7 @@ async function finishPlanDrag(clientX = null, clientY = null) {
       : null
   );
   clearDragPreviewClasses();
+  setDropZonesVisible(false);
 
   if (over && DAYS.includes(over.day) && isValidMealSlot(over.slot)) {
     state.weekPlan = movePlanEntryWithinPlan(state.weekPlan, planEntryId, over);
@@ -1763,9 +1780,25 @@ bindAppEvents({
       cancelPendingDrag();
     },
 
+    onDocumentPointerOver(event) {
+      if (!state.dragState?.active) return;
+      const over = getDropTargetFromElement(event.target);
+      if (!over) return;
+      state.dragState.over = over;
+      highlightDropTarget(state.dragState.planEntryId, over);
+    },
+
     onDocumentMouseMove(event) {
       if (!state.dragState?.active) return;
       updateDragTarget(event.clientX, event.clientY);
+    },
+
+    onDocumentMouseOver(event) {
+      if (!state.dragState?.active) return;
+      const over = getDropTargetFromElement(event.target);
+      if (!over) return;
+      state.dragState.over = over;
+      highlightDropTarget(state.dragState.planEntryId, over);
     },
 
     async onDocumentMouseUp(event) {
