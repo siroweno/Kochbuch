@@ -1,36 +1,36 @@
     :root {
-      /* ─── Mirage-Palette: Dunkles Pergament + Gold ─── */
-      --color-primary: #c8a45c;
-      --color-primary-hover: #d4b06a;
-      --color-primary-muted: rgba(200, 164, 92, 0.15);
+      --color-bg: #0f1a2e;
+      --color-bg-card: #162038;
+      --color-bg-elevated: #1a2844;
+      --color-primary: #d4a843;
+      --color-primary-hover: #e2c06a;
+      --color-primary-muted: rgba(212, 168, 67, 0.15);
       --color-secondary: #8b7355;
-      --color-accent: #5c8a8a;
+      --color-accent: #2a9d8f;
+      --color-accent-light: #3dbfad;
       --color-text: #e8dcc8;
-      --color-text-muted: #a89880;
-      --color-bg: #1a1410;
-      --color-bg-card: #231d16;
-      --color-bg-elevated: #2a2218;
+      --color-text-muted: #8a9ab4;
       --color-danger: #c45050;
       --color-danger-hover: #d45a5a;
-      --color-border: rgba(200, 164, 92, 0.12);
-      --color-border-strong: rgba(200, 164, 92, 0.25);
+      --color-border: rgba(212, 168, 67, 0.12);
+      --color-border-strong: rgba(212, 168, 67, 0.25);
       --transition-fast: 0.15s ease;
       --transition-base: 0.25s ease;
       --transition-slow: 0.4s ease;
       --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
       --shadow-hover: 0 8px 28px rgba(0,0,0,0.4);
       --shadow-lifted: 0 16px 44px rgba(0,0,0,0.5);
-      --shadow-gold: 0 0 20px rgba(200, 164, 92, 0.08);
+      --shadow-gold: 0 0 20px rgba(212, 168, 67, 0.08);
       --radius-sm: 6px;
       --radius-base: 10px;
       --radius-lg: 16px;
-      --parchment-bg: #2a2218;
-      --parchment-dark: #1e1812;
-      --parchment-light: #332a1f;
+      --parchment-bg: #1a2844;
+      --parchment-dark: #0f1a2e;
+      --parchment-light: #1e2e50;
       --ink-color: #e8dcc8;
-      --gold: #c8a45c;
-      --gold-light: #d4b876;
-      --copper: #b07a4a;
+      --gold: #d4a843;
+      --gold-light: #e2c06a;
+      --copper: #c47a3a;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,10 +47,9 @@
       content: '';
       position: fixed;
       inset: 0;
-      background:
-        radial-gradient(ellipse at 20% 50%, rgba(200, 164, 92, 0.03) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 20%, rgba(92, 138, 138, 0.02) 0%, transparent 40%),
-        radial-gradient(ellipse at 50% 80%, rgba(176, 122, 74, 0.02) 0%, transparent 45%);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cpath d='M40 8L47 25L64 16L55 33L72 40L55 47L64 64L47 55L40 72L33 55L16 64L25 47L8 40L25 33L16 16L33 25Z' fill='none' stroke='%23d4a843' stroke-width='0.5' opacity='0.5'/%3E%3Ccircle cx='40' cy='40' r='12' fill='none' stroke='%23d4a843' stroke-width='0.3' opacity='0.3'/%3E%3Ccircle cx='40' cy='40' r='6' fill='none' stroke='%23d4a843' stroke-width='0.3' opacity='0.2'/%3E%3C/svg%3E");
+      background-size: 80px 80px;
+      opacity: 0.03;
       pointer-events: none;
       z-index: 0;
     }
@@ -59,10 +58,12 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(212, 168, 67, 0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 70%, rgba(42, 157, 143, 0.03) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 50%, rgba(196, 122, 58, 0.02) 0%, transparent 45%);
       pointer-events: none;
       z-index: 1;
-      mix-blend-mode: overlay;
     }
 
     /* ─── Custom Cursor: Holzlöffel (Kelle unten, Stiel oben, leicht schräg) ─── */
@@ -75,9 +76,9 @@
     input[type="submit"], input[type="file"],
     .recipe-card, .tag, .filter-toggle, .favorite-btn,
     .modal-favorite, .modal-close, .modal-edit, .modal-cooked,
-    .chip-drop-zone, .toolbar-toggle, .toolbar-close,
+    .toolbar-toggle, .toolbar-close,
     .btn-primary, .btn-secondary, .btn-ghost, .btn-planner,
-    .day-recipe-chip, .icon-btn {
+    .icon-btn {
       cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Crect x='14.8' y='3' width='2' height='12' rx='1' fill='%23c99a60' opacity='0.4'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23d4a574' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23e8c99a' opacity='0.5'/%3E%3Cellipse cx='15' cy='20.5' rx='2.5' ry='1.8' fill='%23f0ddb8' opacity='0.35'/%3E%3Ccircle cx='16' cy='22' r='8.5' fill='none' stroke='%23d4a574' stroke-width='1.2' opacity='0.2'/%3E%3C/g%3E%3C/svg%3E") 6 28, auto !important;
     }
 
@@ -110,14 +111,6 @@
       }
     }
 
-    /* Grab-Cursor beim Drag behält Löffel */
-    .day-recipe-chip {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, grab !important;
-    }
-
-    .planner-drag-active .day-recipe-chip {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(35 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, grabbing !important;
-    }
 
     /* Text-Inputs: Löffel */
     input[type="text"], input[type="email"], input[type="search"], textarea {
@@ -136,23 +129,36 @@
       text-align: center;
       margin-bottom: 42px;
       padding-bottom: 24px;
-      border-bottom: 1px solid var(--color-border-strong);
+      border-bottom: none;
+    }
+
+    header::after {
+      content: '';
+      display: block;
+      height: 14px;
+      margin-top: 16px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='14' viewBox='0 0 60 14'%3E%3Cpath d='M0 7C5 7 5 2 10 2C15 2 15 7 20 7C25 7 25 2 30 2C35 2 35 7 40 7C45 7 45 2 50 2C55 2 55 7 60 7' fill='none' stroke='%23d4a843' stroke-width='1' opacity='0.4'/%3E%3Cpath d='M0 7C5 7 5 12 10 12C15 12 15 7 20 7C25 7 25 12 30 12C35 12 35 7 40 7C45 7 45 12 50 12C55 12 55 7 60 7' fill='none' stroke='%23d4a843' stroke-width='1' opacity='0.4'/%3E%3Ccircle cx='10' cy='7' r='1.5' fill='%23d4a843' opacity='0.35'/%3E%3Ccircle cx='30' cy='7' r='1.5' fill='%23d4a843' opacity='0.35'/%3E%3Ccircle cx='50' cy='7' r='1.5' fill='%23d4a843' opacity='0.35'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 60px 14px;
+      background-position: center;
+      opacity: 0.6;
     }
 
     h1 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cinzel', serif;
       font-size: 48px;
       font-weight: 700;
       margin-bottom: 8px;
-      letter-spacing: -0.5px;
+      letter-spacing: 2px;
       color: var(--gold);
     }
 
     .subtitle {
-      font-size: 16px;
       color: var(--color-text-muted);
-      font-family: 'Lora', serif;
+      font-family: 'Cormorant Garamond', serif;
       font-style: italic;
+      font-size: 16px;
+      letter-spacing: 1px;
       max-width: 620px;
       margin: 0 auto;
     }
@@ -235,9 +241,11 @@
 
     .auth-panel h2,
     .status-panel h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 26px;
-      margin-bottom: 6px;
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
       color: var(--gold);
     }
 
@@ -300,7 +308,8 @@
     }
 
     .status-panel strong {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
       display: block;
       margin-bottom: 4px;
     }
@@ -400,7 +409,8 @@
     }
 
     .loading-caption strong {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
       font-size: 20px;
       color: var(--color-text);
     }
@@ -467,7 +477,7 @@
       border: 1px solid var(--color-primary);
       border-radius: 4px;
       font-size: 14px;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       font-weight: 600;
       background-color: var(--parchment-dark);
       color: var(--color-text);
@@ -491,7 +501,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       letter-spacing: 0.2px;
       min-height: 44px;
     }
@@ -630,461 +640,306 @@
 
     .planner-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.12fr) 340px;
-      gap: 28px;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
     }
 
-    .planner-layout > * {
-      min-width: 0;
+    @media (max-width: 900px) {
+      .planner-layout {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 900px) { .planner-layout { grid-template-columns: 1fr; } }
-
-    .days-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    @media (max-width: 1400px) { .days-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-    @media (max-width: 760px) { .days-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 560px) { .days-grid { grid-template-columns: 1fr; } }
-
-    .day-column {
-      background: var(--parchment-dark);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-base);
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      padding: 14px 12px;
-      min-height: 150px;
+    /* ─── Wochenplaner: Kompakte Tagesleiste ───── */
+    .planner-day-tabs {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
+      gap: 4px;
+      margin-bottom: 16px;
     }
 
-    .day-name {
-      text-align: center;
-      font-weight: 700;
-      font-family: 'Playfair Display', serif;
-      color: var(--gold-light);
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--color-border);
-      margin-bottom: 6px;
-    }
-
-    .day-recipe-chip {
-      background: linear-gradient(135deg, var(--color-primary), #c89263);
-      color: #fff;
-      border-radius: 14px;
-      padding: 10px;
-      font-size: 12px;
-      font-family: 'Lora', serif;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      line-height: 1.3;
-      min-width: 0;
-      cursor: grab;
-    }
-
-    .day-slot-section {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .day-slot-label {
-      font-size: 10px;
-      color: var(--color-text-muted);
-      font-family: 'Playfair Display', serif;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-      pointer-events: none;
-    }
-
-    .day-empty {
-      font-size: 11px;
-      color: rgba(168, 152, 128, 0.5);
-      font-style: italic;
-      min-height: 32px;
-    }
-
-    .day-slot-empty {
-      font-size: 11px;
-      color: rgba(168, 152, 128, 0.4);
-      font-style: italic;
-      padding: 4px 2px 0;
-    }
-
-    .chip-main {
+    .planner-day-tab {
       flex: 1;
-      min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 2px;
+      padding: 10px 4px;
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      font-family: inherit;
     }
 
-    .day-recipe-chip .chip-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      background: none;
-      border: none;
-      padding: 0;
-      color: #fff;
-      font-family: 'Lora', serif;
-      font-size: 12px;
+    .planner-day-tab:hover:not(.active) {
+      border-color: var(--gold);
+      background: rgba(212, 168, 67, 0.05);
+    }
+
+    .planner-day-tab.active {
+      background: linear-gradient(135deg, var(--gold), var(--copper));
+      color: var(--color-bg);
+      border-color: var(--gold);
+    }
+
+    .planner-day-name {
+      font-family: 'Kotta One', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .planner-day-count {
+      font-size: 20px;
+      font-family: 'Cinzel', serif;
       font-weight: 600;
-      text-align: left;
-      line-height: 1.3;
-      box-shadow: none;
+      color: var(--gold);
+      line-height: 1;
     }
-    .day-recipe-chip .chip-name:hover { background: none; transform: none; box-shadow: none; }
 
-    .chip-controls {
+    .planner-day-tab.active .planner-day-count {
+      color: var(--color-bg);
+    }
+
+    .planner-day-tab.active .planner-day-name {
+      color: var(--color-bg);
+    }
+
+    /* Detail-Panel */
+    .planner-day-detail {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-base);
+      padding: 16px 20px;
+      animation: fade-in 0.2s ease;
+    }
+
+    .planner-day-detail-header {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-width: 0;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
     }
 
-    .chip-field {
+    .planner-day-detail-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--gold);
+      margin: 0;
+    }
+
+    .planner-add-btn {
+      font-size: 13px;
+      padding: 6px 14px;
+    }
+
+    /* Slot-Zeilen */
+    .planner-slot-row {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.92);
-    }
-
-    .chip-field span {
-      white-space: nowrap;
-    }
-
-    .chip-servings-select {
-      width: auto;
-      min-width: 66px;
-      padding: 4px 6px;
-      border: 1px solid rgba(255,255,255,0.42);
-      border-radius: 4px;
-      background-color: rgba(255,255,255,0.15);
-      color: #fff;
-      font-size: 11px;
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-    }
-    .chip-slot-select {
-      width: auto;
-      min-width: 92px;
-      padding: 4px 6px;
-      border: 1px solid rgba(255,255,255,0.42);
-      border-radius: 4px;
-      background-color: rgba(255,255,255,0.15);
-      color: #fff;
-      font-size: 11px;
-      font-family: 'Playfair Display', serif;
-      font-weight: 600;
-    }
-    .chip-servings-select option {
-      color: var(--color-text);
-      background-color: var(--color-bg-elevated);
-    }
-    .chip-slot-select option {
-      color: var(--color-text);
-      background-color: var(--color-bg-elevated);
-    }
-
-    .chip-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      align-items: flex-end;
-    }
-
-    .chip-drag-handle {
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.18);
-      color: rgba(255,255,255,0.92);
-      min-width: 44px;
-      min-height: 44px;
-      padding: 0;
-      border-radius: 12px;
-      box-shadow: none;
-      font-size: 16px;
-      letter-spacing: -2px;
-      touch-action: none;
-      cursor: grab;
-    }
-    .chip-drag-handle:hover { transform: none; background: rgba(255,255,255,0.24); }
-
-    .chip-move {
-      background: rgba(255,255,255,0.14);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.16);
-      padding: 0 10px;
-      min-height: 44px;
-      border-radius: 12px;
-      box-shadow: none;
-      font-size: 11px;
-      white-space: nowrap;
-    }
-    .chip-move:hover { transform: none; background: rgba(255,255,255,0.22); }
-
-    .chip-move-panel {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: var(--parchment-dark);
-      border: 1px solid var(--color-border-strong);
-      box-shadow: inset 0 1px 0 rgba(200, 164, 92, 0.05);
-      min-width: 0;
-    }
-    .chip-move-panel select {
-      min-height: 40px;
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 12px;
-      color: var(--color-text);
-      background: var(--color-bg-elevated);
-    }
-    .chip-move-confirm,
-    .chip-move-cancel {
-      min-height: 40px;
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 12px;
-    }
-    .chip-move-confirm {
-      background: var(--color-secondary);
-      color: #fff;
-    }
-    .chip-move-cancel {
-      background: transparent;
-      color: var(--color-text-muted);
-      border: 1px solid var(--color-border-strong);
-    }
-
-    /* ─── Drag & Drop (Enhanced) ─────────────── */
-    @keyframes drag-wobble {
-      0%, 100% { transform: rotate(2deg) scale(1.06); }
-      50% { transform: rotate(4.5deg) scale(1.09); }
-    }
-
-    .drag-ghost {
-      animation: drag-wobble 0.7s ease-in-out infinite;
-      box-shadow: 4px 8px 24px rgba(60, 30, 10, 0.3), 0 2px 6px rgba(60, 30, 10, 0.15);
-      border: 1px solid rgba(139, 95, 50, 0.2);
-      border-radius: var(--radius-base);
-      background: var(--parchment-bg, #f5ecd7);
-      opacity: 0.92;
-    }
-
-    .day-recipe-chip {
-      cursor: grab;
-      transition: opacity var(--transition-fast), transform var(--transition-fast);
-    }
-
-    .planner-drag-active .day-recipe-chip {
-      cursor: grabbing;
-    }
-
-    .day-recipe-chip.is-dragging {
-      opacity: 0.2;
-      transform: scale(0.92);
-    }
-
-    @keyframes drop-zone-pulse {
-      0%, 100% {
-        border-color: var(--color-primary);
-        background: rgba(212, 165, 116, 0.12);
-      }
-      50% {
-        border-color: var(--color-secondary);
-        background: rgba(212, 165, 116, 0.25);
-      }
-    }
-
-    .chip-drop-zone {
-      border: 2px dashed transparent;
-      border-radius: var(--radius-base);
-      transition: all var(--transition-fast);
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(212, 168, 67, 0.06);
+      font-size: 14px;
       min-height: 38px;
     }
 
-    .chip-drop-zone.visible {
-      border-color: rgba(139, 115, 85, 0.3);
-      background: rgba(212, 165, 116, 0.06);
+    .planner-slot-row:last-child {
+      border-bottom: none;
     }
 
-    .chip-drop-zone.is-target {
-      animation: drop-zone-pulse 1s ease-in-out infinite;
-      transform: scale(1.03);
+    .planner-slot-icon {
+      width: 22px;
+      text-align: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      opacity: 0.6;
     }
 
-    .chip-cooked {
+    .planner-slot-name {
+      font-family: 'Kotta One', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--color-text-muted);
+      width: 85px;
+      flex-shrink: 0;
+    }
+
+    .planner-entry-title {
+      flex: 1;
+      min-width: 0;
+      font-family: 'Aref Ruqaa', serif;
+      font-size: 15px;
+      color: var(--color-text);
       background: none;
       border: none;
-      color: rgba(255,255,255,0.85);
-      font-size: 13px;
       padding: 0;
-      min-width: 44px;
-      min-height: 44px;
-      line-height: 1;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
       box-shadow: none;
     }
-    .chip-cooked.active { color: #fff; }
-    .chip-cooked:hover { color: #fff; transform: none; background: none; }
 
-    .chip-remove {
+    .planner-entry-title:hover {
+      color: var(--gold);
+      background: none;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .planner-entry-servings {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-family: 'Kotta One', sans-serif;
+      flex-shrink: 0;
+    }
+
+    .planner-entry-remove {
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      color: var(--color-text-muted);
       background: none;
       border: none;
-      color: rgba(255,255,255,0.8);
-      font-size: 14px;
-      padding: 0;
-      min-width: 44px;
-      min-height: 44px;
-      line-height: 1;
-      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 6px;
       flex-shrink: 0;
       box-shadow: none;
     }
-    .chip-remove:hover { color: #fff; transform: none; background: none; }
 
-    .day-add-wrapper { position: relative; margin-top: auto; }
-
-    .day-add-btn {
-      width: 100%;
+    .planner-entry-remove:hover {
+      color: var(--color-danger);
       background: none;
-      border: 1px dashed var(--color-primary);
-      color: var(--color-primary);
-      font-size: 16px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      cursor: pointer;
-      line-height: 1;
+      transform: none;
       box-shadow: none;
-      min-height: 44px;
     }
-    .day-add-btn:hover { background-color: var(--parchment-bg); transform: none; box-shadow: none; }
 
-    .day-picker {
-      display: none;
-      position: absolute;
-      bottom: calc(100% + 6px);
-      left: 0;
-      width: min(280px, 100%);
-      background: var(--color-bg-elevated);
+    .planner-slot-row:hover .planner-entry-remove {
+      opacity: 1;
+    }
+
+    .planner-slot-empty {
+      opacity: 0.35;
+    }
+
+    .planner-slot-placeholder {
+      flex: 1;
+      font-style: italic;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    /* Day-Picker im neuen Design */
+    .planner-day-picker-panel {
+      margin-top: 14px;
+      background: var(--parchment-dark);
       border: 1px solid var(--color-border-strong);
-      border-radius: 14px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
-      z-index: 50;
-      max-height: 240px;
-      overflow-y: auto;
+      border-radius: var(--radius-base);
+      overflow: hidden;
+      animation: fade-in 0.15s ease;
     }
-    .day-picker.open { display: block; }
 
-    .day-picker-search {
-      width: 100%;
-      padding: 12px 12px;
-      border: none;
+    .planner-day-picker-toolbar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--color-border);
+      background: var(--color-bg);
+    }
+
+    .planner-day-picker-slot {
+      background: var(--color-bg-elevated);
+      color: var(--color-text);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: 'Kotta One', sans-serif;
+    }
+
+    .planner-day-picker-search {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
       font-family: 'Lora', serif;
       font-size: 13px;
-      background: var(--color-bg);
-      min-height: 44px;
+      background: var(--color-bg-elevated);
       color: var(--color-text);
     }
 
-    .day-picker-toolbar {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--color-border);
-      background: var(--color-bg);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .planner-day-picker-search::placeholder {
+      color: var(--color-text-muted);
     }
 
-    .day-picker-toolbar label {
-      margin: 0;
-      font-size: 11px;
-      color: var(--color-secondary);
+    .planner-day-picker-list {
+      max-height: 200px;
+      overflow-y: auto;
     }
 
-    .day-picker-slot {
-      padding: 10px 10px;
-      font-size: 12px;
-      min-height: 44px;
-    }
-
-    .day-picker-item {
+    .planner-day-picker-item {
       width: 100%;
-      padding: 12px 12px;
-      font-size: 12px;
+      padding: 10px 12px;
+      font-size: 13px;
       font-family: 'Lora', serif;
-      cursor: pointer;
       color: var(--color-text);
-      transition: background var(--transition-fast);
       background: none;
       border: none;
+      border-bottom: 1px solid var(--color-border);
       text-align: left;
       box-shadow: none;
-      min-height: 44px;
-    }
-    .day-picker-item:hover,
-    .day-picker-item:focus-visible { background-color: var(--parchment-dark); transform: none; }
-
-    .day-picker-list {
-      display: grid;
-      gap: 2px;
-      padding: 4px;
+      transition: background var(--transition-fast);
     }
 
-    .day-picker-item-title {
-      display: block;
-      font-weight: 600;
+    .planner-day-picker-item:last-child {
+      border-bottom: none;
     }
 
-    .day-picker-item-meta {
-      display: block;
-      font-size: 10px;
-      color: var(--color-text-muted);
-      margin-top: 2px;
+    .planner-day-picker-item:hover {
+      background: var(--color-bg-elevated);
+      box-shadow: none;
+      transform: none;
     }
 
-    .day-picker-empty {
-      padding: 10px 12px;
+    .planner-day-picker-empty {
+      padding: 14px;
+      text-align: center;
       color: var(--color-text-muted);
       font-style: italic;
-      font-size: 12px;
+      font-size: 13px;
     }
 
+    /* Responsive */
     @media (max-width: 560px) {
-      .day-add-wrapper { margin-top: 4px; }
-      .day-picker {
-        position: static;
-        width: 100%;
-        margin-top: 8px;
-        max-height: 240px;
-        box-shadow: none;
+      .planner-day-tabs {
+        flex-wrap: wrap;
       }
-    }
-
-    .planner-shopping h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--gold);
-      margin-bottom: 12px;
+      .planner-day-tab {
+        flex: 0 0 calc(25% - 3px);
+      }
+      .planner-slot-name {
+        width: 60px;
+        font-size: 9px;
+      }
     }
 
     .planner-shopping {
       background: var(--color-bg-elevated);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-base);
-      padding: 20px;
+      padding: 16px;
+    }
+
+    .planner-shopping h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--gold);
+      margin-bottom: 12px;
     }
 
     .shopping-list {
@@ -1104,7 +959,7 @@
     .shopping-list:empty::before { content: "Noch keine Rezepte eingeplant"; color: var(--color-text-muted); font-style: italic; }
 
     .planner-section-title {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
       font-size: 22px;
       color: var(--gold);
       margin-bottom: 18px;
@@ -1123,7 +978,7 @@
     .form-container.visible { display: block; }
 
     .form-container h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
       font-size: 24px;
       margin-bottom: 22px;
       font-weight: 600;
@@ -1149,7 +1004,7 @@
       font-size: 13px;
       color: var(--gold);
       margin-bottom: 4px;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
     }
 
     .form-tip p {
@@ -1232,6 +1087,7 @@
       color: var(--color-text-muted);
       font-size: 13px;
       margin-bottom: 12px;
+      font-family: 'Kotta One', sans-serif;
     }
 
     .recipe-grid {
@@ -1263,9 +1119,11 @@
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--gold), transparent);
-      opacity: 0.4;
+      height: 4px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='4' viewBox='0 0 40 4'%3E%3Cpath d='M0 2C5 0 10 4 15 2C20 0 25 4 30 2C35 0 40 4 40 2' fill='none' stroke='%23d4a843' stroke-width='1.5' opacity='0.5'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 40px 4px;
+      z-index: 1;
     }
 
     .recipe-card:hover {
@@ -1322,7 +1180,7 @@
     .card-body { padding: 16px 18px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 
     .card-title {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Aref Ruqaa', serif;
       font-size: 20px;
       font-weight: 700;
       color: var(--gold-light);
@@ -1465,7 +1323,7 @@
     }
 
     .empty-start-copy h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
       font-size: 34px;
       line-height: 1.15;
       margin-bottom: 10px;
@@ -1501,7 +1359,7 @@
       display: block;
       margin-bottom: 6px;
       color: var(--gold-light);
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       font-size: 15px;
     }
 
@@ -1555,6 +1413,17 @@
       opacity: 1;
     }
 
+    .modal-content::before {
+      content: '';
+      display: block;
+      height: 14px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='14' viewBox='0 0 60 14'%3E%3Cpath d='M0 7C5 7 5 2 10 2C15 2 15 7 20 7C25 7 25 2 30 2C35 2 35 7 40 7C45 7 45 2 50 2C55 2 55 7 60 7' fill='none' stroke='%23d4a843' stroke-width='1' opacity='0.35'/%3E%3Cpath d='M0 7C5 7 5 12 10 12C15 12 15 7 20 7C25 7 25 12 30 12C35 12 35 7 40 7C45 7 45 12 50 12C55 12 55 7 60 7' fill='none' stroke='%23d4a843' stroke-width='1' opacity='0.35'/%3E%3Ccircle cx='10' cy='7' r='1.5' fill='%23d4a843' opacity='0.3'/%3E%3Ccircle cx='30' cy='7' r='1.5' fill='%23d4a843' opacity='0.3'/%3E%3Ccircle cx='50' cy='7' r='1.5' fill='%23d4a843' opacity='0.3'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 60px 14px;
+      background-position: center;
+      flex-shrink: 0;
+    }
+
     @media (min-width: 1200px) { .modal-content { max-width: 680px; } }
 
     .modal-image {
@@ -1566,7 +1435,7 @@
 
     .modal-close {
       position: absolute;
-      top: 16px; right: 16px;
+      top: 12px; right: 12px;
       background: rgba(0, 0, 0, 0.3);
       border: none;
       font-size: 22px;
@@ -1585,7 +1454,7 @@
 
     .modal-edit {
       position: absolute;
-      top: 16px; right: 116px;
+      top: 12px; right: 92px;
       background-color: var(--color-primary);
       color: #fff;
       border: none;
@@ -1594,7 +1463,7 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       transition: all var(--transition-base);
       z-index: 10;
     }
@@ -1617,8 +1486,8 @@
 
     .modal-favorite {
       position: absolute;
-      top: 16px;
-      right: 60px;
+      top: 12px;
+      right: 52px;
       background: rgba(0, 0, 0, 0.3);
       color: var(--color-text-muted);
       width: 44px;
@@ -1637,12 +1506,12 @@
     }
     .modal-favorite:hover { transform: none; }
 
-    .modal-header { padding: 28px 36px 18px; }
+    .modal-header { padding: 28px 36px 18px; padding-top: 50px; }
     .modal-header h1, #modalTitle {
       color: var(--gold) !important;
     }
     .modal-header h1 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cinzel', serif;
       font-size: 40px;
       font-weight: 700;
       margin-bottom: 10px;
@@ -1705,7 +1574,7 @@
       border: 1px solid var(--color-border-strong);
       border-radius: 12px;
       font-size: 14px;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       font-weight: 600;
       background: var(--parchment-dark);
       color: var(--color-text);
@@ -1805,7 +1674,7 @@
     .modal-section:last-child { margin-bottom: 0; }
 
     .modal-section h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant Garamond', serif;
       font-size: 26px;
       font-weight: 600;
       color: var(--gold-light);
@@ -1813,6 +1682,16 @@
       padding-bottom: 8px;
       margin-bottom: 14px;
       border-bottom: 1px solid var(--color-border);
+    }
+
+    .modal-section h2::after {
+      content: '';
+      display: block;
+      height: 4px;
+      margin-top: 6px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='4' viewBox='0 0 40 4'%3E%3Cpath d='M0 2C5 0 10 4 15 2C20 0 25 4 30 2C35 0 40 4 40 2' fill='none' stroke='%23d4a843' stroke-width='1' opacity='0.3'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 40px 4px;
     }
 
     .instructions-text {
@@ -1883,34 +1762,6 @@
       .modal-cooked { width: 100%; }
       .modal-status { margin-left: 0; width: 100%; }
       .modal-planner-row { grid-template-columns: 1fr; }
-      .day-recipe-chip { flex-direction: column; }
-      .chip-field {
-        width: 100%;
-        justify-content: space-between;
-      }
-      .chip-slot-select,
-      .chip-servings-select {
-        flex: 1;
-        min-width: 0;
-      }
-      .chip-actions {
-        flex-direction: row;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-      }
-      .chip-drag-handle,
-      .chip-move {
-        min-width: 44px;
-        min-height: 44px;
-      }
-      .chip-move-panel {
-        grid-template-columns: 1fr;
-      }
-      .chip-cooked,
-      .chip-remove {
-        min-width: 44px;
-        min-height: 44px;
-      }
       .card-footer,
       .modal-controls,
       .modal-planner-actions {
@@ -1930,7 +1781,7 @@
       .modal.visible { padding-top: 20px; }
       .modal-edit {
         top: 12px;
-        right: 104px;
+        right: 92px;
         padding: 7px 12px;
       }
       .modal-close {
@@ -1939,7 +1790,7 @@
       }
       .modal-favorite {
         top: 12px;
-        right: 56px;
+        right: 52px;
       }
     }
 
@@ -1975,7 +1826,7 @@
     }
 
     .confirm-box p {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Kotta One', sans-serif;
       font-size: 18px;
       font-weight: 600;
       color: var(--color-text);
@@ -2123,15 +1974,11 @@
       .btn-secondary:hover,
       .btn-ghost:hover,
       .tag:hover,
-      .day-add-btn:hover,
-      .day-picker-item:hover,
       .icon-btn:hover,
       .modal-close:hover,
       .modal-edit:hover,
       .modal-favorite:hover,
-      .modal-cooked:hover,
-      .chip-cooked:hover,
-      .chip-remove:hover {
+      .modal-cooked:hover {
         transform: none !important;
       }
     }
@@ -2242,8 +2089,8 @@
 
     .toolbar-toggle {
       position: fixed;
-      top: 16px;
-      right: 16px;
+      top: 20px;
+      right: 20px;
       z-index: 201;
       background: var(--color-bg-elevated);
       color: var(--gold);
@@ -2339,15 +2186,23 @@
     }
 
     /* ── Parchment Design Enhancements ── */
-    h1, h2, .card-title, #modalTitle {
-      font-family: 'Amiri', 'Playfair Display', serif;
-      letter-spacing: 0.3px;
+    h2, .planner-section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+    }
+
+    .card-title, #modalTitle, .modal-header h1 {
+      font-family: 'Aref Ruqaa', serif;
     }
 
     header h1 {
-      font-family: 'Amiri', 'Playfair Display', serif;
-      font-size: 52px;
+      font-family: 'Cinzel', serif;
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
       color: var(--gold);
+      margin-bottom: 8px;
     }
 
     .auth-panel-inner {

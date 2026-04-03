@@ -17,6 +17,7 @@ export function createUiState(authService) {
     activeTagFilter: null,
     favoriteFilterActive: false,
     pendingDeleteId: null,
+    activePlannerDay: null,
     activeDayPicker: null,
     activeDayPickerSlot: 'abend',
     activeDayPickerQuery: '',

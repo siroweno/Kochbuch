@@ -103,6 +103,7 @@ export function createAppEventHandlers(deps) {
       state.recipes = [];
       state.recipeLookup = new Map();
       state.weekPlan = createEmptyWeekPlan();
+      state.activePlannerDay = null;
       state.activeDayPicker = null;
       state.activeDayPickerQuery = '';
       state.favoriteFilterActive = false;
@@ -144,6 +145,7 @@ export function createAppEventHandlers(deps) {
         renderPlanner();
         updatePlannerShoppingList();
       } else {
+        state.activePlannerDay = null;
         state.activeDayPicker = null;
         state.activeDayPickerQuery = '';
         resetPlannerDraftState();
@@ -153,6 +155,7 @@ export function createAppEventHandlers(deps) {
     async onClearPlan() {
       if (!deps.DAYS.some((day) => (state.weekPlan[day] || []).length > 0)) return;
       state.weekPlan = createEmptyWeekPlan();
+      state.activePlannerDay = null;
       resetPlannerDraftState();
       await deps.persistWeekPlan();
     },
@@ -408,6 +411,18 @@ export function createAppEventHandlers(deps) {
 
         if (action === 'delete-recipe') {
           askDelete(actionTarget.dataset.recipeId, actionTarget);
+          return;
+        }
+
+        if (action === 'select-planner-day') {
+          const day = actionTarget.closest('[data-day]')?.dataset.day;
+          if (day) {
+            state.activePlannerDay = state.activePlannerDay === day ? null : day;
+            // Close any open day-picker when switching days
+            state.activeDayPicker = null;
+            state.activeDayPickerQuery = '';
+            renderPlanner();
+          }
           return;
         }
 

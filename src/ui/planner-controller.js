@@ -17,14 +17,10 @@ export function createPlannerController({
       weekPlan: getActiveWeekPlan(),
       recipes: state.recipes,
       recipeById: state.recipeLookup,
+      activePlannerDay: state.activePlannerDay,
       activeDayPicker: state.activeDayPicker,
       activeDayPickerSlot: state.activeDayPickerSlot,
       activeDayPickerQuery: state.activeDayPickerQuery,
-      activeMoveEntryId: state.activeMoveEntryId,
-      moveEntryDraftDay: state.moveEntryDraftDay,
-      moveEntryDraftSlot: state.moveEntryDraftSlot,
-      dragState: state.dragState,
-      renderServingOptions,
       renderMealSlotOptions,
     });
     restorePendingFocusTarget();

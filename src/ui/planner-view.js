@@ -8,6 +8,8 @@ import {
 } from '../cookbook-schema.js';
 import { escapeAttribute, escapeHtml } from './view-helpers.js';
 
+// ── Shared helpers (unchanged, used by main.js) ──
+
 export function getPlannerCandidates({ recipes, query = '' }) {
   const normalizedQuery = query.trim().toLowerCase();
   return recipes
@@ -23,37 +25,6 @@ export function getPlannerCandidates({ recipes, query = '' }) {
       if (cookedCompare !== 0) return cookedCompare;
       return compareTitles(a, b);
     });
-}
-
-function getPlanEntryId(day, entry, index) {
-  return String(entry?.planEntryId || entry?.id || `${day}-${index}`);
-}
-
-function renderDayOptions(selectedDay) {
-  return DAYS.map((day) => `<option value="${day}"${day === selectedDay ? ' selected' : ''}>${day}</option>`).join('');
-}
-
-function renderDropZone({ day, slot, position, dragState, empty = false }) {
-  const isTarget = Boolean(
-    dragState?.active
-    && dragState?.over?.day === day
-    && dragState?.over?.slot === slot
-    && Number(dragState?.over?.position) === position,
-  );
-  return `
-    <button
-      type="button"
-      class="chip-drop-zone${dragState?.active ? ' visible' : ''}${isTarget ? ' is-target' : ''}${empty ? ' chip-drop-zone-empty' : ''}"
-      data-drop-zone="true"
-      data-drop-day="${day}"
-      data-drop-slot="${slot}"
-      data-drop-position="${position}"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      ${empty ? 'Hier ablegen' : 'Eintrag hier ablegen'}
-    </button>
-  `;
 }
 
 export function renderDayPickerItems({
@@ -84,121 +55,168 @@ export function renderDayPickerItems({
   }).join('');
 }
 
+// ── Compact planner: Day tabs + detail panel ──
+
+const SLOT_ICONS = {
+  fruehstueck: '\u2600',
+  mittag: '\u25D0',
+  abend: '\u263D',
+  snack: '\u2726',
+};
+
+const DAY_FULL_NAMES = {
+  Mo: 'Montag',
+  Di: 'Dienstag',
+  Mi: 'Mittwoch',
+  Do: 'Donnerstag',
+  Fr: 'Freitag',
+  Sa: 'Samstag',
+  So: 'Sonntag',
+};
+
+function groupEntriesBySlot(entries) {
+  const grouped = {};
+  for (const slot of MEAL_SLOTS) {
+    grouped[slot.id] = [];
+  }
+  for (const entry of entries) {
+    const slotId = entry.slot || 'mittag';
+    if (!grouped[slotId]) grouped[slotId] = [];
+    grouped[slotId].push(entry);
+  }
+  return grouped;
+}
+
+function renderSlotRow(day, slot, entry) {
+  if (!entry) {
+    return `
+      <div class="planner-slot-row planner-slot-empty">
+        <span class="planner-slot-icon">${SLOT_ICONS[slot.id] || '\u00B7'}</span>
+        <span class="planner-slot-name">${escapeHtml(slot.label)}</span>
+        <span class="planner-slot-placeholder">\u2014</span>
+      </div>`;
+  }
+  const planEntryId = escapeAttribute(String(entry.planEntryId || entry.id || ''));
+  return `
+    <div class="planner-slot-row" data-plan-entry-id="${planEntryId}">
+      <span class="planner-slot-icon">${SLOT_ICONS[slot.id] || '\u00B7'}</span>
+      <span class="planner-slot-name">${escapeHtml(slot.label)}</span>
+      <button class="planner-entry-title" data-action="open-recipe" data-recipe-id="${escapeAttribute(entry.recipeId)}">${escapeHtml(entry.recipeTitle || 'Rezept')}</button>
+      <span class="planner-entry-servings">${entry.servings || 2}P</span>
+      <button class="planner-entry-remove" data-action="remove-plan-entry" data-plan-entry-id="${planEntryId}" data-day="${day}" data-index="${entry._index ?? 0}" aria-label="Entfernen">\u00D7</button>
+    </div>`;
+}
+
+function renderDayDetail(day, weekPlan, recipes, activeDayPicker, activeDayPickerSlot, activeDayPickerQuery, renderMealSlotOptions) {
+  const entries = weekPlan[day] || [];
+  const grouped = groupEntriesBySlot(entries);
+  const isPickerOpen = activeDayPicker === day;
+
+  const slotRows = MEAL_SLOTS.map((slot) => {
+    const slotEntries = grouped[slot.id] || [];
+    if (slotEntries.length === 0) {
+      return renderSlotRow(day, slot, null);
+    }
+    return slotEntries.map((entry) => renderSlotRow(day, slot, entry)).join('');
+  }).join('');
+
+  let pickerHTML = '';
+  if (isPickerOpen) {
+    const pickerResults = getPlannerCandidates({ recipes, query: activeDayPickerQuery });
+    const pickerStatusId = `picker-status-${day}`;
+    const pickerListId = `picker-list-${day}`;
+
+    pickerHTML = `
+      <div class="day-picker open" id="picker-${day}" aria-live="polite">
+        <div class="day-picker-status sr-only" id="${pickerStatusId}" aria-live="polite" aria-atomic="true">
+          ${pickerResults.length} Ergebnis${pickerResults.length === 1 ? '' : 'se'} verfügbar.
+        </div>
+        <div class="day-picker-toolbar">
+          <label for="picker-slot-${day}">Eintragen als</label>
+          <select class="day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
+            ${renderMealSlotOptions(activeDayPickerSlot)}
+          </select>
+        </div>
+        <label class="sr-only" for="picker-search-${day}">Rezepte für ${day} suchen</label>
+        <input class="day-picker-search" type="text" value="${escapeAttribute(activeDayPickerQuery || '')}" placeholder="Suchen \u2026" id="picker-search-${day}" data-day-picker-search="${day}" aria-describedby="${pickerStatusId} ${pickerListId}">
+        <div class="day-picker-list" id="${pickerListId}" aria-label="Suchergebnisse für ${day}">
+          ${renderDayPickerItems({ day, query: activeDayPickerQuery, recipes, activeDayPickerSlot })}
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="planner-day-detail" data-day="${day}">
+      <div class="planner-day-detail-header">
+        <h3>${DAY_FULL_NAMES[day] || day}</h3>
+        <div class="day-add-wrapper">
+          <button type="button" class="day-add-btn" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(isPickerOpen)}" aria-controls="picker-${day}">
+            ${isPickerOpen ? 'Schliessen' : '+ Rezept'}
+          </button>
+          ${pickerHTML}
+        </div>
+      </div>
+      ${slotRows}
+    </div>`;
+}
+
 export function renderWeekPlanner({
   daysGrid,
   weekPlan,
   recipes,
   recipeById = null,
+  activePlannerDay = null,
   activeDayPicker,
   activeDayPickerSlot,
   activeDayPickerQuery = '',
-  activeMoveEntryId = null,
-  moveEntryDraftDay = null,
-  moveEntryDraftSlot = 'abend',
-  dragState = null,
-  renderServingOptions,
   renderMealSlotOptions,
 }) {
-  daysGrid.innerHTML = DAYS.map((day) => {
-    const entries = (weekPlan[day] || [])
-      .map((entry, index) => ({
-        entry,
-        index,
-        recipe: recipeById?.get(String(entry.recipeId)) || recipes.find((recipe) => recipe.id === String(entry.recipeId)),
-      }))
-      .filter((item) => item.recipe);
-    const pickerOpen = activeDayPicker === day;
-    const pickerStatusId = `picker-status-${day}`;
-    const pickerListId = `picker-list-${day}`;
-    const pickerResults = pickerOpen ? getPlannerCandidates({ recipes, query: activeDayPickerQuery }) : [];
-
-    const slotSections = MEAL_SLOTS.map((slot) => {
-      const slotEntries = entries.filter((item) => item.entry.slot === slot.id);
-      const chips = slotEntries.map(({ entry, index, recipe }, slotIndex) => {
-        const planEntryId = getPlanEntryId(day, entry, index);
-        const movePanel = activeMoveEntryId === planEntryId ? `
-          <div class="chip-move-panel" data-plan-entry-id="${escapeAttribute(planEntryId)}">
-            <label class="sr-only" for="move-entry-day-${planEntryId}">Tag für ${escapeHtml(recipe.title)}</label>
-            <select id="move-entry-day-${planEntryId}" data-action="move-entry-day" data-plan-entry-id="${escapeAttribute(planEntryId)}" aria-label="Tag für ${escapeAttribute(recipe.title)}">
-              ${renderDayOptions(moveEntryDraftDay || day)}
-            </select>
-            <label class="sr-only" for="move-entry-slot-${planEntryId}">Slot für ${escapeHtml(recipe.title)}</label>
-            <select id="move-entry-slot-${planEntryId}" data-action="move-entry-slot" data-plan-entry-id="${escapeAttribute(planEntryId)}" aria-label="Slot für ${escapeAttribute(recipe.title)}">
-              ${renderMealSlotOptions(moveEntryDraftSlot || entry.slot)}
-            </select>
-            <button type="button" class="chip-move-confirm" data-action="confirm-move-entry" data-plan-entry-id="${escapeAttribute(planEntryId)}">Speichern</button>
-            <button type="button" class="chip-move-cancel" data-action="cancel-move-entry" data-plan-entry-id="${escapeAttribute(planEntryId)}">Abbrechen</button>
-          </div>
-        ` : '';
-
-        return `
-        ${renderDropZone({ day, slot: slot.id, position: slotIndex, dragState })}
-        <div class="day-recipe-chip" data-plan-entry-id="${escapeAttribute(planEntryId)}" data-day="${day}" data-index="${index}">
-          <button type="button" class="chip-drag-handle" data-action="start-plan-drag" data-plan-entry-id="${escapeAttribute(planEntryId)}" data-day="${day}" data-index="${index}" aria-label="${escapeAttribute(recipe.title)} verschieben" title="Zum Verschieben greifen">⋮⋮</button>
-          <div class="chip-main">
-            <button type="button" class="chip-name" data-action="open-recipe" data-recipe-id="${recipe.id}" data-modal-servings="${entry.servings}" title="${escapeAttribute(recipe.title)}">${escapeHtml(recipe.title)}</button>
-            <div class="chip-controls">
-              <div class="chip-field">
-                <span>Slot</span>
-                <label class="sr-only" for="chip-slot-${day}-${index}">Mahlzeiten-Slot für ${escapeHtml(recipe.title)}</label>
-                <select id="chip-slot-${day}-${index}" class="chip-slot-select" data-action="plan-slot" data-day="${day}" data-index="${index}" data-plan-entry-id="${escapeAttribute(planEntryId)}" aria-label="Mahlzeiten-Slot für ${escapeAttribute(recipe.title)}">
-                  ${renderMealSlotOptions(entry.slot, true)}
-                </select>
-              </div>
-              <div class="chip-field">
-                <span>Port.</span>
-                <label class="sr-only" for="chip-servings-${day}-${index}">Portionen für ${escapeHtml(recipe.title)}</label>
-                <select id="chip-servings-${day}-${index}" class="chip-servings-select" data-action="plan-serving" data-day="${day}" data-index="${index}" data-plan-entry-id="${escapeAttribute(planEntryId)}" aria-label="Portionen für ${escapeAttribute(recipe.title)}">
-                  ${renderServingOptions(entry.servings)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="chip-actions">
-            <button type="button" class="chip-cooked${formatLastCooked(recipe, 'short') ? ' active' : ''}" data-action="mark-cooked" data-recipe-id="${recipe.id}" data-plan-entry-id="${escapeAttribute(planEntryId)}" title="${escapeAttribute(formatLastCooked(recipe, 'long') || 'Heute gekocht markieren')}" aria-label="${escapeAttribute(recipe.title)} als gekocht markieren">✓</button>
-            <button type="button" class="chip-move" data-action="move-plan-entry" data-day="${day}" data-index="${index}" data-plan-entry-id="${escapeAttribute(planEntryId)}" title="Verschieben" aria-label="${escapeAttribute(recipe.title)} verschieben">Verschieben…</button>
-            <button type="button" class="chip-remove" data-action="remove-plan-entry" data-day="${day}" data-index="${index}" data-plan-entry-id="${escapeAttribute(planEntryId)}" title="Entfernen" aria-label="${escapeAttribute(recipe.title)} aus ${day} entfernen">×</button>
-          </div>
-        </div>
-        ${movePanel}
-      `;
-      }).join('');
-
-      return `<div class="day-slot-section" data-slot-section="${slot.id}" data-slot-entry-count="${slotEntries.length}">
-        <div class="day-slot-label">${slot.label}</div>
-        ${slotEntries.length
-          ? `${chips}${renderDropZone({ day, slot: slot.id, position: slotEntries.length, dragState })}`
-          : `${renderDropZone({ day, slot: slot.id, position: 0, dragState, empty: true })}<div class="day-slot-empty">Noch frei</div>`}
-      </div>`;
-    }).join('');
-
-    const pickerSearch = pickerOpen ? `
-      <div class="day-picker-toolbar">
-        <label for="picker-slot-${day}">Eintragen als</label>
-        <select class="day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
-          ${renderMealSlotOptions(activeDayPickerSlot)}
-        </select>
-      </div>
-      <label class="sr-only" for="picker-search-${day}">Rezepte für ${day} suchen</label>
-      <input class="day-picker-search" type="text" value="${escapeAttribute(activeDayPickerQuery)}" placeholder="Suchen …" id="picker-search-${day}" data-day-picker-search="${day}" aria-describedby="${pickerStatusId} ${pickerListId}">
-    ` : '';
-
+  // 1. Day tabs bar
+  const dayTabs = DAYS.map((day) => {
+    const entries = weekPlan[day] || [];
+    const isActive = activePlannerDay === day;
     return `
-      <div class="day-column" data-day-column="${day}">
-        <div class="day-name">${day}</div>
-        ${slotSections || '<div class="day-empty">Noch nichts geplant</div>'}
-        <div class="day-add-wrapper">
-          <button type="button" class="day-add-btn" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(pickerOpen)}" aria-controls="picker-${day}">+ Rezept</button>
-          <div class="day-picker ${pickerOpen ? 'open' : ''}" id="picker-${day}" ${pickerOpen ? 'aria-live="polite"' : ''}>
-            <div class="day-picker-status sr-only" id="${pickerStatusId}" aria-live="polite" aria-atomic="true">${pickerOpen ? `${pickerResults.length} Ergebnis${pickerResults.length === 1 ? '' : 'se'} verfügbar.` : ''}</div>
-            ${pickerSearch}
-            <div class="day-picker-list" id="${pickerListId}" aria-label="Suchergebnisse für ${day}">${pickerOpen ? renderDayPickerItems({ day, query: activeDayPickerQuery, recipes, activeDayPickerSlot }) : ''}</div>
-          </div>
-        </div>
-      </div>
-    `;
+      <button class="planner-day-tab${isActive ? ' active' : ''}"
+              data-action="select-planner-day" data-day="${day}"
+              type="button">
+        <span class="planner-day-name">${day}</span>
+        <span class="planner-day-count">${entries.length || '\u2014'}</span>
+      </button>`;
   }).join('');
+
+  // 2. Detail panel for active day
+  let detailPanel = '';
+  if (activePlannerDay) {
+    // Resolve recipe titles for entries, preserving original index
+    const resolvedPlan = {};
+    for (const day of DAYS) {
+      resolvedPlan[day] = (weekPlan[day] || []).map((entry, index) => {
+        const recipe = recipeById?.get(String(entry.recipeId)) || recipes.find((r) => r.id === String(entry.recipeId));
+        return {
+          ...entry,
+          _index: index,
+          recipeTitle: recipe?.title || entry.recipeTitle || 'Unbekannt',
+        };
+      });
+    }
+    detailPanel = renderDayDetail(
+      activePlannerDay,
+      resolvedPlan,
+      recipes,
+      activeDayPicker,
+      activeDayPickerSlot,
+      activeDayPickerQuery,
+      renderMealSlotOptions,
+    );
+  }
+
+  daysGrid.innerHTML = `
+    <div class="planner-day-tabs">${dayTabs}</div>
+    ${detailPanel}
+  `;
 }
+
+// ── Shopping list (unchanged) ──
 
 export function buildShoppingListText({ weekPlan, recipes, recipeById = null }) {
   const ingredientMap = {};
