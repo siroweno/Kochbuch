@@ -3,21 +3,14 @@ import { loadRuntimeConfig } from './bootstrap/runtime-config.js';
 import { createAppServices } from './bootstrap/app.js';
 import { createUiState } from './ui/state-controller.js';
 import { createRecipeFormController } from './ui/recipe-form.js';
+import { getAppDom } from './ui/app-dom.js';
 import { bindAppEvents } from './ui/events.js';
 import { createDialogController } from './ui/modals.js';
 import { createAppEventHandlers } from './ui/app-event-handlers.js';
-import {
-  getFilteredSortedRecipes,
-  renderCollectionSummary,
-  renderRecipeGrid,
-  renderRecipeModalContent,
-} from './ui/recipes-view.js';
-import {
-  getPlannerCandidates,
-  buildShoppingListText,
-  renderDayPickerItems,
-  renderWeekPlanner,
-} from './ui/planner-view.js';
+import { createRecipesController } from './ui/recipes-controller.js';
+import { createPlannerController } from './ui/planner-controller.js';
+import { createModalRecipeController } from './ui/modal-recipe-controller.js';
+import { getPlannerCandidates, renderDayPickerItems } from './ui/planner-view.js';
 import { createEffectsLayer } from './ui/effects-layer.js';
 import { createNotificationCenter } from './ui/notifications.js';
 import { setVisible } from './ui/view-helpers.js';
@@ -26,7 +19,6 @@ import {
   createEmptyWeekPlan,
   DAYS,
   getMealSlotLabel,
-  getPlannerStats,
   isDataUrl,
   isExternalImageUrl,
   isValidMealSlot,
@@ -44,105 +36,116 @@ await loadRuntimeConfig();
 const { config, authService, repository } = createAppServices();
 const state = createUiState(authService);
 
-const authBar = document.getElementById('authBar');
-const authBarName = document.getElementById('authBarName');
-const authBarMeta = document.getElementById('authBarMeta');
-const signOutBtn = document.getElementById('signOutBtn');
-const loginPanel = document.getElementById('loginPanel');
-const loginIntro = document.getElementById('loginIntro');
-const googleLoginActions = document.getElementById('googleLoginActions');
-const googleLoginBtn = document.getElementById('googleLoginBtn');
-const browserTestLoginForm = document.getElementById('browserTestLoginForm');
-const browserTestEmail = document.getElementById('browserTestEmail');
-const loginMessage = document.getElementById('loginMessage');
-const authHint = document.getElementById('authHint');
-const loadingPanel = document.getElementById('loadingPanel');
-const accessPanel = document.getElementById('accessPanel');
-const accessMessage = document.getElementById('accessMessage');
-const configPanel = document.getElementById('configPanel');
-const appShell = document.getElementById('appShell');
-
-const toggleFormBtn = document.getElementById('toggleFormBtn');
-const toggleFavoritesBtn = document.getElementById('toggleFavoritesBtn');
-const formContainer = document.getElementById('formContainer');
-const formTitle = document.getElementById('formTitle');
-const recipeForm = document.getElementById('recipeForm');
-const recipeGrid = document.getElementById('recipeGrid');
-const collectionSummary = document.getElementById('collectionSummary');
-const summaryFeaturePlannerValue = document.getElementById('summaryFeaturePlannerValue');
-const summaryFeatureFavoriteValue = document.getElementById('summaryFeatureFavoriteValue');
-const searchInput = document.getElementById('searchInput');
-const sortSelect = document.getElementById('sortSelect');
-const titleInput = document.getElementById('title');
-const servingsInput = document.getElementById('servings');
-const prepTimeInput = document.getElementById('prepTime');
-const cookTimeInput = document.getElementById('cookTime');
-const tagsInput = document.getElementById('tags');
-const imageUrlInput = document.getElementById('imageUrl');
-const imageFileInput = document.getElementById('imageFile');
-const imagePreview = document.getElementById('imagePreview');
-const previewImg = document.getElementById('previewImg');
-const ingredientsInput = document.getElementById('ingredients');
-const instructionsInput = document.getElementById('instructions');
-const platingInput = document.getElementById('plating');
-const tipsInput = document.getElementById('tips');
-const descriptionInput = document.getElementById('description');
-const exportBtn = document.getElementById('exportBtn');
-const restoreImportBtn = document.getElementById('restoreImportBtn');
-const recipeImportBtn = document.getElementById('recipeImportBtn');
-const restoreImportFile = document.getElementById('restoreImportFile');
-const recipeImportFile = document.getElementById('recipeImportFile');
-const migrateLocalBtn = document.getElementById('migrateLocalBtn');
-const uploadImageBtn = document.getElementById('uploadImageBtn');
-const togglePlannerBtn = document.getElementById('togglePlannerBtn');
-const weekPlanner = document.getElementById('weekPlanner');
-const plannerSummary = document.getElementById('plannerSummary');
-const daysGrid = document.getElementById('daysGrid');
-const shoppingList = document.getElementById('shoppingList');
-const shoppingSearchInput = document.getElementById('shoppingSearchInput');
-const exportShoppingBtn = document.getElementById('exportShoppingBtn');
-const clearPlanBtn = document.getElementById('clearPlanBtn');
-const tagFilterPill = document.getElementById('tagFilterPill');
-const tagFilterLabel = document.getElementById('tagFilterLabel');
-const clearTagFilterBtn = document.getElementById('clearTagFilterBtn');
-const recipeCount = document.getElementById('recipeCount');
-const uiAnnouncements = document.getElementById('uiAnnouncements');
-const notificationStack = document.getElementById('notificationStack');
-
-const recipeModal = document.getElementById('recipeModal');
-const recipeModalContent = recipeModal.querySelector('.modal-content');
-const modalCloseBtn = document.getElementById('modalCloseBtn');
-const modalFavoriteBtn = document.getElementById('modalFavoriteBtn');
-const modalEditBtn = document.getElementById('modalEditBtn');
-const modalCookedBtn = document.getElementById('modalCookedBtn');
-const modalCookedStatus = document.getElementById('modalCookedStatus');
-const modalServingsSelect = document.getElementById('modalServings');
-const modalImage = document.getElementById('modalImage');
-const modalTitle = document.getElementById('modalTitle');
-const modalDate = document.getElementById('modalDate');
-const modalHeaderMeta = document.getElementById('modalHeaderMeta');
-const modalDescription = document.getElementById('modalDescription');
-const modalIngredients = document.getElementById('modalIngredients');
-const modalInstructions = document.getElementById('modalInstructions');
-const modalPlating = document.getElementById('modalPlating');
-const modalTips = document.getElementById('modalTips');
-const modalPlannerToggle = document.getElementById('modalPlannerToggle');
-const modalPlannerPanel = document.getElementById('modalPlannerPanel');
-const modalPlannerDay = document.getElementById('modalPlannerDay');
-const modalPlannerSlot = document.getElementById('modalPlannerSlot');
-const modalPlannerServings = document.getElementById('modalPlannerServings');
-const modalPlannerSaveBtn = document.getElementById('modalPlannerSaveBtn');
-const modalPlannerCancelBtn = document.getElementById('modalPlannerCancelBtn');
-const modalPlannerFeedback = document.getElementById('modalPlannerFeedback');
-const descriptionSection = document.getElementById('descriptionSectionModal');
-const platingWrapper = document.getElementById('modalPlatingWrapper');
-const tipsSection = document.getElementById('tipsSectionModal');
-
-const deleteConfirm = document.getElementById('deleteConfirm');
-const deleteConfirmBox = deleteConfirm.querySelector('.confirm-box');
-const deleteConfirmName = document.getElementById('deleteConfirmName');
-const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const dom = getAppDom();
+const { shell, auth, recipes, planner, modal, deleteDialog } = dom;
+const {
+  appShell,
+  loadingPanel,
+  uiAnnouncements,
+  notificationStack,
+} = shell;
+const {
+  authBar,
+  authBarName,
+  authBarMeta,
+  signOutBtn,
+  loginPanel,
+  loginIntro,
+  googleLoginActions,
+  googleLoginBtn,
+  browserTestLoginForm,
+  browserTestEmail,
+  loginMessage,
+  authHint,
+  accessPanel,
+  accessMessage,
+  configPanel,
+} = auth;
+const {
+  toggleFormBtn,
+  toggleFavoritesBtn,
+  formContainer,
+  formTitle,
+  recipeForm,
+  recipeGrid,
+  collectionSummary,
+  summaryFeaturePlannerValue,
+  summaryFeatureFavoriteValue,
+  searchInput,
+  sortSelect,
+  recipeCount,
+  tagFilterPill,
+  tagFilterLabel,
+  clearTagFilterBtn,
+  titleInput,
+  servingsInput,
+  prepTimeInput,
+  cookTimeInput,
+  tagsInput,
+  imageUrlInput,
+  imageFileInput,
+  imagePreview,
+  previewImg,
+  ingredientsInput,
+  instructionsInput,
+  platingInput,
+  tipsInput,
+  descriptionInput,
+  uploadImageBtn,
+  exportBtn,
+  restoreImportBtn,
+  recipeImportBtn,
+  restoreImportFile,
+  recipeImportFile,
+  migrateLocalBtn,
+} = recipes;
+const {
+  togglePlannerBtn,
+  weekPlanner,
+  plannerSummary,
+  daysGrid,
+  shoppingList,
+  shoppingSearchInput,
+  exportShoppingBtn,
+  clearPlanBtn,
+} = planner;
+const {
+  overlay: recipeModal,
+  content: recipeModalContent,
+  closeBtn: modalCloseBtn,
+  favoriteBtn: modalFavoriteBtn,
+  editBtn: modalEditBtn,
+  cookedBtn: modalCookedBtn,
+  cookedStatus: modalCookedStatus,
+  servingsSelect: modalServingsSelect,
+  image: modalImage,
+  title: modalTitle,
+  date: modalDate,
+  headerMeta: modalHeaderMeta,
+  description: modalDescription,
+  ingredients: modalIngredients,
+  instructions: modalInstructions,
+  plating: modalPlating,
+  tips: modalTips,
+  plannerToggle: modalPlannerToggle,
+  plannerPanel: modalPlannerPanel,
+  plannerDay: modalPlannerDay,
+  plannerSlot: modalPlannerSlot,
+  plannerServings: modalPlannerServings,
+  plannerSaveBtn: modalPlannerSaveBtn,
+  plannerCancelBtn: modalPlannerCancelBtn,
+  plannerFeedback: modalPlannerFeedback,
+  descriptionSection,
+  platingWrapper,
+  tipsSection,
+} = modal;
+const {
+  overlay: deleteConfirm,
+  content: deleteConfirmBox,
+  name: deleteConfirmName,
+  confirmBtn: confirmDeleteBtn,
+  cancelBtn: cancelDeleteBtn,
+} = deleteDialog;
 
 const REQUIRED_FIELDS = new Map([
   [titleInput, 'Bitte gib einen Rezeptnamen ein.'],
@@ -209,6 +212,73 @@ const notifications = createNotificationCenter({
   liveRegion: uiAnnouncements,
 });
 state.motionMode = reducedMotionQuery?.matches ? 'reduce' : 'full';
+
+const modalRecipeController = createModalRecipeController({
+  state,
+  elements: {
+    modalImage,
+    modalTitle,
+    modalDate,
+    modalHeaderMeta,
+    modalFavoriteBtn,
+    modalCookedBtn,
+    modalCookedStatus,
+    modalServingsSelect,
+    modalEditBtn,
+    modalDescription,
+    modalIngredients,
+    modalInstructions,
+    modalPlating,
+    modalTips,
+    descriptionSection,
+    platingWrapper,
+    tipsSection,
+  },
+  getCanAdmin: () => Boolean(state.latestAppData.capabilities?.canAdmin),
+  renderServingOptions: renderModalServingOptions,
+  syncModalPlanningUi,
+  restorePendingFocusTarget,
+});
+
+const recipesController = createRecipesController({
+  state,
+  elements: {
+    toggleFavoritesBtn,
+    tagFilterPill,
+    tagFilterLabel,
+    collectionSummary,
+    summaryFeaturePlannerValue,
+    summaryFeatureFavoriteValue,
+    recipeGrid,
+    recipeCount,
+    searchInput,
+    sortSelect,
+  },
+  getCanAdmin: () => Boolean(state.latestAppData.capabilities?.canAdmin),
+  modalController,
+  modalRecipeController,
+  restorePendingFocusTarget,
+});
+
+const plannerController = createPlannerController({
+  state,
+  elements: {
+    daysGrid,
+    plannerSummary,
+    shoppingList,
+    shoppingSearchInput,
+  },
+  getActiveWeekPlan,
+  renderServingOptions: renderPlannerServingOptions,
+  renderMealSlotOptions,
+  restorePendingFocusTarget,
+});
+
+const renderRecipeModal = () => modalRecipeController.render();
+const renderRecipes = () => recipesController.render();
+const renderPlanner = () => plannerController.render();
+const updatePlannerShoppingList = () => plannerController.updateShoppingList();
+const refreshPlannerViews = () => plannerController.refresh();
 
 function syncBodyScrollLock() {
   const shouldLock = modalController.isOpen() || deleteDialogController.isOpen();
@@ -333,13 +403,6 @@ function resetPlannerDraftState() {
   state.activeMoveEntryId = null;
   state.moveEntryDraftDay = null;
   state.moveEntryDraftSlot = state.lastPlannerSlot || 'abend';
-}
-
-function updateSummaryFeatureValues() {
-  if (!summaryFeaturePlannerValue || !summaryFeatureFavoriteValue) return;
-  const plannerStats = getPlannerStats(state.weekPlan, state.recipes);
-  summaryFeaturePlannerValue.textContent = String(plannerStats.entries);
-  summaryFeatureFavoriteValue.textContent = String(state.recipes.filter((recipe) => recipe.favorite).length);
 }
 
 function ensureModalPlanningDefaults() {
@@ -479,18 +542,6 @@ function applyRoleUi(canAdmin) {
   });
 }
 
-function updateFavoriteFilterButton() {
-  toggleFavoritesBtn.classList.toggle('active', state.favoriteFilterActive);
-  toggleFavoritesBtn.setAttribute('aria-pressed', String(state.favoriteFilterActive));
-}
-
-function updateTagFilterPill() {
-  tagFilterPill.classList.toggle('visible', Boolean(state.activeTagFilter));
-  if (state.activeTagFilter) {
-    tagFilterLabel.textContent = state.activeTagFilter;
-  }
-}
-
 function setPlannerOpen(open) {
   state.plannerOpen = open;
   weekPlanner.style.display = open ? 'block' : 'none';
@@ -538,120 +589,28 @@ function renderAuthShell(snapshot) {
   applyRoleUi(snapshot.canAdmin);
 }
 
-function buildFilteredRecipes() {
-  return getFilteredSortedRecipes({
-    recipes: state.recipes,
-    query: searchInput.value,
-    activeTagFilter: state.activeTagFilter,
-    favoriteFilterActive: state.favoriteFilterActive,
-    sort: sortSelect.value,
-  });
-}
-
-function renderRecipeModal() {
-  if (!state.currentModalRecipe) return;
-  const currentRecipe = state.recipes.find((recipe) => recipe.id === state.currentModalRecipe.id) || state.currentModalRecipe;
-  state.currentModalRecipe = currentRecipe;
-  renderRecipeModalContent({
-    recipe: currentRecipe,
-    displayServings: state.currentModalServings || currentRecipe.baseServings,
-    canAdmin: state.latestAppData.capabilities?.canAdmin,
-    renderServingOptions: renderModalServingOptions,
-    elements: {
-      modalImage,
-      modalTitle,
-      modalDate,
-      modalHeaderMeta,
-      modalFavoriteBtn,
-      modalCookedBtn,
-      modalCookedStatus,
-      modalServingsSelect,
-      modalEditBtn,
-      modalDescription,
-      modalIngredients,
-      modalInstructions,
-      modalPlating,
-      modalTips,
-      descriptionSection,
-      platingWrapper,
-      tipsSection,
-    },
-  });
-  syncModalPlanningUi();
-  restorePendingFocusTarget();
-}
-
-function renderRecipes() {
-  updateFavoriteFilterButton();
-  updateTagFilterPill();
-  renderCollectionSummary({
-    collectionSummary,
-    recipes: state.recipes,
-    weekPlan: state.weekPlan,
-  });
-  updateSummaryFeatureValues();
-
-  renderRecipeGrid({
-    recipeGrid,
-    recipeCount,
-    recipes: state.recipes,
-    filteredRecipes: buildFilteredRecipes(),
-    activeTagFilter: state.activeTagFilter,
-    query: searchInput.value,
-    favoriteFilterActive: state.favoriteFilterActive,
-    canAdmin: state.latestAppData.capabilities?.canAdmin,
-  });
-
-  if (modalController.isOpen()) {
-    renderRecipeModal();
-  }
-
-  restorePendingFocusTarget();
-}
-
-function updatePlannerShoppingList() {
-  state.fullShoppingList = buildShoppingListText({
-    weekPlan: state.weekPlan,
-    recipes: state.recipes,
-  });
-  shoppingList.textContent = state.fullShoppingList || '';
-  shoppingSearchInput.value = '';
-}
-
-function renderPlanner() {
-  renderWeekPlanner({
-    daysGrid,
-    plannerSummary,
-    weekPlan: getActiveWeekPlan(),
-    recipes: state.recipes,
-    activeDayPicker: state.activeDayPicker,
-    activeDayPickerSlot: state.activeDayPickerSlot,
-    activeDayPickerQuery: state.activeDayPickerQuery,
-    activeMoveEntryId: state.activeMoveEntryId,
-    moveEntryDraftDay: state.moveEntryDraftDay,
-    moveEntryDraftSlot: state.moveEntryDraftSlot,
-    dragState: state.dragState,
-    renderServingOptions: renderPlannerServingOptions,
-    renderMealSlotOptions,
-  });
-  restorePendingFocusTarget();
-}
-
-function refreshPlannerViews() {
-  if (!state.plannerOpen) return;
-  renderPlanner();
-  updatePlannerShoppingList();
-}
-
-function applyLoadResult(result) {
+function applyLoadResult(result, { scope = 'full' } = {}) {
   state.latestAppData = result;
   state.recipes = result.recipes || [];
+  state.recipeLookup = new Map(state.recipes.map((recipe) => [String(recipe.id), recipe]));
   state.weekPlan = result.weekPlan || createEmptyWeekPlan();
   state.plannerDraftWeekPlan = null;
   state.dragState = null;
   applyRoleUi(result.capabilities?.canAdmin);
-  renderRecipes();
-  refreshPlannerViews();
+
+  if (scope === 'planner') {
+    recipesController.renderSummary();
+    plannerController.refresh();
+  } else if (scope === 'recipes') {
+    recipesController.render();
+    if (state.plannerOpen) {
+      plannerController.render();
+    }
+  } else {
+    recipesController.render();
+    plannerController.refresh();
+  }
+
   migrateLocalBtn.style.display = result.capabilities?.canAdmin && result.migration?.hasLegacyData && !result.migration?.alreadyMigrated ? '' : 'none';
   restorePendingFocusTarget();
 }
@@ -693,7 +652,7 @@ async function waitForAppReady() {
 
 function clearTagFilter() {
   state.activeTagFilter = null;
-  renderRecipes();
+  recipesController.render();
 }
 
 function setTagFilter(tag) {
@@ -703,21 +662,21 @@ function setTagFilter(tag) {
   }
 
   state.activeTagFilter = tag;
-  renderRecipes();
+  recipesController.render();
 }
 
 function toggleFavoritesFilter() {
   state.favoriteFilterActive = !state.favoriteFilterActive;
-  renderRecipes();
+  recipesController.render();
 }
 
 function openRecipeModal(recipeId, options = {}) {
-  const recipe = state.recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
   state.currentModalRecipe = recipe;
   state.currentModalServings = normalizePositiveInteger(options.servings, recipe.baseServings);
   initializeModalPlanningState();
-  renderRecipeModal();
+  modalRecipeController.render();
   modalController.open({
     trigger: options.trigger || document.activeElement,
   });
@@ -735,7 +694,7 @@ function updateModalServings() {
   if (modalPlannerServings) {
     modalPlannerServings.value = String(state.currentModalServings);
   }
-  renderRecipeModal();
+  modalRecipeController.render();
 }
 
 function editRecipeModal() {
@@ -747,7 +706,7 @@ function editRecipeModal() {
 }
 
 function askDelete(recipeId, trigger = null) {
-  const recipe = state.recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
   state.pendingDeleteId = recipe.id;
   deleteConfirmName.textContent = `"${recipe.title}"`;
@@ -765,9 +724,9 @@ async function confirmDelete() {
 
   try {
     await waitForAppReady();
-    await repository.deleteRecipe(recipeId);
+    const result = await repository.deleteRecipe(recipeId);
     deleteDialogController.close();
-    await refreshAppData({ silent: true });
+    applyLoadResult(result);
   } catch (error) {
     notifications.error(`Loeschen fehlgeschlagen: ${error.message}`);
   } finally {
@@ -797,7 +756,7 @@ function toggleDayPicker(day) {
     state.activeDayPickerQuery = '';
   }
 
-  renderPlanner();
+  plannerController.render();
   if (state.activeDayPicker) {
     focusDayPickerSearch(day);
   }
@@ -827,12 +786,12 @@ function filterDayPicker(day, query) {
 }
 
 async function persistWeekPlan() {
-  await repository.saveWeekPlan(state.weekPlan);
-  await refreshAppData({ silent: true });
+  const result = await repository.saveWeekPlan(state.weekPlan);
+  applyLoadResult(result, { scope: 'planner' });
 }
 
 async function addToDay(day, recipeId, options = {}) {
-  const recipe = state.recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
 
   state.weekPlan[day].push({
@@ -891,7 +850,7 @@ async function saveModalPlannerEntry() {
   state.modalPlanningFeedback = `Für ${day} · ${getMealSlotLabel(slot)} · ${servings} P. eingeplant.`;
   setPendingFocusTarget({ type: 'modal-planner-feedback' });
   announceUi(state.modalPlanningFeedback);
-  renderRecipeModal();
+  modalRecipeController.render();
 }
 
 function toggleMoveEntryComposer(planEntryId) {
@@ -908,7 +867,7 @@ function toggleMoveEntryComposer(planEntryId) {
     state.moveEntryDraftSlot = location.entry.slot;
   }
 
-  renderPlanner();
+  plannerController.render();
 }
 
 async function confirmMoveEntry(planEntryId) {
@@ -1077,11 +1036,11 @@ async function finishPlanDrag(clientX = null, clientY = null) {
 
   state.dragState = null;
   state.plannerDraftWeekPlan = null;
-  renderPlanner();
+  plannerController.render();
 }
 
 async function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
-  const recipe = state.recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
 
   const isLike = !recipe.favorite;
@@ -1103,14 +1062,11 @@ async function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
     effectsLayer.playHeartPop({ anchor, anchorRect });
   }
 
-  await repository.toggleFavorite(recipeId);
+  const result = await repository.toggleFavorite(recipeId);
   if (!isLike) {
     announceUi('Aus Favoriten entfernt');
   }
-  await refreshAppData({ silent: true });
-  if (surface === 'modal') {
-    renderRecipeModal();
-  }
+  applyLoadResult(result, { scope: 'recipes' });
 }
 
 function downloadJson(filename, payload) {
@@ -1203,7 +1159,7 @@ async function handleRecipeSubmit(event) {
     };
   }
 
-  await repository.saveRecipe({
+  const result = await repository.saveRecipe({
     id: existing?.id,
     title: titleInput.value.trim(),
     baseServings: normalizePositiveInteger(servingsInput.value, existing?.baseServings || 2),
@@ -1221,7 +1177,7 @@ async function handleRecipeSubmit(event) {
 
   state.editingRecipeId = null;
   formController.closeRecipeForm();
-  await refreshAppData({ silent: true });
+  applyLoadResult(result);
 }
 
 function handleDayPickerKeyboard(event) {
@@ -1232,7 +1188,7 @@ function handleDayPickerKeyboard(event) {
     setPendingFocusTarget({ type: 'day-picker-trigger', day: state.activeDayPicker });
     state.activeDayPicker = null;
     state.activeDayPickerQuery = '';
-    renderPlanner();
+    plannerController.render();
     return true;
   }
 
@@ -1356,6 +1312,7 @@ bindAppEvents({
     persistWeekPlan,
     recipeImportFile,
     recipeModal,
+    applyLoadResult,
     refreshAppData,
     renderAuthShell,
     renderPlanner,

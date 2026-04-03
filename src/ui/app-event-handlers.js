@@ -18,6 +18,7 @@ export function createAppEventHandlers(deps) {
     renderAuthShell,
     waitForAppReady,
     refreshAppData,
+    applyLoadResult,
     closeRecipeForm,
     openRecipeForm,
     handleRecipeSubmit,
@@ -100,6 +101,7 @@ export function createAppEventHandlers(deps) {
       browserTestEmail.value = '';
       googleLoginBtn.disabled = false;
       state.recipes = [];
+      state.recipeLookup = new Map();
       state.weekPlan = createEmptyWeekPlan();
       state.activeDayPicker = null;
       state.activeDayPickerQuery = '';
@@ -242,10 +244,14 @@ export function createAppEventHandlers(deps) {
     async onModalCooked() {
       if (!state.currentModalRecipe) return;
       setPendingFocusTarget({ selector: '#modalCookedBtn' });
-      await repository.markRecipeCooked(state.currentModalRecipe.id);
+      const result = await repository.markRecipeCooked(state.currentModalRecipe.id);
       announceUi('Heute gekocht markiert');
-      await refreshAppData({ silent: true });
-      renderRecipeModal();
+      if (typeof applyLoadResult === 'function') {
+        applyLoadResult(result, { scope: 'recipes' });
+      } else {
+        await refreshAppData({ silent: true });
+        renderRecipeModal();
+      }
     },
 
     onEditModal() {
@@ -390,9 +396,13 @@ export function createAppEventHandlers(deps) {
           if (actionTarget.dataset.planEntryId) {
             setPendingFocusTarget({ type: 'plan-entry', planEntryId: actionTarget.dataset.planEntryId, action: 'mark-cooked' });
           }
-          await repository.markRecipeCooked(actionTarget.dataset.recipeId);
+          const result = await repository.markRecipeCooked(actionTarget.dataset.recipeId);
           announceUi('Heute gekocht markiert');
-          await refreshAppData({ silent: true });
+          if (typeof applyLoadResult === 'function') {
+            applyLoadResult(result, { scope: 'recipes' });
+          } else {
+            await refreshAppData({ silent: true });
+          }
           return;
         }
 

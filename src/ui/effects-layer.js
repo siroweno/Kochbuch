@@ -252,6 +252,8 @@ export function createEffectsLayer({
   let loadingNode = null;
   let liveRegionNode = ensureLiveRegion(liveRegion);
   let currentReducedMotion = getReducedMotionPreference(reducedMotion);
+  let activeBurst = null;
+  let activeHeart = null;
 
   function mount() {
     if (!layer.isConnected) {
@@ -283,6 +285,21 @@ export function createEffectsLayer({
     window.setTimeout(() => node.remove(), delay);
   }
 
+  function replaceEffectNode(nextNode, currentNodeName, delay) {
+    if (currentNodeName === 'heart' && activeHeart?.isConnected) {
+      activeHeart.remove();
+    }
+    if (currentNodeName === 'burst' && activeBurst?.isConnected) {
+      activeBurst.remove();
+    }
+    if (currentNodeName === 'heart') {
+      activeHeart = nextNode;
+    } else {
+      activeBurst = nextNode;
+    }
+    cleanupAfter(nextNode, delay);
+  }
+
   function getPlacement(anchor, anchorRect) {
     const rect = normalizeRect(anchor, anchorRect);
     return {
@@ -300,7 +317,7 @@ export function createEffectsLayer({
     heart.style.left = `${placement.x}px`;
     heart.style.top = `${placement.y}px`;
     layer.appendChild(heart);
-    cleanupAfter(heart, currentReducedMotion ? 260 : 900);
+    replaceEffectNode(heart, 'heart', currentReducedMotion ? 220 : 720);
     return heart;
   }
 
@@ -314,7 +331,7 @@ export function createEffectsLayer({
     mount();
     const placement = getPlacement(anchor, anchorRect);
     const heart = playHeartPop({ anchor, anchorRect });
-    const usableWords = currentReducedMotion ? words.slice(0, 1) : words.slice(0, window.innerWidth < 640 ? 5 : 7);
+    const usableWords = currentReducedMotion ? words.slice(0, 1) : words.slice(0, window.innerWidth < 640 ? 3 : 4);
     const burst = createElement('div', 'effects-layer__burst');
     burst.dataset.surface = surface;
     burst.style.left = `${placement.x}px`;
@@ -334,7 +351,7 @@ export function createEffectsLayer({
     });
 
     layer.appendChild(burst);
-    cleanupAfter(burst, currentReducedMotion ? 340 : 1120);
+    replaceEffectNode(burst, 'burst', currentReducedMotion ? 320 : 900);
     announce(message);
     return { heart, burst };
   }

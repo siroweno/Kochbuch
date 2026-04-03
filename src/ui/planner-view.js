@@ -134,6 +134,7 @@ export function renderWeekPlanner({
   plannerSummary,
   weekPlan,
   recipes,
+  recipeById = null,
   activeDayPicker,
   activeDayPickerSlot,
   activeDayPickerQuery = '',
@@ -147,7 +148,11 @@ export function renderWeekPlanner({
   renderPlannerSummary({ plannerSummary, weekPlan, recipes });
   daysGrid.innerHTML = DAYS.map((day) => {
     const entries = (weekPlan[day] || [])
-      .map((entry, index) => ({ entry, index, recipe: recipes.find((recipe) => recipe.id === String(entry.recipeId)) }))
+      .map((entry, index) => ({
+        entry,
+        index,
+        recipe: recipeById?.get(String(entry.recipeId)) || recipes.find((recipe) => recipe.id === String(entry.recipeId)),
+      }))
       .filter((item) => item.recipe);
     const pickerOpen = activeDayPicker === day;
     const pickerStatusId = `picker-status-${day}`;
@@ -242,12 +247,12 @@ export function renderWeekPlanner({
   }).join('');
 }
 
-export function buildShoppingListText({ weekPlan, recipes }) {
+export function buildShoppingListText({ weekPlan, recipes, recipeById = null }) {
   const ingredientMap = {};
   const allEntries = DAYS.flatMap((day) => weekPlan[day] || []);
 
   allEntries.forEach((entry) => {
-    const recipe = recipes.find((item) => item.id === String(entry.recipeId));
+    const recipe = recipeById?.get(String(entry.recipeId)) || recipes.find((item) => item.id === String(entry.recipeId));
     if (!recipe || !recipe.parsedIngredients?.length) return;
     const servings = entry.servings || recipe.baseServings;
 

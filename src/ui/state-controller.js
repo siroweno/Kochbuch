@@ -3,6 +3,7 @@ import { createEmptyWeekPlan } from '../cookbook-schema.js';
 export function createUiState(authService) {
   return {
     recipes: [],
+    recipeLookup: new Map(),
     weekPlan: createEmptyWeekPlan(),
     plannerDraftWeekPlan: null,
     dragState: null,
