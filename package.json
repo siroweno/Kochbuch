@@ -5,6 +5,10 @@
   "scripts": {
     "serve": "node server.js",
     "test": "playwright test",
+    "test:supabase": "npm run test:supabase:contracts && npm run test:supabase:local",
+    "test:supabase:browser": "playwright test --config tests/supabase/playwright.config.js --grep @browser",
+    "test:supabase:contracts": "playwright test --config tests/supabase/playwright.config.js --grep @contracts",
+    "test:supabase:local": "playwright test --config tests/supabase/local.playwright.config.js",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "supabase:start": "npx supabase start",

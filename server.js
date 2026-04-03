@@ -7,6 +7,8 @@ const HOST = '127.0.0.1';
 const PORT = Number(process.env.PORT || 4173);
 const ROOT_DIR = __dirname;
 const ADMIN_TEST_EMAIL = 'admin@kochbuch.local';
+const ALLOWED_STATIC_PATHS = new Set(['/index.html', '/runtime-config.js']);
+const ALLOWED_STATIC_PREFIXES = ['/src/', '/data/'];
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -24,8 +26,27 @@ function createEmptyWeekPlan() {
   return { Mo: [], Di: [], Mi: [], Do: [], Fr: [], Sa: [], So: [] };
 }
 
+function normalizeMultilineText(value) {
+  return String(value || '')
+    .split('\n')
+    .map((line) => line.replace(/\s+$/g, ''))
+    .join('\n')
+    .trim();
+}
+
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
+}
+
+function normalizePositiveInteger(value, fallback = 2) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function hasRequiredRecipeFields(recipe) {
+  return String(recipe.title || '').trim().length > 0
+    && normalizeMultilineText(recipe.rawIngredients).length > 0
+    && normalizeMultilineText(recipe.instructions).length > 0;
 }
 
 function createDefaultState() {
@@ -159,14 +180,14 @@ function normalizeRecipePayload(recipe) {
     createdAt: recipe.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     title: String(recipe.title || '').trim(),
-    baseServings: Number(recipe.baseServings || 2),
+    baseServings: normalizePositiveInteger(recipe.baseServings, 2),
     prepTime: Number(recipe.prepTime || 0),
     cookTime: Number(recipe.cookTime || 0),
     tags: Array.isArray(recipe.tags) ? recipe.tags : [],
     description: String(recipe.description || ''),
-    rawIngredients: String(recipe.rawIngredients || ''),
+    rawIngredients: normalizeMultilineText(recipe.rawIngredients || ''),
     parsedIngredients: Array.isArray(recipe.parsedIngredients) ? recipe.parsedIngredients : [],
-    instructions: String(recipe.instructions || ''),
+    instructions: normalizeMultilineText(recipe.instructions || ''),
     plating: String(recipe.plating || ''),
     tips: String(recipe.tips || ''),
     imagePath: recipe.imagePath || null,
@@ -273,6 +294,10 @@ async function handleBrowserTestApi(request, response, pathname) {
     if (!auth) return true;
     const payload = await readJson(request);
     const recipe = normalizeRecipePayload(payload.recipe || {});
+    if (!hasRequiredRecipeFields(recipe)) {
+      writeJson(response, 400, { error: 'Bitte gib Titel, Zutaten und Zubereitung an.' });
+      return true;
+    }
     browserTestState.recipes.unshift(recipe);
     writeJson(response, 200, { recipe: serializeRecipe(recipe) });
     return true;
@@ -288,6 +313,10 @@ async function handleBrowserTestApi(request, response, pathname) {
       ...(payload.recipe || {}),
       id: recipeId,
     });
+    if (!hasRequiredRecipeFields(nextRecipe)) {
+      writeJson(response, 400, { error: 'Bitte gib Titel, Zutaten und Zubereitung an.' });
+      return true;
+    }
     browserTestState.recipes = browserTestState.recipes.map((recipe) => (recipe.id === recipeId ? nextRecipe : recipe));
     writeJson(response, 200, { recipe: serializeRecipe(nextRecipe) });
     return true;
@@ -324,6 +353,15 @@ async function handleBrowserTestApi(request, response, pathname) {
     return true;
   }
 
+  if (request.method === 'DELETE' && pathname.startsWith('/api/browser-test/user-recipe-state/')) {
+    const auth = requireMember(request, response);
+    if (!auth) return true;
+    const recipeId = decodeURIComponent(pathname.split('/').pop());
+    delete getUserRecipeState(auth.session.userId)[recipeId];
+    writeJson(response, 200, { ok: true });
+    return true;
+  }
+
   if (request.method === 'PUT' && pathname === '/api/browser-test/week-plan') {
     const auth = requireMember(request, response);
     if (!auth) return true;
@@ -354,6 +392,14 @@ async function handleBrowserTestApi(request, response, pathname) {
 
 function serveStaticFile(requestPath, response) {
   const relativePath = requestPath === '/' ? '/index.html' : requestPath;
+  const canServe = ALLOWED_STATIC_PATHS.has(relativePath)
+    || ALLOWED_STATIC_PREFIXES.some((prefix) => relativePath.startsWith(prefix));
+
+  if (!canServe) {
+    writeJson(response, 404, { error: 'Not found' });
+    return;
+  }
+
   const absolutePath = path.resolve(ROOT_DIR, `.${relativePath}`);
 
   if (!absolutePath.startsWith(ROOT_DIR)) {

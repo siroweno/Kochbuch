@@ -3,18 +3,18 @@ import {
   buildPersonalStateMap,
   buildRecipeViewModels,
   createEmptyWeekPlan,
+  createStableLegacyRecipeId,
   extractLegacyPersonalState,
-  generateId,
-  getTitleKey,
+  hasRequiredRecipeFields,
   isDataUrl,
   isExternalImageUrl,
   isUuid,
   normalizeImportPayload,
   normalizeRecipeRecord,
+  normalizePositiveInteger,
   normalizeUserRecipeStateRecord,
   normalizeWeekPlan,
   readLegacyLocalSnapshot,
-  mergeWeekPlans,
 } from './cookbook-schema.js';
 
 const MIGRATION_MARKER_KEY = 'cookbook_cloud_migration_done_v1';
@@ -88,8 +88,48 @@ function createImagePath(filename = '') {
   return `recipes/${Date.now()}-${Math.random().toString(16).slice(2, 10)}-${safeName}`;
 }
 
+function isCompleteRecipeRecord(recipe) {
+  return hasRequiredRecipeFields(recipe);
+}
+
+function normalizeImportedRecipeId(rawRecipe, normalizedRecipe) {
+  if (isUuid(normalizedRecipe.id)) {
+    return normalizedRecipe.id;
+  }
+
+  return createStableLegacyRecipeId(rawRecipe);
+}
+
+function normalizeImportedRecipeRecord(rawRecipe) {
+  const normalizedRecipe = normalizeRecipeRecord(rawRecipe);
+  normalizedRecipe.id = normalizeImportedRecipeId(rawRecipe, normalizedRecipe);
+  return normalizedRecipe;
+}
+
 function cloneWeekPlan(weekPlan) {
   return JSON.parse(JSON.stringify(weekPlan || createEmptyWeekPlan()));
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Bild konnte nicht gelesen werden.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function fetchImageDataUrl(imageUrl) {
+  if (!imageUrl || isDataUrl(imageUrl)) {
+    return String(imageUrl || '').trim() || null;
+  }
+
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Bild konnte nicht geladen werden (${response.status}).`);
+  }
+
+  return blobToDataUrl(await response.blob());
 }
 
 function extractResolvedImageUrls(rawRecipes = []) {
@@ -152,7 +192,9 @@ export function createCookbookRepository({ config, authService }) {
         const snapshot = getSnapshot();
         ensureSession(snapshot);
 
-        await authService.syncProfileFromAllowlist();
+        if (typeof authService.syncProfileForCurrentUser === 'function') {
+          await authService.syncProfileForCurrentUser();
+        }
 
         const [recipesResponse, stateResponse, planResponse] = await Promise.all([
           supabase
@@ -192,7 +234,7 @@ export function createCookbookRepository({ config, authService }) {
           tips: row.tips,
           imagePath: row.image_path,
           externalImageUrl: row.external_image_url,
-        })).filter((recipe) => recipe.title);
+        })).filter(isCompleteRecipeRecord);
 
         const personalStateRecords = (stateResponse.data || []).map((row) => normalizeUserRecipeStateRecord({
           recipeId: row.recipe_id,
@@ -214,6 +256,9 @@ export function createCookbookRepository({ config, authService }) {
       async saveRecipeRecord(recipe) {
         const snapshot = getSnapshot();
         ensureAdmin(snapshot);
+        if (!isCompleteRecipeRecord(recipe)) {
+          throw new Error('Bitte gib Titel, Zutaten und Zubereitung an.');
+        }
         const { error } = await supabase.from('recipes').upsert(mapRecipeRecordToRow(recipe, snapshot.sessionUser.id));
         if (error) throw error;
       },
@@ -233,6 +278,17 @@ export function createCookbookRepository({ config, authService }) {
           last_cooked_at: patch.lastCookedAt || null,
         };
         const { error } = await supabase.from('user_recipe_state').upsert(payload);
+        if (error) throw error;
+      },
+
+      async deleteUserRecipeState(recipeId) {
+        const snapshot = getSnapshot();
+        ensureSession(snapshot);
+        const { error } = await supabase
+          .from('user_recipe_state')
+          .delete()
+          .eq('user_id', snapshot.sessionUser.id)
+          .eq('recipe_id', recipeId);
         if (error) throw error;
       },
 
@@ -283,7 +339,7 @@ export function createCookbookRepository({ config, authService }) {
     return {
       async loadBundle() {
         const payload = await request('/cookbook', { method: 'GET' });
-        const sharedRecipes = (payload.recipes || []).map((recipe) => normalizeRecipeRecord(recipe)).filter((recipe) => recipe.title);
+        const sharedRecipes = (payload.recipes || []).map((recipe) => normalizeRecipeRecord(recipe)).filter(isCompleteRecipeRecord);
         const imageUrlByRecipeId = extractResolvedImageUrls(payload.recipes || []);
         const personalStateRecords = (payload.userRecipeState || []).map((state) => normalizeUserRecipeStateRecord(state));
         const weekPlan = normalizeWeekPlan(payload.weekPlan || createEmptyWeekPlan(), new Map(sharedRecipes.map((recipe) => [recipe.id, recipe])));
@@ -296,6 +352,9 @@ export function createCookbookRepository({ config, authService }) {
       },
 
       async saveRecipeRecord(recipe) {
+        if (!isCompleteRecipeRecord(recipe)) {
+          throw new Error('Bitte gib Titel, Zutaten und Zubereitung an.');
+        }
         const pathname = recipe.id && cache.sharedRecipes.some((existing) => existing.id === recipe.id)
           ? `/recipes/${encodeURIComponent(recipe.id)}`
           : '/recipes';
@@ -319,6 +378,12 @@ export function createCookbookRepository({ config, authService }) {
             favorite: Boolean(patch.favorite),
             lastCookedAt: patch.lastCookedAt || null,
           }),
+        });
+      },
+
+      async deleteUserRecipeState(recipeId) {
+        await request(`/user-recipe-state/${encodeURIComponent(recipeId)}`, {
+          method: 'DELETE',
         });
       },
 
@@ -358,8 +423,68 @@ export function createCookbookRepository({ config, authService }) {
     cache.recipes = buildRecipeViewModels(bundle.sharedRecipes, cache.personalStateMap, bundle.imageUrlByRecipeId);
   }
 
+  async function collectPortableImageDataUrlByRecipeId() {
+    const portableImageDataUrlByRecipeId = new Map();
+
+    await Promise.all(cache.recipes.map(async (recipe) => {
+      if (!recipe.imagePath) return;
+      const imageUrl = recipe.imageUrl || '';
+      if (!imageUrl) return;
+
+      try {
+        const portableImageDataUrl = await fetchImageDataUrl(imageUrl);
+        if (portableImageDataUrl) {
+          portableImageDataUrlByRecipeId.set(recipe.id, portableImageDataUrl);
+        }
+      } catch (_error) {
+        // Export stays usable even if an individual image cannot be fetched.
+      }
+    }));
+
+    return portableImageDataUrlByRecipeId;
+  }
+
   function getSharedRecipeById(recipeId) {
     return cache.sharedRecipes.find((recipe) => recipe.id === String(recipeId)) || null;
+  }
+
+  async function applyImportedRecipeImage(driver, recipe, existingRecipe, { replaceMissingImage = false } = {}) {
+    let imagePath = existingRecipe?.imagePath || null;
+    let externalImageUrl = existingRecipe?.externalImageUrl || null;
+    const portableImageDataUrl = recipe.portableImageDataUrl || recipe.legacyImageDataUrl || null;
+
+    if (portableImageDataUrl) {
+      try {
+        const upload = await driver.uploadImageDataUrl(portableImageDataUrl, `${recipe.title || 'rezeptbild'}.jpg`);
+        if (existingRecipe?.imagePath && existingRecipe.imagePath !== upload.imagePath) {
+          await driver.deleteImage(existingRecipe.imagePath);
+        }
+        imagePath = upload.imagePath;
+        externalImageUrl = null;
+      } catch (_error) {
+        if (replaceMissingImage && existingRecipe?.imagePath) {
+          await driver.deleteImage(existingRecipe.imagePath);
+        }
+        if (replaceMissingImage) {
+          imagePath = null;
+          externalImageUrl = null;
+        }
+      }
+    } else if (recipe.externalImageUrl) {
+      if (existingRecipe?.imagePath) {
+        await driver.deleteImage(existingRecipe.imagePath);
+      }
+      imagePath = null;
+      externalImageUrl = recipe.externalImageUrl;
+    } else if (replaceMissingImage) {
+      if (existingRecipe?.imagePath) {
+        await driver.deleteImage(existingRecipe.imagePath);
+      }
+      imagePath = null;
+      externalImageUrl = null;
+    }
+
+    return { imagePath, externalImageUrl };
   }
 
   async function persistRecipe(recipeInput) {
@@ -373,8 +498,8 @@ export function createCookbookRepository({ config, authService }) {
       ...recipeInput,
     }, { id: recipeInput.id || existing?.id });
 
-    if (!normalized.title) {
-      throw new Error('Bitte gib einen Rezeptnamen ein.');
+    if (!isCompleteRecipeRecord(normalized)) {
+      throw new Error('Bitte gib Titel, Zutaten und Zubereitung an.');
     }
 
     const image = recipeInput.image || {
@@ -416,30 +541,39 @@ export function createCookbookRepository({ config, authService }) {
     });
   }
 
-  async function applyPersonalStateImport(entries, mappedRecipeIdBySource) {
-    const driver = createDriver();
+  async function applyImportedPersonalState(driver, entries, { mode, currentStateRecipeIds }) {
+    if (mode !== 'restore') {
+      return { importedEntries: 0, removedEntries: 0 };
+    }
+
+    const importedRecipeIds = new Set();
     let importedEntries = 0;
 
     for (const entry of entries) {
-      const mappedRecipeId = mappedRecipeIdBySource.get(String(entry.sourceRecipeId || entry.recipeId || ''))
-        || String(entry.recipeId || '')
-        || mappedRecipeIdBySource.get(getTitleKey(entry.title || ''));
-      if (!mappedRecipeId) continue;
+      const recipeId = String(entry.recipeId || entry.sourceRecipeId || '').trim();
+      if (!recipeId) continue;
 
-      await driver.upsertUserRecipeState(mappedRecipeId, {
+      importedRecipeIds.add(recipeId);
+      await driver.upsertUserRecipeState(recipeId, {
         favorite: Boolean(entry.favorite),
         lastCookedAt: entry.lastCookedAt || null,
       });
       importedEntries += 1;
     }
 
-    return importedEntries;
+    let removedEntries = 0;
+    for (const recipeId of currentStateRecipeIds) {
+      if (importedRecipeIds.has(recipeId)) continue;
+      if (typeof driver.deleteUserRecipeState !== 'function') continue;
+      await driver.deleteUserRecipeState(recipeId);
+      removedEntries += 1;
+    }
+
+    return { importedEntries, removedEntries };
   }
 
   function mapImportedWeekPlan(rawWeekPlan, mappedRecipeIdBySource, recipeLookup) {
     const mapped = createEmptyWeekPlan();
-    Object.assign(mapped, createEmptyWeekPlan());
-
     const sourceWeekPlan = normalizeWeekPlan(rawWeekPlan || createEmptyWeekPlan());
 
     Object.keys(sourceWeekPlan).forEach((day) => {
@@ -449,7 +583,7 @@ export function createCookbookRepository({ config, authService }) {
           if (!recipeLookup.has(targetRecipeId)) return null;
           return {
             recipeId: targetRecipeId,
-            servings: entry.servings,
+            servings: normalizePositiveInteger(entry.servings, recipeLookup.get(targetRecipeId)?.baseServings || 2),
             slot: entry.slot,
           };
         })
@@ -536,14 +670,28 @@ export function createCookbookRepository({ config, authService }) {
       if (!cache.sharedRecipes.length) {
         await this.loadAppData();
       }
+      const portableImageDataUrlByRecipeId = await collectPortableImageDataUrlByRecipeId();
       return buildExportPayload({
         sharedRecipes: cache.sharedRecipes,
         personalStateMap: cache.personalStateMap,
         weekPlan: cache.weekPlan,
+        portableImageDataUrlByRecipeId,
       });
     },
 
-    async importCookbookPayload(payload) {
+    async importCookbookPayload(payload, options = {}) {
+      return this.importWithMode(payload, { ...options, mode: options.mode || 'restore' });
+    },
+
+    async restoreCookbookPayload(payload) {
+      return this.importWithMode(payload, { mode: 'restore' });
+    },
+
+    async importCookbookRecipesPayload(payload) {
+      return this.importWithMode(payload, { mode: 'additive' });
+    },
+
+    async importWithMode(payload, { mode = 'restore' } = {}) {
       const snapshot = getSnapshot();
       ensureAdmin(snapshot);
 
@@ -553,8 +701,7 @@ export function createCookbookRepository({ config, authService }) {
       }
 
       const driver = createDriver();
-      const workingRecipes = [...cache.sharedRecipes];
-      const knownTitles = new Map(workingRecipes.map((recipe) => [getTitleKey(recipe.title), recipe]));
+      const workingRecipesById = new Map(cache.sharedRecipes.map((recipe) => [recipe.id, recipe]));
       const mappedRecipeIdBySource = new Map();
       const importedPersonalState = [];
       let importedRecipes = 0;
@@ -567,75 +714,74 @@ export function createCookbookRepository({ config, authService }) {
           continue;
         }
 
-        const normalizedRecipe = normalizeRecipeRecord(rawRecipe);
-        if (!normalizedRecipe.title) {
+        const normalizedRecipe = normalizeImportedRecipeRecord(rawRecipe);
+        if (!isCompleteRecipeRecord(normalizedRecipe)) {
           invalidRecipes += 1;
           continue;
         }
 
         const sourceKey = String(rawRecipe.id ?? normalizedRecipe.id);
-        if (!isUuid(normalizedRecipe.id)) {
-          normalizedRecipe.id = generateId();
-        }
+        const existing = workingRecipesById.get(normalizedRecipe.id) || null;
+        const recipeToSave = { ...normalizedRecipe };
+        const image = await applyImportedRecipeImage(driver, recipeToSave, existing, {
+          replaceMissingImage: mode === 'restore',
+        });
 
-        const titleKey = getTitleKey(normalizedRecipe.title);
-        const existing = knownTitles.get(titleKey);
-        const recipeToSave = isUuid(normalizedRecipe.id)
-          ? normalizedRecipe
-          : {
-            ...normalizedRecipe,
-            id: generateId(),
-          };
-
+        await driver.saveRecipeRecord({
+          ...recipeToSave,
+          imagePath: image.imagePath,
+          externalImageUrl: image.externalImageUrl,
+        });
+        workingRecipesById.set(recipeToSave.id, {
+          ...recipeToSave,
+          imagePath: image.imagePath,
+          externalImageUrl: image.externalImageUrl,
+        });
+        mappedRecipeIdBySource.set(sourceKey, recipeToSave.id);
+        importedRecipes += 1;
         if (existing) {
           duplicateRecipes += 1;
-          mappedRecipeIdBySource.set(sourceKey, existing.id);
-          importedPersonalState.push({
-            sourceRecipeId: sourceKey,
-            title: normalizedRecipe.title,
-            ...extractLegacyPersonalState(rawRecipe),
-          });
-          continue;
         }
 
-        if (recipeToSave.legacyImageDataUrl) {
-          const upload = await driver.uploadImageDataUrl(recipeToSave.legacyImageDataUrl, `${recipeToSave.title}.jpg`);
-          recipeToSave.imagePath = upload.imagePath;
-          recipeToSave.externalImageUrl = null;
+        if (mode === 'restore') {
+          const legacyState = extractLegacyPersonalState(rawRecipe);
+          if (legacyState.favorite || legacyState.lastCookedAt) {
+            importedPersonalState.push({
+              recipeId: recipeToSave.id,
+              ...legacyState,
+            });
+          }
         }
-
-        await driver.saveRecipeRecord(recipeToSave);
-        workingRecipes.push(recipeToSave);
-        knownTitles.set(titleKey, recipeToSave);
-        mappedRecipeIdBySource.set(sourceKey, recipeToSave.id);
-        importedPersonalState.push({
-          sourceRecipeId: sourceKey,
-          title: recipeToSave.title,
-          ...extractLegacyPersonalState(rawRecipe),
-        });
-        importedRecipes += 1;
       }
 
-      if (normalizedPayload.personalState?.recipeState) {
+      if (mode === 'restore' && normalizedPayload.personalState?.recipeState) {
         normalizedPayload.personalState.recipeState.forEach((state) => {
+          const recipeId = mappedRecipeIdBySource.get(String(state.recipeId)) || String(state.recipeId || '').trim();
+          if (!recipeId || !workingRecipesById.has(recipeId)) return;
+          if (!state.favorite && !state.lastCookedAt) return;
           importedPersonalState.push({
-            sourceRecipeId: state.recipeId,
-            title: '',
+            recipeId,
             favorite: Boolean(state.favorite),
             lastCookedAt: state.lastCookedAt || null,
           });
         });
       }
 
-      const importedStateCount = await applyPersonalStateImport(importedPersonalState, mappedRecipeIdBySource);
-      const recipeLookup = new Map(workingRecipes.map((recipe) => [recipe.id, recipe]));
-      const importedWeekPlan = mapImportedWeekPlan(
-        normalizedPayload.weekPlan || normalizedPayload.personalState?.weekPlan,
-        mappedRecipeIdBySource,
-        recipeLookup,
-      );
-      const mergedWeekPlan = mergeWeekPlans(cache.weekPlan, importedWeekPlan);
-      await driver.saveWeekPlan(mergedWeekPlan);
+      const importedStateResult = await applyImportedPersonalState(driver, importedPersonalState, {
+        mode,
+        currentStateRecipeIds: cache.personalStateMap.keys(),
+      });
+
+      let importedWeekPlan = createEmptyWeekPlan();
+      if (mode === 'restore') {
+        const recipeLookup = new Map(workingRecipesById.entries());
+        importedWeekPlan = mapImportedWeekPlan(
+          normalizedPayload.weekPlan || normalizedPayload.personalState?.weekPlan,
+          mappedRecipeIdBySource,
+          recipeLookup,
+        );
+        await driver.saveWeekPlan(importedWeekPlan);
+      }
 
       await this.reload();
 
@@ -643,8 +789,10 @@ export function createCookbookRepository({ config, authService }) {
         importedRecipes,
         duplicateRecipes,
         invalidRecipes,
-        importedStateEntries: importedStateCount,
+        importedStateEntries: importedStateResult.importedEntries,
+        removedStateEntries: importedStateResult.removedEntries,
         importedPlannerEntries: Object.values(importedWeekPlan).reduce((sum, entries) => sum + entries.length, 0),
+        importMode: mode,
       };
     },
 
@@ -660,11 +808,12 @@ export function createCookbookRepository({ config, authService }) {
           duplicateRecipes: 0,
           invalidRecipes: 0,
           importedStateEntries: 0,
+          removedStateEntries: 0,
           importedPlannerEntries: 0,
         };
       }
 
-      const summary = await this.importCookbookPayload({
+      const summary = await this.restoreCookbookPayload({
         app: 'mein-kochbuch',
         schemaVersion: 2,
         exportedAt: new Date().toISOString(),

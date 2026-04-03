@@ -120,13 +120,8 @@ export function createAuthService(config) {
 
     try {
       const { error } = await supabase.rpc('sync_profile_for_current_user');
-      if (!error) {
-        return { attempted: true, available: true, synced: true };
-      }
-
-      const fallback = await supabase.rpc('sync_profile_from_allowlist');
-      if (fallback.error) {
-        return { attempted: true, available: false, synced: false, error: fallback.error };
+      if (error) {
+        return { attempted: true, available: false, synced: false, error };
       }
       return { attempted: true, available: true, synced: true };
     } catch (error) {
@@ -170,7 +165,7 @@ export function createAuthService(config) {
         canAdmin: false,
         message: syncResult.available
           ? 'Dein Profil konnte nicht vorbereitet werden.'
-          : 'Kein aktives Profil gefunden. Falls die Rollen-Migration gerade noch nicht aktiv ist, versuche es gleich noch einmal.',
+          : 'Kein aktives Profil gefunden.',
       });
       return;
     }
@@ -453,7 +448,7 @@ export function createAuthService(config) {
       return cloneSnapshot(snapshot);
     },
 
-    async syncProfileFromAllowlist() {
+    async syncProfileForCurrentUser() {
       if (config.backend !== 'supabase' || !supabase) {
         return { attempted: false, available: false, synced: false };
       }

@@ -1419,9 +1419,11 @@
     <button class="btn-primary" id="toggleFormBtn" type="button" data-admin-only>+ Neues Rezept</button>
     <div class="backup-controls" data-admin-only>
       <button class="btn-secondary" id="migrateLocalBtn" type="button">Lokale Daten migrieren</button>
-      <button class="btn-secondary" id="exportBtn">Exportieren</button>
-      <button class="btn-secondary" id="importBtn">Importieren</button>
-      <input type="file" id="importFile" accept=".json">
+      <button class="btn-secondary" id="exportBtn" type="button">Exportieren</button>
+      <button class="btn-secondary" id="restoreImportBtn" type="button">Backup wiederherstellen</button>
+      <button class="btn-secondary" id="recipeImportBtn" type="button">Rezepte ergänzen</button>
+      <input type="file" id="restoreImportFile" accept=".json">
+      <input type="file" id="recipeImportFile" accept=".json">
     </div>
   </div>
 
@@ -1435,9 +1437,9 @@
 
   <!-- Week Planner -->
   <div class="week-planner-container">
-    <button class="btn-secondary" id="togglePlannerBtn" style="width:100%; text-align:left; margin-bottom:16px;">Wochenplaner &amp; Einkaufsliste</button>
+    <button class="btn-secondary" id="togglePlannerBtn" type="button" aria-expanded="false" aria-controls="weekPlanner" style="width:100%; text-align:left; margin-bottom:16px;">Wochenplaner &amp; Einkaufsliste</button>
 
-    <div class="week-planner" id="weekPlanner" style="display:none;">
+    <div class="week-planner" id="weekPlanner" style="display:none;" hidden>
       <div class="planner-summary" id="plannerSummary"></div>
       <div class="planner-layout">
         <div>
@@ -1481,9 +1483,10 @@
         </div>
         <div class="form-group">
           <label for="servings">Gespeichert für … Personen</label>
-          <select id="servings">
+          <input type="number" id="servings" min="1" step="1" inputmode="numeric" list="servingsPresetList" value="2" placeholder="z.B. 2">
+          <datalist id="servingsPresetList">
             <option value="1">1 Person</option>
-            <option value="2" selected>2 Personen</option>
+            <option value="2">2 Personen</option>
             <option value="3">3 Personen</option>
             <option value="4">4 Personen</option>
             <option value="5">5 Personen</option>
@@ -1491,7 +1494,8 @@
             <option value="8">8 Personen</option>
             <option value="10">10 Personen</option>
             <option value="12">12 Personen</option>
-          </select>
+          </datalist>
+          <p class="note">Voreinstellungen bleiben, aber du kannst auch jede andere positive Zahl speichern.</p>
         </div>
       </div>
 

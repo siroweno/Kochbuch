@@ -97,16 +97,19 @@ async function exportCookbook(page, testInfo) {
   return JSON.parse(fs.readFileSync(exportPath, 'utf8'));
 }
 
-async function importCookbook(page, payload) {
+async function importCookbook(page, payload, { mode = 'restore' } = {}) {
+  const selectors = mode === 'additive'
+    ? { button: '#recipeImportBtn', input: '#recipeImportFile' }
+    : { button: '#restoreImportBtn', input: '#restoreImportFile' };
   const dialogPromise = page.waitForEvent('dialog');
-  await page.locator('#importBtn').click();
-  await page.locator('#importFile').setInputFiles({
+  await page.locator(selectors.button).click();
+  await page.locator(selectors.input).setInputFiles({
     name: 'kochbuch-import.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
   });
   const dialog = await dialogPromise;
-  expect(dialog.message()).toMatch(/importiert/i);
+  expect(dialog.message()).toMatch(/(importiert|wiederhergestellt|ergänzt)/i);
   await dialog.accept();
 }
 
@@ -115,16 +118,32 @@ test.describe('Privates Familien-Kochbuch', () => {
     await resetBrowserTestBackend(request);
   });
 
+  test('lokaler Testserver liefert nur erlaubte App-Assets aus', async ({ request }) => {
+    const allowed = ['/index.html', '/runtime-config.js', '/src/main.js', '/data/familienkochbuch-import.json'];
+    for (const pathname of allowed) {
+      const response = await request.get(pathname);
+      expect(response.ok(), `expected ${pathname} to be served`).toBeTruthy();
+    }
+
+    const blocked = ['/package.json', '/server.js', '/README.md', '/supabase/seed.sql'];
+    for (const pathname of blocked) {
+      const response = await request.get(pathname);
+      expect(response.status(), `expected ${pathname} to be blocked`).toBe(404);
+    }
+  });
+
   test('ordnet Admin und beliebige Reader-Logins automatisch zu', async ({ browser }) => {
     const adminSession = await openLoggedInPage(browser, 'admin@kochbuch.local');
     await expect(adminSession.page.locator('#toggleFormBtn')).toBeVisible();
-    await expect(adminSession.page.locator('#importBtn')).toBeVisible();
+    await expect(adminSession.page.locator('#restoreImportBtn')).toBeVisible();
+    await expect(adminSession.page.locator('#recipeImportBtn')).toBeVisible();
     await expect(adminSession.page.locator('#exportBtn')).toBeVisible();
     await adminSession.context.close();
 
     const readerSession = await openLoggedInPage(browser, 'reader@kochbuch.local');
     await expect(readerSession.page.locator('#toggleFormBtn')).toBeHidden();
-    await expect(readerSession.page.locator('#importBtn')).toBeHidden();
+    await expect(readerSession.page.locator('#restoreImportBtn')).toBeHidden();
+    await expect(readerSession.page.locator('#recipeImportBtn')).toBeHidden();
     await expect(readerSession.page.locator('#exportBtn')).toBeHidden();
     await readerSession.context.close();
 
@@ -132,7 +151,8 @@ test.describe('Privates Familien-Kochbuch', () => {
     const anyReaderPage = await anyReaderContext.newPage();
     await loginViaUi(anyReaderPage, 'anyone@example.com');
     await expect(anyReaderPage.locator('#toggleFormBtn')).toBeHidden();
-    await expect(anyReaderPage.locator('#importBtn')).toBeHidden();
+    await expect(anyReaderPage.locator('#restoreImportBtn')).toBeHidden();
+    await expect(anyReaderPage.locator('#recipeImportBtn')).toBeHidden();
     await expect(anyReaderPage.locator('#exportBtn')).toBeHidden();
     await anyReaderContext.close();
   });
@@ -196,7 +216,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     await adminSession.context.close();
   });
 
-  test('Legacy localStorage wird migriert und als schemaVersion 3 exportiert', async ({ browser, request }, testInfo) => {
+  test('Legacy localStorage wird migriert und als schemaVersion 4 exportiert', async ({ browser, request }, testInfo) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     await seedLegacyLocalStorage(page);
@@ -207,7 +227,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     const migrationDialogPromise = page.waitForEvent('dialog');
     await migrateButton.click();
     const migrationDialog = await migrationDialogPromise;
-    expect(migrationDialog.message()).toMatch(/importiert/i);
+    expect(migrationDialog.message()).toMatch(/(importiert|wiederhergestellt)/i);
     await migrationDialog.accept();
 
     await expect(page.locator('.recipe-card').filter({ hasText: 'Legacy Suppe' })).toHaveCount(1);
@@ -219,9 +239,11 @@ test.describe('Privates Familien-Kochbuch', () => {
     await expect(page.locator('[data-action="plan-slot"][data-day="Mo"]').first()).toHaveValue('abend');
 
     const exportContent = await exportCookbook(page, testInfo);
-    expect(exportContent.schemaVersion).toBe(3);
+    expect(exportContent.schemaVersion).toBe(4);
     expect(Array.isArray(exportContent.recipes)).toBe(true);
-    expect(exportContent.recipes.some((recipe) => recipe.title === 'Legacy Suppe')).toBe(true);
+    const exportedRecipe = exportContent.recipes.find((recipe) => recipe.title === 'Legacy Suppe');
+    expect(Boolean(exportedRecipe)).toBe(true);
+    expect(exportedRecipe.portableImageDataUrl).toMatch(/^data:/);
     expect(Array.isArray(exportContent.personalState.recipeState)).toBe(true);
     expect(exportContent.personalState.weekPlan.Mo[0].servings).toBe(4);
     expect(exportContent.personalState.weekPlan.Mo[0].slot).toBe('abend');
@@ -251,7 +273,7 @@ test.describe('Privates Familien-Kochbuch', () => {
         tags: ['Salat'],
         createdAt: '02.04.2026',
       },
-    ]);
+    ], { mode: 'additive' });
 
     await expect(importPage.locator('.recipe-card').filter({ hasText: 'Toskanische Suppe' })).toHaveCount(1);
     await expect(importPage.locator('.recipe-card').filter({ hasText: 'Lauwarmer Linsensalat „Green & Creamy“' })).toHaveCount(1);
@@ -268,7 +290,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     await importContext.close();
   });
 
-  test('Admin kann schemaVersion 3 export wieder importieren', async ({ browser, request }, testInfo) => {
+  test('Admin kann schemaVersion 4 export wieder importieren', async ({ browser, request }, testInfo) => {
     const createContext = await browser.newContext();
     const createPage = await createContext.newPage();
     await loginViaUi(createPage, 'admin@kochbuch.local');
@@ -287,7 +309,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     await createPage.locator('[data-action="plan-slot"][data-day="Mi"]').first().selectOption('abend');
 
     const exportContent = await exportCookbook(createPage, testInfo);
-    expect(exportContent.schemaVersion).toBe(3);
+    expect(exportContent.schemaVersion).toBe(4);
     await createContext.close();
 
     await resetBrowserTestBackend(request);
@@ -295,7 +317,7 @@ test.describe('Privates Familien-Kochbuch', () => {
     const importContext = await browser.newContext();
     const importPage = await importContext.newPage();
     await loginViaUi(importPage, 'admin@kochbuch.local');
-    await importCookbook(importPage, exportContent);
+    await importCookbook(importPage, exportContent, { mode: 'restore' });
 
     await expect(importPage.locator('.recipe-card').filter({ hasText: 'Import Pasta' })).toHaveCount(1);
     await expect(importPage.locator('[data-action="toggle-favorite"]').first()).toHaveAttribute('aria-pressed', 'true');

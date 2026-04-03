@@ -1,6 +1,6 @@
 export const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 export const SERVING_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
-export const EXPORT_SCHEMA_VERSION = 3;
+export const EXPORT_SCHEMA_VERSION = 4;
 export const LEGACY_EXPORT_SCHEMA_VERSION = 2;
 export const MEAL_SLOTS = [
   { id: 'fruehstueck', label: 'Fruehstueck', short: 'Frueh' },
@@ -10,6 +10,26 @@ export const MEAL_SLOTS = [
 ];
 
 const QUANTITY_PATTERN = /^([\d.,]+)\s*([a-zäöü°\/]*)/i;
+const UNICODE_FRACTIONS = {
+  '¼': '1/4',
+  '½': '1/2',
+  '¾': '3/4',
+  '⅐': '1/7',
+  '⅑': '1/9',
+  '⅒': '1/10',
+  '⅓': '1/3',
+  '⅔': '2/3',
+  '⅕': '1/5',
+  '⅖': '2/5',
+  '⅗': '3/5',
+  '⅘': '4/5',
+  '⅙': '1/6',
+  '⅚': '5/6',
+  '⅛': '1/8',
+  '⅜': '3/8',
+  '⅝': '5/8',
+  '⅞': '7/8',
+};
 const UNIT_ALIASES = {
   g: 'g',
   gramm: 'g',
@@ -102,6 +122,11 @@ export function isValidDateString(value) {
   return Boolean(value) && !Number.isNaN(new Date(value).getTime());
 }
 
+export function normalizePositiveInteger(value, fallback = 2) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function parseGermanDate(value) {
   const match = String(value || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
   if (!match) return null;
@@ -180,6 +205,59 @@ export function generateId() {
   return `recipe-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 }
 
+export function createDeterministicUuid(seed) {
+  const input = String(seed || '');
+  let h1 = 0xdeadbeef ^ input.length;
+  let h2 = 0x41c6ce57 ^ input.length;
+  let h3 = 0xc0decafe ^ input.length;
+  let h4 = 0x1234567 ^ input.length;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input.charCodeAt(index);
+    h1 = Math.imul(h1 ^ char, 2654435761);
+    h2 = Math.imul(h2 ^ char, 1597334677);
+    h3 = Math.imul(h3 ^ char, 2246822507);
+    h4 = Math.imul(h4 ^ char, 3266489909);
+  }
+
+  h1 = (h1 ^ (h1 >>> 16)) >>> 0;
+  h2 = (h2 ^ (h2 >>> 16)) >>> 0;
+  h3 = (h3 ^ (h3 >>> 16)) >>> 0;
+  h4 = (h4 ^ (h4 >>> 16)) >>> 0;
+
+  const bytes = [
+    h1 >>> 24, (h1 >>> 16) & 0xff, (h1 >>> 8) & 0xff, h1 & 0xff,
+    h2 >>> 24, (h2 >>> 16) & 0xff, (h2 >>> 8) & 0xff, h2 & 0xff,
+    h3 >>> 24, (h3 >>> 16) & 0xff, (h3 >>> 8) & 0xff, h3 & 0xff,
+    h4 >>> 24, (h4 >>> 16) & 0xff, (h4 >>> 8) & 0xff, h4 & 0xff,
+  ];
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = bytes.map((byte) => byte.toString(16).padStart(2, '0'));
+  return [
+    hex.slice(0, 4).join(''),
+    hex.slice(4, 6).join(''),
+    hex.slice(6, 8).join(''),
+    hex.slice(8, 10).join(''),
+    hex.slice(10, 16).join(''),
+  ].join('-');
+}
+
+export function createStableLegacyRecipeId(rawRecipe = {}) {
+  const legacyId = String(rawRecipe.id ?? rawRecipe.recipeId ?? rawRecipe.recipe_id ?? '').trim();
+  const title = String(rawRecipe.title ?? '').trim();
+  const createdAt = String(rawRecipe.createdAt ?? rawRecipe.created_at ?? '').trim();
+  return createDeterministicUuid(`legacy:${legacyId}|${title}|${createdAt}`);
+}
+
+export function hasRequiredRecipeFields(recipe = {}) {
+  return String(recipe.title || '').trim().length > 0
+    && normalizeMultilineText(recipe.rawIngredients).length > 0
+    && normalizeMultilineText(recipe.instructions).length > 0;
+}
+
 export function isUuid(value) {
   return UUID_PATTERN.test(String(value || '').trim());
 }
@@ -189,12 +267,60 @@ export function getPlanEntrySignature(entry) {
 }
 
 export function parseIngredient(line) {
-  const match = String(line || '').match(QUANTITY_PATTERN);
-  if (!match) return { quantity: null, unit: null, name: String(line || '').trim() };
+  const value = String(line || '').trim();
+  if (!value) return { quantity: null, unit: null, name: '' };
 
-  let quantity = Number.parseFloat(match[1].replace(',', '.'));
-  let unit = match[2].toLowerCase().trim();
-  const name = String(line).substring(match[0].length).trim();
+  const normalized = value
+    .replace(/(\d)([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, '$1 $2')
+    .replace(/[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g, (fraction) => UNICODE_FRACTIONS[fraction] || fraction)
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const mixedFractionMatch = normalized.match(/^(\d+)\s+(\d+)\/(\d+)(?:\s+(.*)|$)/);
+  if (mixedFractionMatch) {
+    const [, whole, numerator, denominator, rest = ''] = mixedFractionMatch;
+    const quantity = Number(whole) + (Number(numerator) / Number(denominator));
+    const remainder = rest.trim();
+    const unitMatch = remainder.match(/^([a-zäöü°]+)\b\s*(.*)$/i);
+    return {
+      quantity,
+      unit: unitMatch ? (UNIT_ALIASES[unitMatch[1].toLowerCase()] || unitMatch[1].toLowerCase()) : null,
+      name: (unitMatch ? unitMatch[2] : remainder).trim(),
+    };
+  }
+
+  const fractionMatch = normalized.match(/^(\d+)\/(\d+)(?:\s+(.*)|$)/);
+  if (fractionMatch) {
+    const [, numerator, denominator, rest = ''] = fractionMatch;
+    const quantity = Number(numerator) / Number(denominator);
+    const remainder = rest.trim();
+    const unitMatch = remainder.match(/^([a-zäöü°]+)\b\s*(.*)$/i);
+    return {
+      quantity,
+      unit: unitMatch ? (UNIT_ALIASES[unitMatch[1].toLowerCase()] || unitMatch[1].toLowerCase()) : null,
+      name: (unitMatch ? unitMatch[2] : remainder).trim(),
+    };
+  }
+
+  const unicodeFractionMatch = normalized.match(/^(\d+)?\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])(?:\s+(.*)|$)/);
+  if (unicodeFractionMatch) {
+    const [, whole = '0', fraction, rest = ''] = unicodeFractionMatch;
+    const quantity = Number(whole) + Number.parseFloat(UNICODE_FRACTIONS[fraction] || '0');
+    const remainder = rest.trim();
+    const unitMatch = remainder.match(/^([a-zäöü°]+)\b\s*(.*)$/i);
+    return {
+      quantity,
+      unit: unitMatch ? (UNIT_ALIASES[unitMatch[1].toLowerCase()] || unitMatch[1].toLowerCase()) : null,
+      name: (unitMatch ? unitMatch[2] : remainder).trim(),
+    };
+  }
+
+  const decimalMatch = normalized.match(QUANTITY_PATTERN);
+  if (!decimalMatch) return { quantity: null, unit: null, name: value };
+
+  let quantity = Number.parseFloat(decimalMatch[1].replace(',', '.'));
+  let unit = decimalMatch[2].toLowerCase().trim();
+  const name = normalized.substring(decimalMatch[0].length).trim();
 
   if (unit) unit = UNIT_ALIASES[unit] || unit;
   if (Number.isNaN(quantity)) quantity = null;
@@ -264,9 +390,7 @@ export function normalizeRecipeRecord(rawRecipe = {}, options = {}) {
     createdAt: toIsoTimestamp(rawRecipe.createdAt, new Date()),
     updatedAt: toIsoTimestamp(rawRecipe.updatedAt || rawRecipe.createdAt, new Date()),
     title: String(rawRecipe.title || '').trim(),
-    baseServings: SERVING_OPTIONS.includes(Number.parseInt(rawRecipe.baseServings, 10))
-      ? Number.parseInt(rawRecipe.baseServings, 10)
-      : 2,
+    baseServings: normalizePositiveInteger(rawRecipe.baseServings, 2),
     prepTime: Math.max(0, Number.parseInt(rawRecipe.prepTime, 10) || 0),
     cookTime: Math.max(0, Number.parseInt(rawRecipe.cookTime, 10) || 0),
     tags: normalizeTags(rawRecipe.tags),
@@ -278,6 +402,7 @@ export function normalizeRecipeRecord(rawRecipe = {}, options = {}) {
     tips: normalizeMultilineText(rawRecipe.tips || rawRecipe.notes || ''),
     imagePath: rawRecipe.imagePath || rawRecipe.image_path || null,
     externalImageUrl: isExternalImageUrl(rawImageValue) ? rawImageValue : null,
+    portableImageDataUrl: isDataUrl(rawRecipe.portableImageDataUrl) ? String(rawRecipe.portableImageDataUrl).trim() : null,
     legacyImageDataUrl: isDataUrl(rawImageValue) ? rawImageValue : null,
   };
 }
@@ -302,14 +427,14 @@ export function normalizeWeekPlanEntry(entry, recipesById = new Map()) {
   if (!recipeId) return null;
 
   const fallbackServings = recipesById.get(recipeId)?.baseServings || 2;
-  const servings = Number.parseInt(
+  const servings = normalizePositiveInteger(
     typeof entry === 'object' && entry !== null ? entry.servings : '',
-    10,
+    fallbackServings,
   );
 
   return {
     recipeId,
-    servings: SERVING_OPTIONS.includes(servings) ? servings : fallbackServings,
+    servings,
     slot: isValidMealSlot(typeof entry === 'object' && entry !== null ? entry.slot : '') ? entry.slot : 'abend',
   };
 }
@@ -419,7 +544,12 @@ export function extractLegacyPersonalState(rawRecipe) {
   };
 }
 
-export function buildExportPayload({ sharedRecipes = [], personalStateMap = new Map(), weekPlan = createEmptyWeekPlan() }) {
+export function buildExportPayload({
+  sharedRecipes = [],
+  personalStateMap = new Map(),
+  weekPlan = createEmptyWeekPlan(),
+  portableImageDataUrlByRecipeId = new Map(),
+}) {
   return {
     app: 'mein-kochbuch',
     schemaVersion: EXPORT_SCHEMA_VERSION,
@@ -441,6 +571,7 @@ export function buildExportPayload({ sharedRecipes = [], personalStateMap = new 
       tips: recipe.tips,
       imagePath: recipe.imagePath || null,
       externalImageUrl: recipe.externalImageUrl || null,
+      portableImageDataUrl: portableImageDataUrlByRecipeId.get(recipe.id) || recipe.portableImageDataUrl || null,
     })),
     personalState: {
       recipeState: Array.from(personalStateMap.values()).map((state) => ({

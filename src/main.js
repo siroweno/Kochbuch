@@ -1,56 +1,37 @@
-import { getAppConfig } from './app-config.js';
-import { createAuthService } from './auth.js';
-import { createCookbookRepository } from './repository.js';
+import { createAppServices } from './bootstrap/app.js';
+import { createUiState } from './ui/state-controller.js';
+import { createRecipeFormController } from './ui/recipe-form.js';
+import { bindAppEvents } from './ui/events.js';
+import { createDialogController } from './ui/modals.js';
 import {
-  DAYS,
-  MEAL_SLOTS,
-  SERVING_OPTIONS,
-  compareTitles,
+  getFilteredSortedRecipes,
+  renderCollectionSummary,
+  renderRecipeGrid,
+  renderRecipeModalContent,
+} from './ui/recipes-view.js';
+import {
+  buildShoppingListText,
+  renderDayPickerItems,
+  renderWeekPlanner,
+} from './ui/planner-view.js';
+import { setVisible } from './ui/view-helpers.js';
+import {
   createEmptyWeekPlan,
-  formatDateLabel,
-  formatLastCooked,
-  getCookedTimestamp,
-  getMealSlotLabel,
-  getPlannerStats,
+  DAYS,
   isDataUrl,
   isExternalImageUrl,
-  isSameCalendarDay,
-  isValidDateString,
   isValidMealSlot,
   normalizeMultilineText,
+  normalizePositiveInteger,
   normalizeTags,
   parseIngredientsText,
   readLegacyLocalSnapshot,
   renderMealSlotOptions,
-  scaleIngredient,
+  SERVING_OPTIONS,
 } from './cookbook-schema.js';
 
-const config = getAppConfig();
-const authService = createAuthService(config);
-const repository = createCookbookRepository({ config, authService });
-
-let recipes = [];
-let weekPlan = createEmptyWeekPlan();
-let currentModalRecipe = null;
-let currentModalServings = null;
-let editingRecipeId = null;
-let activeTagFilter = null;
-let favoriteFilterActive = false;
-let pendingDeleteId = null;
-let activeDayPicker = null;
-let activeDayPickerSlot = 'abend';
-let fullShoppingList = '';
-let lastModalTrigger = null;
-let lastDeleteTrigger = null;
-let latestAuthSnapshot = authService.getSnapshot();
-let latestAppData = {
-  recipes: [],
-  weekPlan: createEmptyWeekPlan(),
-  capabilities: { canAdmin: false },
-  migration: { hasLegacyData: false, alreadyMigrated: false },
-};
-let pendingImageUpload = null;
-let inflightRefreshPromise = null;
+const { config, authService, repository } = createAppServices();
+const state = createUiState(authService);
 
 const authBar = document.getElementById('authBar');
 const authBarName = document.getElementById('authBarName');
@@ -73,6 +54,7 @@ const appShell = document.getElementById('appShell');
 const toggleFormBtn = document.getElementById('toggleFormBtn');
 const toggleFavoritesBtn = document.getElementById('toggleFavoritesBtn');
 const formContainer = document.getElementById('formContainer');
+const formTitle = document.getElementById('formTitle');
 const recipeForm = document.getElementById('recipeForm');
 const recipeGrid = document.getElementById('recipeGrid');
 const collectionSummary = document.getElementById('collectionSummary');
@@ -93,9 +75,11 @@ const platingInput = document.getElementById('plating');
 const tipsInput = document.getElementById('tips');
 const descriptionInput = document.getElementById('description');
 const exportBtn = document.getElementById('exportBtn');
-const importBtn = document.getElementById('importBtn');
+const restoreImportBtn = document.getElementById('restoreImportBtn');
+const recipeImportBtn = document.getElementById('recipeImportBtn');
+const restoreImportFile = document.getElementById('restoreImportFile');
+const recipeImportFile = document.getElementById('recipeImportFile');
 const migrateLocalBtn = document.getElementById('migrateLocalBtn');
-const importFile = document.getElementById('importFile');
 const uploadImageBtn = document.getElementById('uploadImageBtn');
 const togglePlannerBtn = document.getElementById('togglePlannerBtn');
 const weekPlanner = document.getElementById('weekPlanner');
@@ -109,14 +93,31 @@ const tagFilterPill = document.getElementById('tagFilterPill');
 const tagFilterLabel = document.getElementById('tagFilterLabel');
 const clearTagFilterBtn = document.getElementById('clearTagFilterBtn');
 const recipeCount = document.getElementById('recipeCount');
+
 const recipeModal = document.getElementById('recipeModal');
+const recipeModalContent = recipeModal.querySelector('.modal-content');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 const modalFavoriteBtn = document.getElementById('modalFavoriteBtn');
 const modalEditBtn = document.getElementById('modalEditBtn');
 const modalCookedBtn = document.getElementById('modalCookedBtn');
 const modalCookedStatus = document.getElementById('modalCookedStatus');
 const modalServingsSelect = document.getElementById('modalServings');
+const modalImage = document.getElementById('modalImage');
+const modalTitle = document.getElementById('modalTitle');
+const modalDate = document.getElementById('modalDate');
+const modalHeaderMeta = document.getElementById('modalHeaderMeta');
+const modalDescription = document.getElementById('modalDescription');
+const modalIngredients = document.getElementById('modalIngredients');
+const modalInstructions = document.getElementById('modalInstructions');
+const modalPlating = document.getElementById('modalPlating');
+const modalTips = document.getElementById('modalTips');
+const descriptionSection = document.getElementById('descriptionSectionModal');
+const platingWrapper = document.getElementById('modalPlatingWrapper');
+const tipsSection = document.getElementById('tipsSectionModal');
+
 const deleteConfirm = document.getElementById('deleteConfirm');
+const deleteConfirmBox = deleteConfirm.querySelector('.confirm-box');
+const deleteConfirmName = document.getElementById('deleteConfirmName');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 
@@ -126,68 +127,78 @@ const REQUIRED_FIELDS = new Map([
   [instructionsInput, 'Bitte trage eine Zubereitung ein.'],
 ]);
 
-function escapeHtml(text) {
-  const node = document.createElement('div');
-  node.textContent = text;
-  return node.innerHTML;
-}
+const formController = createRecipeFormController({
+  elements: {
+    recipeForm,
+    formContainer,
+    toggleFormBtn,
+    titleInput,
+    servingsInput,
+    imagePreview,
+    previewImg,
+    imageUrlInput,
+    imageFileInput,
+    prepTimeInput,
+    cookTimeInput,
+    tagsInput,
+    descriptionInput,
+    ingredientsInput,
+    instructionsInput,
+    platingInput,
+    tipsInput,
+    formTitle,
+  },
+  requiredFields: REQUIRED_FIELDS,
+});
 
-function escapeAttribute(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+const modalController = createDialogController({
+  overlay: recipeModal,
+  content: recipeModalContent,
+  appShell,
+  initialFocus: () => modalCloseBtn,
+  onOpen: syncBodyScrollLock,
+  onClose: () => {
+    state.currentModalRecipe = null;
+    state.currentModalServings = null;
+    syncBodyScrollLock();
+  },
+});
 
-function getMainCategory(recipe) {
-  return (recipe.tags && recipe.tags[0]) || '';
-}
-
-function formatTime(recipe) {
-  const prep = Number.parseInt(recipe.prepTime, 10) || 0;
-  const cook = Number.parseInt(recipe.cookTime, 10) || 0;
-  const total = prep + cook;
-  if (!total) return '';
-  return `${total} Min`;
-}
-
-function setVisible(element, visible, className = 'visible') {
-  if (!element) return;
-  if (className) {
-    element.classList.toggle(className, visible);
-  }
-  element.style.display = visible ? '' : 'none';
-}
+const deleteDialogController = createDialogController({
+  overlay: deleteConfirm,
+  content: deleteConfirmBox,
+  appShell,
+  initialFocus: () => cancelDeleteBtn,
+  onOpen: syncBodyScrollLock,
+  onClose: () => {
+    state.pendingDeleteId = null;
+    syncBodyScrollLock();
+  },
+});
 
 function syncBodyScrollLock() {
-  const shouldLock = recipeModal.classList.contains('visible') || deleteConfirm.classList.contains('visible');
+  const shouldLock = modalController.isOpen() || deleteDialogController.isOpen();
   document.body.style.overflow = shouldLock ? 'hidden' : '';
 }
 
-function updateRequiredFieldValidity(input) {
-  const message = REQUIRED_FIELDS.get(input);
-  if (!message) return true;
-  const hasContent = normalizeMultilineText(input.value).length > 0;
-  input.setCustomValidity(hasContent ? '' : message);
-  return hasContent;
+function getServingOptionValues(selected) {
+  const values = new Set(SERVING_OPTIONS);
+  values.add(normalizePositiveInteger(selected, 2));
+  return Array.from(values).sort((a, b) => a - b);
 }
 
-function validateRecipeForm() {
-  let firstInvalid = null;
-  REQUIRED_FIELDS.forEach((_message, input) => {
-    const valid = updateRequiredFieldValidity(input);
-    if (!valid && !firstInvalid) {
-      firstInvalid = input;
-    }
-  });
-  if (firstInvalid) {
-    firstInvalid.reportValidity();
-    firstInvalid.focus();
-    return false;
-  }
-  return true;
+function renderServingOptions(selected, formatLabel) {
+  return getServingOptionValues(selected)
+    .map((value) => `<option value="${value}"${value === Number(selected) ? ' selected' : ''}>${formatLabel(value)}</option>`)
+    .join('');
+}
+
+function renderPlannerServingOptions(selected) {
+  return renderServingOptions(selected, (value) => `${value} P.`);
+}
+
+function renderModalServingOptions(selected) {
+  return renderServingOptions(selected, (value) => String(value));
 }
 
 function applyRoleUi(canAdmin) {
@@ -196,8 +207,40 @@ function applyRoleUi(canAdmin) {
   });
 }
 
+function updateFavoriteFilterButton() {
+  toggleFavoritesBtn.classList.toggle('active', state.favoriteFilterActive);
+  toggleFavoritesBtn.setAttribute('aria-pressed', String(state.favoriteFilterActive));
+}
+
+function updateTagFilterPill() {
+  tagFilterPill.classList.toggle('visible', Boolean(state.activeTagFilter));
+  if (state.activeTagFilter) {
+    tagFilterLabel.textContent = state.activeTagFilter;
+  }
+}
+
+function setPlannerOpen(open) {
+  state.plannerOpen = open;
+  weekPlanner.style.display = open ? 'block' : 'none';
+  weekPlanner.toggleAttribute('hidden', !open);
+  togglePlannerBtn.setAttribute('aria-expanded', String(open));
+}
+
+function openRecipeForm() {
+  if (!state.latestAppData.capabilities?.canAdmin) return;
+  state.editingRecipeId = null;
+  formController.resetForm();
+  servingsInput.value = '2';
+  formController.openRecipeForm();
+}
+
+function closeRecipeForm() {
+  state.editingRecipeId = null;
+  formController.closeRecipeForm();
+}
+
 function renderAuthShell(snapshot) {
-  latestAuthSnapshot = snapshot;
+  state.latestAuthSnapshot = snapshot;
 
   authBar.classList.toggle('visible', snapshot.accessState === 'signed_in' || snapshot.accessState === 'no_access');
   authBarName.textContent = snapshot.sessionUser?.email || 'Nicht angemeldet';
@@ -212,9 +255,9 @@ function renderAuthShell(snapshot) {
   authHint.textContent = config.backend === 'browser-test'
     ? 'Dieser Test-Login ist nur lokal für Playwright und die Entwicklung sichtbar.'
     : 'Google ist der einzige sichtbare Login-Weg. Nach dem ersten Login bleibt deine Session auch auf mehreren Geräten parallel nutzbar.';
+
   setVisible(googleLoginActions, config.backend !== 'browser-test');
   setVisible(browserTestLoginForm, config.backend === 'browser-test');
-
   setVisible(loginPanel, snapshot.accessState === 'signed_out');
   setVisible(loadingPanel, snapshot.accessState === 'loading');
   setVisible(accessPanel, snapshot.accessState === 'no_access');
@@ -223,10 +266,104 @@ function renderAuthShell(snapshot) {
   applyRoleUi(snapshot.canAdmin);
 }
 
+function buildFilteredRecipes() {
+  return getFilteredSortedRecipes({
+    recipes: state.recipes,
+    query: searchInput.value,
+    activeTagFilter: state.activeTagFilter,
+    favoriteFilterActive: state.favoriteFilterActive,
+    sort: sortSelect.value,
+  });
+}
+
+function renderRecipeModal() {
+  if (!state.currentModalRecipe) return;
+  const currentRecipe = state.recipes.find((recipe) => recipe.id === state.currentModalRecipe.id) || state.currentModalRecipe;
+  state.currentModalRecipe = currentRecipe;
+  renderRecipeModalContent({
+    recipe: currentRecipe,
+    displayServings: state.currentModalServings || currentRecipe.baseServings,
+    canAdmin: state.latestAppData.capabilities?.canAdmin,
+    renderServingOptions: renderModalServingOptions,
+    elements: {
+      modalImage,
+      modalTitle,
+      modalDate,
+      modalHeaderMeta,
+      modalFavoriteBtn,
+      modalCookedBtn,
+      modalCookedStatus,
+      modalServingsSelect,
+      modalEditBtn,
+      modalDescription,
+      modalIngredients,
+      modalInstructions,
+      modalPlating,
+      modalTips,
+      descriptionSection,
+      platingWrapper,
+      tipsSection,
+    },
+  });
+}
+
+function renderRecipes() {
+  updateFavoriteFilterButton();
+  updateTagFilterPill();
+  renderCollectionSummary({
+    collectionSummary,
+    recipes: state.recipes,
+    weekPlan: state.weekPlan,
+  });
+
+  renderRecipeGrid({
+    recipeGrid,
+    recipeCount,
+    recipes: state.recipes,
+    filteredRecipes: buildFilteredRecipes(),
+    activeTagFilter: state.activeTagFilter,
+    query: searchInput.value,
+    favoriteFilterActive: state.favoriteFilterActive,
+    canAdmin: state.latestAppData.capabilities?.canAdmin,
+  });
+
+  if (modalController.isOpen()) {
+    renderRecipeModal();
+  }
+}
+
+function updatePlannerShoppingList() {
+  state.fullShoppingList = buildShoppingListText({
+    weekPlan: state.weekPlan,
+    recipes: state.recipes,
+  });
+  shoppingList.textContent = state.fullShoppingList || '';
+  shoppingSearchInput.value = '';
+}
+
+function renderPlanner() {
+  renderWeekPlanner({
+    daysGrid,
+    plannerSummary,
+    weekPlan: state.weekPlan,
+    recipes: state.recipes,
+    activeDayPicker: state.activeDayPicker,
+    activeDayPickerSlot: state.activeDayPickerSlot,
+    renderServingOptions: renderPlannerServingOptions,
+    renderMealSlotOptions,
+  });
+}
+
+function refreshPlannerViews() {
+  if (!state.plannerOpen) return;
+  renderPlanner();
+  updatePlannerShoppingList();
+}
+
 function applyLoadResult(result) {
-  latestAppData = result;
-  recipes = result.recipes || [];
-  weekPlan = result.weekPlan || createEmptyWeekPlan();
+  state.latestAppData = result;
+  state.recipes = result.recipes || [];
+  state.weekPlan = result.weekPlan || createEmptyWeekPlan();
   applyRoleUi(result.capabilities?.canAdmin);
   renderRecipes();
   refreshPlannerViews();
@@ -234,15 +371,15 @@ function applyLoadResult(result) {
 }
 
 async function refreshAppData({ silent = false } = {}) {
-  if (inflightRefreshPromise) {
-    return inflightRefreshPromise;
+  if (state.inflightRefreshPromise) {
+    return state.inflightRefreshPromise;
   }
 
-  inflightRefreshPromise = (async () => {
+  state.inflightRefreshPromise = (async () => {
     if (!silent) {
       renderAuthShell({
-        ...latestAuthSnapshot,
-        accessState: latestAuthSnapshot.accessState === 'signed_in' ? 'loading' : latestAuthSnapshot.accessState,
+        ...state.latestAuthSnapshot,
+        accessState: state.latestAuthSnapshot.accessState === 'signed_in' ? 'loading' : state.latestAuthSnapshot.accessState,
       });
     }
     const result = await repository.loadAppData();
@@ -252,467 +389,84 @@ async function refreshAppData({ silent = false } = {}) {
   })();
 
   try {
-    return await inflightRefreshPromise;
+    return await state.inflightRefreshPromise;
   } finally {
-    inflightRefreshPromise = null;
+    state.inflightRefreshPromise = null;
   }
 }
 
 async function waitForAppReady() {
-  if (!inflightRefreshPromise) return;
+  if (!state.inflightRefreshPromise) return;
 
   try {
-    await inflightRefreshPromise;
+    await state.inflightRefreshPromise;
   } catch (_error) {
     // Callers surface their own action errors. We only want to wait for the current load to settle.
   }
 }
 
-async function resizeImage(file) {
-  const rawDataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-  return new Promise((resolve) => {
-    const image = new Image();
-    image.onload = () => {
-      const maxWidth = 600;
-      const maxHeight = 400;
-      let width = image.width;
-      let height = image.height;
-      if (width > maxWidth) {
-        height = Math.round(height * (maxWidth / width));
-        width = maxWidth;
-      }
-      if (height > maxHeight) {
-        width = Math.round(width * (maxHeight / height));
-        height = maxHeight;
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(image, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.75));
-    };
-    image.src = rawDataUrl;
-  });
-}
-
-function resetForm() {
-  recipeForm.reset();
-  servingsInput.value = '2';
-  imagePreview.style.display = 'none';
-  document.getElementById('formTitle').textContent = 'Neues Rezept';
-  editingRecipeId = null;
-  pendingImageUpload = null;
-  REQUIRED_FIELDS.forEach((_message, input) => input.setCustomValidity(''));
-}
-
-function openRecipeForm() {
-  if (!latestAppData.capabilities?.canAdmin) return;
-  formContainer.classList.add('visible');
-  toggleFormBtn.textContent = '✕ Abbrechen';
-  titleInput.focus();
-}
-
-function closeRecipeForm() {
-  formContainer.classList.remove('visible');
-  toggleFormBtn.textContent = '+ Neues Rezept';
-  resetForm();
-}
-
-function updateFavoriteFilterButton() {
-  toggleFavoritesBtn.classList.toggle('active', favoriteFilterActive);
-  toggleFavoritesBtn.setAttribute('aria-pressed', String(favoriteFilterActive));
-}
-
-function updateTagFilterPill() {
-  tagFilterPill.classList.toggle('visible', Boolean(activeTagFilter));
-  if (activeTagFilter) {
-    tagFilterLabel.textContent = activeTagFilter;
-  }
-}
-
-function setTagFilter(tag) {
-  if (activeTagFilter === tag) {
-    clearTagFilter();
-    return;
-  }
-  activeTagFilter = tag;
-  updateTagFilterPill();
+function clearTagFilter() {
+  state.activeTagFilter = null;
   renderRecipes();
 }
 
-function clearTagFilter() {
-  activeTagFilter = null;
-  updateTagFilterPill();
+function setTagFilter(tag) {
+  if (state.activeTagFilter === tag) {
+    clearTagFilter();
+    return;
+  }
+
+  state.activeTagFilter = tag;
   renderRecipes();
 }
 
 function toggleFavoritesFilter() {
-  favoriteFilterActive = !favoriteFilterActive;
-  updateFavoriteFilterButton();
+  state.favoriteFilterActive = !state.favoriteFilterActive;
   renderRecipes();
 }
 
-function getFilteredSorted() {
-  const query = searchInput.value.toLowerCase().trim();
-  const list = recipes.filter((recipe) => {
-    if (query) {
-      const inTitle = recipe.title.toLowerCase().includes(query);
-      const inDescription = (recipe.description || '').toLowerCase().includes(query);
-      const inIngredients = (recipe.rawIngredients || '').toLowerCase().includes(query);
-      const inTags = (recipe.tags || []).some((tag) => tag.toLowerCase().includes(query));
-      const inInstructions = (recipe.instructions || '').toLowerCase().includes(query);
-      if (!inTitle && !inDescription && !inIngredients && !inTags && !inInstructions) {
-        return false;
-      }
-    }
-
-    if (activeTagFilter && !(recipe.tags || []).some((tag) => tag.toLowerCase() === activeTagFilter.toLowerCase())) {
-      return false;
-    }
-
-    if (favoriteFilterActive && !recipe.favorite) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const sort = sortSelect.value;
-  list.sort((a, b) => {
-    if (sort === 'az') return compareTitles(a, b);
-    if (sort === 'za') return compareTitles(b, a);
-    if (sort === 'category') {
-      const categoryCompare = getMainCategory(a).localeCompare(getMainCategory(b), 'de', { sensitivity: 'base' });
-      return categoryCompare !== 0 ? categoryCompare : compareTitles(a, b);
-    }
-    if (sort === 'recent') {
-      const cookedCompare = getCookedTimestamp(b) - getCookedTimestamp(a);
-      if (cookedCompare !== 0) return cookedCompare;
-      return compareTitles(a, b);
-    }
-    if (sort === 'favorites') {
-      const favoriteCompare = Number(b.favorite) - Number(a.favorite);
-      if (favoriteCompare !== 0) return favoriteCompare;
-      return compareTitles(a, b);
-    }
-    if (sort === 'time') {
-      const timeA = (a.prepTime || 0) + (a.cookTime || 0);
-      const timeB = (b.prepTime || 0) + (b.cookTime || 0);
-      if (timeA === 0 && timeB === 0) return compareTitles(a, b);
-      if (timeA === 0) return 1;
-      if (timeB === 0) return -1;
-      return timeA - timeB;
-    }
-    const createdA = new Date(a.createdAt || 0).getTime();
-    const createdB = new Date(b.createdAt || 0).getTime();
-    if (sort === 'oldest') return createdA - createdB;
-    return createdB - createdA;
-  });
-
-  return list;
-}
-
-function renderCollectionSummary() {
-  const totalRecipes = recipes.length;
-  const favoriteRecipes = recipes.filter((recipe) => recipe.favorite).length;
-  const cookedRecipes = recipes.filter((recipe) => recipe.lastCookedAt).length;
-  const plannerStats = getPlannerStats(weekPlan, recipes);
-
-  collectionSummary.innerHTML = `
-    <div class="summary-card">
-      <strong>Rezepte im Regal</strong>
-      <div class="summary-card-value">${totalRecipes}</div>
-      <p>${totalRecipes ? 'Suche, Tags und Sortierung greifen ueber die ganze Sammlung.' : 'Lege dein erstes Rezept an oder importiere eine vorhandene Sammlung.'}</p>
-    </div>
-    <div class="summary-card">
-      <strong>Favoriten</strong>
-      <div class="summary-card-value">${favoriteRecipes}</div>
-      <p>${favoriteRecipes ? 'Lieblingsrezepte lassen sich separat filtern und stehen im Picker weiter oben.' : 'Markiere alltagstaugliche Rezepte mit dem Herz fuer schnellere Planung.'}</p>
-    </div>
-    <div class="summary-card">
-      <strong>Wochenplan</strong>
-      <div class="summary-card-value">${plannerStats.entries}</div>
-      <p>${plannerStats.entries ? `${plannerStats.plannedDays} Tage sind belegt, ${plannerStats.favoriteEntries} Eintraege davon sind Favoriten.` : 'Plane Mahlzeiten mit Portionen und Slot direkt in die Woche ein.'}</p>
-    </div>
-    <div class="summary-card">
-      <strong>Schon gekocht</strong>
-      <div class="summary-card-value">${cookedRecipes}</div>
-      <p>${cookedRecipes ? 'Zuletzt gekochte Rezepte tauchen in Karte, Sortierung und Picker direkt wieder auf.' : 'Markiere im Modal oder Planner, was du heute gekocht hast.'}</p>
-    </div>
-  `;
-}
-
-function renderPlannerSummary() {
-  const stats = getPlannerStats(weekPlan, recipes);
-  plannerSummary.innerHTML = `
-    <div class="summary-card">
-      <strong>Geplante Mahlzeiten</strong>
-      <div class="summary-card-value">${stats.entries}</div>
-      <p>${stats.entries ? `${stats.uniqueRecipes} verschiedene Rezepte sind diese Woche im Umlauf.` : 'Noch leer: oeffne einen Tag und trage ein Rezept direkt in einen Slot ein.'}</p>
-    </div>
-    <div class="summary-card">
-      <strong>Belegte Tage</strong>
-      <div class="summary-card-value">${stats.plannedDays}</div>
-      <p>${stats.plannedDays ? 'Portionen und Slots bleiben pro Eintrag gespeichert.' : 'Ideal fuer wiederkehrende Wochenmuster oder spontane Planung.'}</p>
-    </div>
-    <div class="summary-card">
-      <strong>Favoriten im Plan</strong>
-      <div class="summary-card-value">${stats.favoriteEntries}</div>
-      <p>${stats.favoriteEntries ? 'Favoriten stehen im Picker zuerst und landen dadurch schneller im Alltag.' : 'Herzrezepte helfen besonders, wenn es schnell gehen soll.'}</p>
-    </div>
-  `;
-}
-
-function renderPlannerServingOptions(selected) {
-  return SERVING_OPTIONS.map((value) => `<option value="${value}"${value === selected ? ' selected' : ''}>${value} P.</option>`).join('');
-}
-
-function renderRecipes() {
-  const list = getFilteredSorted();
-  updateFavoriteFilterButton();
-  updateTagFilterPill();
-  renderCollectionSummary();
-
-  recipeCount.textContent = list.length === recipes.length
-    ? `${recipes.length} Rezept${recipes.length !== 1 ? 'e' : ''}`
-    : `${list.length} von ${recipes.length} Rezepten`;
-
-  if (!list.length) {
-    const hasActiveFilters = Boolean(searchInput.value.trim() || activeTagFilter || favoriteFilterActive);
-    const canAdmin = latestAppData.capabilities?.canAdmin;
-    recipeGrid.innerHTML = recipes.length === 0 && !hasActiveFilters
-      ? `<section class="empty-start">
-          <div class="empty-start-copy">
-            <h2>Dein Kochbuch beginnt hier</h2>
-            <p>Starte mit einem ersten Rezept, halte Mengen sauber fest und baue dir nach und nach eine Sammlung auf, die sich auch im Alltag schnell benutzen laesst.</p>
-          </div>
-          <div class="empty-start-actions">
-            ${canAdmin ? '<button type="button" class="btn-primary" data-action="open-form">Erstes Rezept anlegen</button>' : ''}
-            ${canAdmin ? '<button type="button" class="btn-ghost" data-action="open-import">Rezepte importieren</button>' : ''}
-          </div>
-          <div class="empty-start-steps">
-            <div class="empty-step">
-              <strong>1. Titel und Tags</strong>
-              <p>So benennst du Rezepte so, wie du spaeter wirklich danach suchen wuerdest.</p>
-            </div>
-            <div class="empty-step">
-              <strong>2. Zutaten pro Zeile</strong>
-              <p>Das macht Skalierung und Einkaufsliste verlaesslich, statt nur dekorativ.</p>
-            </div>
-            <div class="empty-step">
-              <strong>3. Planner nutzen</strong>
-              <p>Rezepte lassen sich fuer konkrete Portionen und Mahlzeiten-Slots in die Woche legen.</p>
-            </div>
-          </div>
-        </section>`
-      : `<div class="empty-state">${hasActiveFilters ? 'Keine Rezepte passen zu Suche oder Filtern.' : 'Keine Rezepte gefunden.'}</div>`;
-    return;
-  }
-
-  recipeGrid.innerHTML = list.map((recipe) => {
-    const tagsHtml = (recipe.tags || []).map((tag) => `
-      <button type="button" class="tag${activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
-        data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase())}">${escapeHtml(tag)}</button>
-    `).join('');
-
-    const metaItems = [];
-    const timeLabel = formatTime(recipe);
-    if (timeLabel) metaItems.push(`<span class="meta-item"><span class="meta-icon">◷</span>${timeLabel}</span>`);
-    metaItems.push(`<span class="meta-item">${recipe.baseServings} Pers.</span>`);
-    if (recipe.lastCookedAt) metaItems.push(`<span class="meta-item">${escapeHtml(formatLastCooked(recipe, 'short'))}</span>`);
-
-    const imageHtml = recipe.imageUrl
-      ? `<img class="card-image" src="${escapeAttribute(recipe.imageUrl)}" alt="${escapeAttribute(recipe.title)}" loading="lazy" onerror="this.style.display='none'">`
-      : '<div class="card-image-placeholder">✦</div>';
-
-    return `
-      <article class="recipe-card">
-        <button type="button" class="recipe-card-main" data-action="open-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} öffnen">
-          ${imageHtml}
-          <div class="card-body">
-            <div class="card-title">${escapeHtml(recipe.title)}</div>
-            <div class="card-meta">${metaItems.join('')}</div>
-            ${recipe.description ? `<p class="card-description">${escapeHtml(recipe.description)}</p>` : ''}
-          </div>
-        </button>
-        <div class="card-footer">
-          <div class="card-tags">${tagsHtml}</div>
-          <div class="card-actions">
-            <button type="button" class="icon-btn favorite-btn${recipe.favorite ? ' active' : ''}" data-action="toggle-favorite" data-recipe-id="${recipe.id}" aria-pressed="${String(recipe.favorite)}" aria-label="${recipe.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${recipe.favorite ? '♥' : '♡'}</button>
-            ${latestAppData.capabilities?.canAdmin ? `<button type="button" class="icon-btn delete-btn" data-action="delete-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} löschen">✕</button>` : ''}
-          </div>
-        </div>
-      </article>
-    `;
-  }).join('');
-}
-
-function renderRecipeModal() {
-  if (!currentModalRecipe) return;
-  const recipe = currentModalRecipe;
-  const displayServings = currentModalServings || recipe.baseServings;
-  const modalImage = document.getElementById('modalImage');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalDate = document.getElementById('modalDate');
-  const modalHeaderMeta = document.getElementById('modalHeaderMeta');
-  const modalIngredients = document.getElementById('modalIngredients');
-  const modalInstructions = document.getElementById('modalInstructions');
-  const modalDescription = document.getElementById('modalDescription');
-  const modalPlating = document.getElementById('modalPlating');
-  const modalTips = document.getElementById('modalTips');
-  const descriptionSection = document.getElementById('descriptionSectionModal');
-  const platingWrapper = document.getElementById('modalPlatingWrapper');
-  const tipsSection = document.getElementById('tipsSectionModal');
-
-  if (recipe.imageUrl) {
-    modalImage.src = recipe.imageUrl;
-    modalImage.style.display = 'block';
-  } else {
-    modalImage.style.display = 'none';
-  }
-
-  modalTitle.textContent = recipe.title;
-  modalDate.textContent = recipe.createdAtLabel || formatDateLabel(recipe.createdAt);
-
-  const metaParts = [];
-  (recipe.tags || []).forEach((tag) => {
-    metaParts.push(`<span class="modal-tag">${escapeHtml(tag)}</span>`);
-  });
-  const prep = Number.parseInt(recipe.prepTime, 10) || 0;
-  const cook = Number.parseInt(recipe.cookTime, 10) || 0;
-  if (prep || cook) {
-    let timeLabel = '';
-    if (prep && cook) timeLabel = `${prep} Min Vorbereitung · ${cook} Min Kochen`;
-    else if (prep) timeLabel = `${prep} Min Vorbereitung`;
-    else timeLabel = `${cook} Min Kochen`;
-    metaParts.push(`<span class="modal-meta-item">◷ ${timeLabel}</span>`);
-  }
-  modalHeaderMeta.innerHTML = metaParts.join('');
-
-  modalFavoriteBtn.textContent = recipe.favorite ? '♥' : '♡';
-  modalFavoriteBtn.classList.toggle('active', recipe.favorite);
-  modalFavoriteBtn.setAttribute('aria-pressed', String(recipe.favorite));
-  modalFavoriteBtn.setAttribute('aria-label', recipe.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen');
-  modalCookedBtn.classList.toggle('active', isValidDateString(recipe.lastCookedAt) && isSameCalendarDay(new Date(recipe.lastCookedAt), new Date()));
-  modalCookedStatus.textContent = formatLastCooked(recipe, 'long');
-  modalServingsSelect.value = String(displayServings);
-  modalEditBtn.style.display = latestAppData.capabilities?.canAdmin ? '' : 'none';
-
-  if (recipe.description) {
-    descriptionSection.style.display = 'block';
-    modalDescription.textContent = recipe.description;
-  } else {
-    descriptionSection.style.display = 'none';
-  }
-
-  let ingredientHtml = '';
-  if (recipe.parsedIngredients?.length) {
-    ingredientHtml = recipe.parsedIngredients.map((ingredient) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(scaleIngredient(ingredient, recipe.baseServings, displayServings))}</span></div>
-    `).join('');
-  } else if (recipe.rawIngredients) {
-    ingredientHtml = recipe.rawIngredients.split('\n').filter(Boolean).map((line) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(line.trim())}</span></div>
-    `).join('');
-  }
-  modalIngredients.innerHTML = ingredientHtml;
-  modalInstructions.textContent = recipe.instructions || '';
-
-  if (recipe.plating) {
-    platingWrapper.style.display = 'block';
-    modalPlating.textContent = recipe.plating;
-  } else {
-    platingWrapper.style.display = 'none';
-  }
-
-  if (recipe.tips) {
-    tipsSection.style.display = 'block';
-    modalTips.textContent = recipe.tips;
-  } else {
-    tipsSection.style.display = 'none';
-  }
-}
-
 function openRecipeModal(recipeId, options = {}) {
-  const recipe = recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
-  currentModalRecipe = recipe;
-  currentModalServings = SERVING_OPTIONS.includes(Number.parseInt(options.servings, 10))
-    ? Number.parseInt(options.servings, 10)
-    : recipe.baseServings;
-  lastModalTrigger = options.trigger || document.activeElement;
+  state.currentModalRecipe = recipe;
+  state.currentModalServings = normalizePositiveInteger(options.servings, recipe.baseServings);
   renderRecipeModal();
-  recipeModal.classList.add('visible');
-  syncBodyScrollLock();
-  modalCloseBtn.focus();
+  modalController.open({
+    trigger: options.trigger || document.activeElement,
+  });
 }
 
 function closeRecipeModal({ restoreFocus = true } = {}) {
-  recipeModal.classList.remove('visible');
-  syncBodyScrollLock();
-  currentModalRecipe = null;
-  currentModalServings = null;
-  if (restoreFocus && lastModalTrigger?.isConnected) {
-    lastModalTrigger.focus();
-  }
-  lastModalTrigger = null;
+  modalController.close({ restoreFocus });
 }
 
 function updateModalServings() {
-  if (!currentModalRecipe) return;
-  currentModalServings = Number.parseInt(modalServingsSelect.value, 10);
+  if (!state.currentModalRecipe) return;
+  state.currentModalServings = normalizePositiveInteger(modalServingsSelect.value, state.currentModalRecipe.baseServings);
   renderRecipeModal();
 }
 
 function editRecipeModal() {
-  if (!currentModalRecipe || !latestAppData.capabilities?.canAdmin) return;
-  const recipe = currentModalRecipe;
+  if (!state.currentModalRecipe || !state.latestAppData.capabilities?.canAdmin) return;
+  const recipe = state.currentModalRecipe;
   closeRecipeModal({ restoreFocus: false });
-  editingRecipeId = recipe.id;
-  pendingImageUpload = null;
-  titleInput.value = recipe.title;
-  servingsInput.value = recipe.baseServings;
-  prepTimeInput.value = recipe.prepTime || '';
-  cookTimeInput.value = recipe.cookTime || '';
-  tagsInput.value = (recipe.tags || []).join(', ');
-  imageUrlInput.value = recipe.imageEditorValue || '';
-  if (recipe.imageUrl) {
-    previewImg.src = recipe.imageUrl;
-    imagePreview.style.display = 'block';
-  } else {
-    imagePreview.style.display = 'none';
-  }
-  descriptionInput.value = recipe.description || '';
-  ingredientsInput.value = recipe.rawIngredients || '';
-  instructionsInput.value = recipe.instructions || '';
-  platingInput.value = recipe.plating || '';
-  tipsInput.value = recipe.tips || '';
-  document.getElementById('formTitle').textContent = `Bearbeiten: ${recipe.title}`;
-  formContainer.classList.add('visible');
-  toggleFormBtn.textContent = '✕ Abbrechen';
-  titleInput.focus();
+  state.editingRecipeId = recipe.id;
+  formController.prefillRecipeForm(recipe);
 }
 
 function askDelete(recipeId, trigger = null) {
-  const recipe = recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
-  pendingDeleteId = recipe.id;
-  lastDeleteTrigger = trigger || document.activeElement;
-  document.getElementById('deleteConfirmName').textContent = `"${recipe.title}"`;
-  deleteConfirm.classList.add('visible');
-  syncBodyScrollLock();
-  cancelDeleteBtn.focus();
+  state.pendingDeleteId = recipe.id;
+  deleteConfirmName.textContent = `"${recipe.title}"`;
+  deleteDialogController.open({
+    trigger: trigger || document.activeElement,
+  });
 }
 
 async function confirmDelete() {
-  if (!pendingDeleteId) return;
-  const recipeId = pendingDeleteId;
+  if (!state.pendingDeleteId) return;
+  const recipeId = state.pendingDeleteId;
   const previousLabel = confirmDeleteBtn.textContent;
   confirmDeleteBtn.disabled = true;
   confirmDeleteBtn.textContent = 'Loesche...';
@@ -720,11 +474,7 @@ async function confirmDelete() {
   try {
     await waitForAppReady();
     await repository.deleteRecipe(recipeId);
-    pendingDeleteId = null;
-    deleteConfirm.classList.remove('visible');
-    syncBodyScrollLock();
-    if (lastDeleteTrigger?.isConnected) lastDeleteTrigger.focus();
-    lastDeleteTrigger = null;
+    deleteDialogController.close();
     await refreshAppData({ silent: true });
   } catch (error) {
     alert(`Loeschen fehlgeschlagen: ${error.message}`);
@@ -735,221 +485,73 @@ async function confirmDelete() {
 }
 
 function cancelDelete() {
-  pendingDeleteId = null;
-  deleteConfirm.classList.remove('visible');
-  syncBodyScrollLock();
-  if (lastDeleteTrigger?.isConnected) lastDeleteTrigger.focus();
-  lastDeleteTrigger = null;
+  deleteDialogController.close();
 }
 
-function getPlannerCandidates(query = '') {
-  const normalizedQuery = query.trim().toLowerCase();
-  return recipes
-    .filter((recipe) => {
-      if (!normalizedQuery) return true;
-      return recipe.title.toLowerCase().includes(normalizedQuery)
-        || (recipe.tags || []).some((tag) => tag.toLowerCase().includes(normalizedQuery));
-    })
-    .sort((a, b) => {
-      const favoriteCompare = Number(b.favorite) - Number(a.favorite);
-      if (favoriteCompare !== 0) return favoriteCompare;
-      const cookedCompare = getCookedTimestamp(b) - getCookedTimestamp(a);
-      if (cookedCompare !== 0) return cookedCompare;
-      return compareTitles(a, b);
-    });
-}
-
-function renderDayPickerItems(day, query = '') {
-  const matches = getPlannerCandidates(query);
-  if (!matches.length) {
-    return `<div class="day-picker-item" aria-disabled="true" style="color:#a0826d;font-style:italic;">${query ? 'Keine Treffer' : 'Keine Rezepte'}</div>`;
+function focusDayPickerSearch(day) {
+  const input = document.getElementById(`picker-search-${day}`);
+  if (input) {
+    setTimeout(() => input.focus(), 50);
   }
-
-  return matches.map((recipe) => `
-    <button type="button" class="day-picker-item" data-action="add-to-day" data-day="${day}" data-recipe-id="${recipe.id}">
-      ${escapeHtml(recipe.title)}
-      <span class="day-picker-item-meta">${[
-        recipe.favorite ? 'Favorit' : '',
-        formatLastCooked(recipe, 'short'),
-        `${recipe.baseServings} Pers. Standard`,
-        `Slot ${getMealSlotLabel(activeDayPickerSlot, true)}`,
-      ].filter(Boolean).join(' · ')}</span>
-    </button>
-  `).join('');
-}
-
-function renderWeekPlanner() {
-  renderPlannerSummary();
-  daysGrid.innerHTML = DAYS.map((day) => {
-    const entries = (weekPlan[day] || [])
-      .map((entry, index) => ({ entry, index, recipe: recipes.find((recipe) => recipe.id === String(entry.recipeId)) }))
-      .filter((item) => item.recipe);
-
-    const slotSections = MEAL_SLOTS.map((slot) => {
-      const slotEntries = entries.filter((item) => item.entry.slot === slot.id);
-      if (!slotEntries.length) return '';
-
-      const chips = slotEntries.map(({ entry, index, recipe }) => `
-        <div class="day-recipe-chip">
-          <div class="chip-main">
-            <button type="button" class="chip-name" data-action="open-recipe" data-recipe-id="${recipe.id}" data-modal-servings="${entry.servings}" title="${escapeAttribute(recipe.title)}">${escapeHtml(recipe.title)}</button>
-            <div class="chip-controls">
-              <div class="chip-field">
-                <span>Slot</span>
-                <label class="sr-only" for="chip-slot-${day}-${index}">Mahlzeiten-Slot für ${escapeHtml(recipe.title)}</label>
-                <select id="chip-slot-${day}-${index}" class="chip-slot-select" data-action="plan-slot" data-day="${day}" data-index="${index}" aria-label="Mahlzeiten-Slot für ${escapeAttribute(recipe.title)}">
-                  ${renderMealSlotOptions(entry.slot, true)}
-                </select>
-              </div>
-              <div class="chip-field">
-                <span>Port.</span>
-                <label class="sr-only" for="chip-servings-${day}-${index}">Portionen für ${escapeHtml(recipe.title)}</label>
-                <select id="chip-servings-${day}-${index}" class="chip-servings-select" data-action="plan-serving" data-day="${day}" data-index="${index}" aria-label="Portionen für ${escapeAttribute(recipe.title)}">
-                  ${renderPlannerServingOptions(entry.servings)}
-                </select>
-              </div>
-            </div>
-          </div>
-          <div class="chip-actions">
-            <button type="button" class="chip-cooked${formatLastCooked(recipe, 'short') ? ' active' : ''}" data-action="mark-cooked" data-recipe-id="${recipe.id}" title="${escapeAttribute(formatLastCooked(recipe, 'long') || 'Heute gekocht markieren')}" aria-label="${escapeAttribute(recipe.title)} als gekocht markieren">✓</button>
-            <button type="button" class="chip-remove" data-action="remove-plan-entry" data-day="${day}" data-index="${index}" title="Entfernen" aria-label="${escapeAttribute(recipe.title)} aus ${day} entfernen">×</button>
-          </div>
-        </div>
-      `).join('');
-
-      return `<div class="day-slot-section">
-        <div class="day-slot-label">${slot.label}</div>
-        ${chips}
-      </div>`;
-    }).join('');
-
-    const pickerOpen = activeDayPicker === day;
-    const pickerSearch = pickerOpen ? `
-      <div class="day-picker-toolbar">
-        <label for="picker-slot-${day}">Eintragen als</label>
-        <select class="day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
-          ${renderMealSlotOptions(activeDayPickerSlot)}
-        </select>
-      </div>
-      <input class="day-picker-search" type="text" placeholder="Suchen …" id="picker-search-${day}" data-day-picker-search="${day}">
-    ` : '';
-
-    return `
-      <div class="day-column" data-day-column="${day}">
-        <div class="day-name">${day}</div>
-        ${slotSections || '<div class="day-empty">Noch nichts geplant</div>'}
-        <div class="day-add-wrapper">
-          <button type="button" class="day-add-btn" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(pickerOpen)}" aria-controls="picker-${day}">+ Rezept</button>
-          <div class="day-picker ${pickerOpen ? 'open' : ''}" id="picker-${day}">
-            ${pickerSearch}
-            <div id="picker-list-${day}">${pickerOpen ? renderDayPickerItems(day) : ''}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function refreshPlannerViews() {
-  if (weekPlanner.style.display === 'block') {
-    renderWeekPlanner();
-    updatePlannerShoppingList();
-  }
-}
-
-function updatePlannerShoppingList() {
-  const ingredientMap = {};
-  const allEntries = DAYS.flatMap((day) => weekPlan[day] || []);
-
-  allEntries.forEach((entry) => {
-    const recipe = recipes.find((item) => item.id === String(entry.recipeId));
-    if (!recipe || !recipe.parsedIngredients?.length) return;
-    const servings = entry.servings || recipe.baseServings;
-
-    recipe.parsedIngredients.forEach((ingredient) => {
-      if (ingredient.quantity === null || ingredient.quantity === undefined) {
-        const key = ingredient.name.toLowerCase();
-        if (!ingredientMap[key]) ingredientMap[key] = { name: ingredient.name, quantity: null, unit: null };
-        return;
-      }
-
-      const scaled = ingredient.quantity * (servings / recipe.baseServings);
-      const key = `${ingredient.unit || 'stück'}:${ingredient.name.toLowerCase()}`;
-      if (!ingredientMap[key]) ingredientMap[key] = { name: ingredient.name, quantity: 0, unit: ingredient.unit };
-      ingredientMap[key].quantity += scaled;
-    });
-  });
-
-  let text = '';
-  Object.values(ingredientMap).forEach((item) => {
-    if (item.quantity === null || item.quantity === undefined) {
-      text += `${item.name}\n`;
-      return;
-    }
-    let quantity = Math.round(item.quantity * 10) / 10;
-    if (quantity === Math.floor(quantity)) quantity = Math.floor(quantity);
-    text += `${quantity}${item.unit ? ` ${item.unit}` : ''} ${item.name}\n`;
-  });
-
-  fullShoppingList = text;
-  shoppingList.textContent = text || '';
-  shoppingSearchInput.value = '';
 }
 
 function toggleDayPicker(day) {
-  if (activeDayPicker === day) {
-    activeDayPicker = null;
+  if (state.activeDayPicker === day) {
+    state.activeDayPicker = null;
   } else {
-    activeDayPicker = day;
-    activeDayPickerSlot = 'abend';
+    state.activeDayPicker = day;
+    state.activeDayPickerSlot = 'abend';
   }
-  renderWeekPlanner();
-  if (activeDayPicker) {
-    const input = document.getElementById(`picker-search-${day}`);
-    if (input) {
-      setTimeout(() => input.focus(), 50);
-    }
+
+  renderPlanner();
+  if (state.activeDayPicker) {
+    focusDayPickerSearch(day);
   }
 }
 
 function filterDayPicker(day, query) {
   const list = document.getElementById(`picker-list-${day}`);
   if (!list) return;
-  list.innerHTML = renderDayPickerItems(day, query);
+  list.innerHTML = renderDayPickerItems({
+    day,
+    query,
+    recipes: state.recipes,
+    activeDayPickerSlot: state.activeDayPickerSlot,
+  });
 }
 
 async function persistWeekPlan() {
-  await repository.saveWeekPlan(weekPlan);
+  await repository.saveWeekPlan(state.weekPlan);
   await refreshAppData({ silent: true });
 }
 
 async function addToDay(day, recipeId) {
-  const recipe = recipes.find((item) => item.id === String(recipeId));
+  const recipe = state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
-  weekPlan[day].push({
+
+  state.weekPlan[day].push({
     recipeId: recipe.id,
     servings: recipe.baseServings,
-    slot: activeDayPickerSlot,
+    slot: state.activeDayPickerSlot,
   });
-  activeDayPicker = null;
+  state.activeDayPicker = null;
   await persistWeekPlan();
 }
 
 async function removeFromDay(day, index) {
-  weekPlan[day].splice(index, 1);
+  state.weekPlan[day].splice(index, 1);
   await persistWeekPlan();
 }
 
 async function updatePlanEntryServings(day, index, servings) {
-  if (!weekPlan[day] || !weekPlan[day][index]) return;
-  if (!SERVING_OPTIONS.includes(servings)) return;
-  weekPlan[day][index].servings = servings;
+  if (!state.weekPlan[day] || !state.weekPlan[day][index]) return;
+  state.weekPlan[day][index].servings = normalizePositiveInteger(servings, state.weekPlan[day][index].servings);
   await persistWeekPlan();
 }
 
 async function updatePlanEntrySlot(day, index, slot) {
-  if (!weekPlan[day] || !weekPlan[day][index] || !isValidMealSlot(slot)) return;
-  weekPlan[day][index].slot = slot;
+  if (!state.weekPlan[day] || !state.weekPlan[day][index] || !isValidMealSlot(slot)) return;
+  state.weekPlan[day][index].slot = slot;
   await persistWeekPlan();
 }
 
@@ -964,21 +566,55 @@ function downloadJson(filename, payload) {
 }
 
 function buildImportMessage(summary) {
-  let message = `${summary.importedRecipes} Rezept${summary.importedRecipes !== 1 ? 'e' : ''} importiert.`;
-  if (summary.duplicateRecipes > 0) message += ` ${summary.duplicateRecipes} Duplikat${summary.duplicateRecipes !== 1 ? 'e' : ''} übersprungen.`;
-  if (summary.invalidRecipes > 0) message += ` ${summary.invalidRecipes} ungültig${summary.invalidRecipes !== 1 ? 'e' : ''} Eintrag${summary.invalidRecipes !== 1 ? 'e' : ''} ignoriert.`;
-  if (summary.importedPlannerEntries > 0) {
-    message += ` Wochenplan: ${summary.importedPlannerEntries} Eintrag${summary.importedPlannerEntries !== 1 ? 'e' : ''} übernommen.`;
+  const modeLabel = summary.importMode === 'additive' ? 'ergänzt' : 'wiederhergestellt';
+  let message = `${summary.importedRecipes} Rezept${summary.importedRecipes !== 1 ? 'e' : ''} ${modeLabel}.`;
+  if (summary.duplicateRecipes > 0) {
+    message += ` ${summary.duplicateRecipes} vorhandene Rezept${summary.duplicateRecipes !== 1 ? 'e' : ''} aktualisiert.`;
+  }
+  if (summary.invalidRecipes > 0) {
+    message += ` ${summary.invalidRecipes} ungueltig${summary.invalidRecipes !== 1 ? 'e' : ''} Eintrag${summary.invalidRecipes !== 1 ? 'e' : ''} ignoriert.`;
+  }
+  if (summary.importMode === 'restore') {
+    if (summary.importedStateEntries > 0) {
+      message += ` Persönlicher Zustand: ${summary.importedStateEntries} Eintrag${summary.importedStateEntries !== 1 ? 'e' : ''} übernommen.`;
+    }
+    if (summary.removedStateEntries > 0) {
+      message += ` ${summary.removedStateEntries} alte Zustands-Eintrag${summary.removedStateEntries !== 1 ? 'e' : ''} ersetzt.`;
+    }
+    if (summary.importedPlannerEntries > 0) {
+      message += ` Wochenplan: ${summary.importedPlannerEntries} Eintrag${summary.importedPlannerEntries !== 1 ? 'e' : ''} übernommen.`;
+    } else {
+      message += ' Wochenplan wurde leer oder bereinigt wiederhergestellt.';
+    }
   }
   return message;
 }
 
+async function handleImport(mode, input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  try {
+    await waitForAppReady();
+    const payload = JSON.parse(await file.text());
+    const summary = mode === 'restore'
+      ? await repository.restoreCookbookPayload(payload)
+      : await repository.importCookbookRecipesPayload(payload);
+    alert(buildImportMessage(summary));
+    await refreshAppData({ silent: true });
+  } catch (error) {
+    alert(`Fehler beim Importieren: ${error.message}`);
+  } finally {
+    input.value = '';
+  }
+}
+
 async function handleRecipeSubmit(event) {
   event.preventDefault();
-  if (!validateRecipeForm()) return;
+  if (!formController.validateRecipeForm()) return;
   await waitForAppReady();
 
-  const existing = editingRecipeId ? recipes.find((recipe) => recipe.id === editingRecipeId) : null;
+  const existing = state.editingRecipeId ? state.recipes.find((recipe) => recipe.id === state.editingRecipeId) : null;
   const rawIngredients = normalizeMultilineText(ingredientsInput.value);
   const imageValue = imageUrlInput.value.trim();
   let image = {
@@ -987,6 +623,7 @@ async function handleRecipeSubmit(event) {
     previousExternalImageUrl: existing?.externalImageUrl || null,
   };
 
+  const pendingImageUpload = formController.getPendingImageUpload();
   if (pendingImageUpload?.dataUrl) {
     image = {
       mode: 'upload',
@@ -1000,12 +637,18 @@ async function handleRecipeSubmit(event) {
       externalUrl: imageValue,
       previousImagePath: existing?.imagePath || null,
     };
+  } else if (!imageValue && !pendingImageUpload && (existing?.imagePath || existing?.externalImageUrl)) {
+    image = {
+      mode: 'remove',
+      previousImagePath: existing?.imagePath || null,
+      previousExternalImageUrl: existing?.externalImageUrl || null,
+    };
   }
 
   await repository.saveRecipe({
     id: existing?.id,
     title: titleInput.value.trim(),
-    baseServings: Number.parseInt(servingsInput.value, 10),
+    baseServings: normalizePositiveInteger(servingsInput.value, existing?.baseServings || 2),
     prepTime: Number.parseInt(prepTimeInput.value, 10) || 0,
     cookTime: Number.parseInt(cookTimeInput.value, 10) || 0,
     tags: normalizeTags(tagsInput.value),
@@ -1018,331 +661,439 @@ async function handleRecipeSubmit(event) {
     image,
   });
 
-  resetForm();
-  closeRecipeForm();
+  state.editingRecipeId = null;
+  formController.closeRecipeForm();
   await refreshAppData({ silent: true });
 }
 
-googleLoginBtn.addEventListener('click', async () => {
-  try {
-    googleLoginBtn.disabled = true;
-    await authService.signInWithGoogle();
-    renderAuthShell(authService.getSnapshot());
-  } catch (error) {
-    googleLoginBtn.disabled = false;
-    loginMessage.textContent = error.message || 'Google-Login fehlgeschlagen.';
-  }
-});
+function handleDayPickerKeyboard(event) {
+  if (!state.activeDayPicker) return false;
 
-browserTestLoginForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  try {
-    await authService.signInForBrowserTest(browserTestEmail.value);
-    const snapshot = authService.getSnapshot();
-    renderAuthShell(snapshot);
-    if (snapshot.accessState === 'signed_in') {
-      await waitForAppReady();
-      await refreshAppData({ silent: true });
+  if (event.key === 'Escape' && event.target.closest('.day-picker')) {
+    event.preventDefault();
+    state.activeDayPicker = null;
+    renderPlanner();
+    return true;
+  }
+
+  const items = Array.from(document.querySelectorAll(`#picker-list-${state.activeDayPicker} .day-picker-item[data-action="add-to-day"]`));
+  if (!items.length) return false;
+
+  if (event.target.matches('[data-day-picker-search]') && event.key === 'ArrowDown') {
+    event.preventDefault();
+    items[0].focus();
+    return true;
+  }
+
+  if (!event.target.classList.contains('day-picker-item')) {
+    return false;
+  }
+
+  const currentIndex = items.indexOf(event.target);
+  if (currentIndex === -1) return false;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    items[(currentIndex + 1) % items.length].focus();
+    return true;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    if (currentIndex === 0) {
+      const input = document.getElementById(`picker-search-${state.activeDayPicker}`);
+      (input || items[items.length - 1]).focus();
+    } else {
+      items[currentIndex - 1].focus();
     }
-  } catch (error) {
-    loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
-  }
-});
-
-signOutBtn.addEventListener('click', async () => {
-  await authService.signOut();
-  renderAuthShell(authService.getSnapshot());
-  browserTestEmail.value = '';
-  googleLoginBtn.disabled = false;
-  recipes = [];
-  weekPlan = createEmptyWeekPlan();
-  renderRecipes();
-});
-
-toggleFormBtn.addEventListener('click', () => {
-  if (formContainer.classList.contains('visible')) {
-    closeRecipeForm();
-  } else {
-    openRecipeForm();
-  }
-});
-
-uploadImageBtn.addEventListener('click', () => imageFileInput.click());
-
-imageFileInput.addEventListener('change', async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  const dataUrl = await resizeImage(file);
-  pendingImageUpload = {
-    dataUrl,
-    filename: file.name || 'bild.jpg',
-  };
-  previewImg.src = dataUrl;
-  imagePreview.style.display = 'block';
-  imageUrlInput.value = '';
-  imageFileInput.value = '';
-});
-
-imageUrlInput.addEventListener('input', () => {
-  const value = imageUrlInput.value.trim();
-  if (value && (isExternalImageUrl(value) || isDataUrl(value))) {
-    previewImg.src = value;
-    imagePreview.style.display = 'block';
-  } else if (!value && !pendingImageUpload) {
-    imagePreview.style.display = 'none';
-  }
-  if (value) {
-    pendingImageUpload = null;
-  }
-});
-
-recipeForm.addEventListener('submit', handleRecipeSubmit);
-
-togglePlannerBtn.addEventListener('click', () => {
-  const open = weekPlanner.style.display === 'none';
-  weekPlanner.style.display = open ? 'block' : 'none';
-  togglePlannerBtn.setAttribute('aria-expanded', String(open));
-  if (open) {
-    renderPlannerSummary();
-    renderWeekPlanner();
-    updatePlannerShoppingList();
-  }
-});
-
-clearPlanBtn.addEventListener('click', async () => {
-  if (!DAYS.some((day) => (weekPlan[day] || []).length > 0)) return;
-  weekPlan = createEmptyWeekPlan();
-  await persistWeekPlan();
-});
-
-shoppingSearchInput.addEventListener('input', (event) => {
-  const query = event.target.value.toLowerCase();
-  if (!query) {
-    shoppingList.textContent = fullShoppingList;
-    return;
-  }
-  const filtered = fullShoppingList.split('\n').filter((line) => line.toLowerCase().includes(query)).join('\n');
-  shoppingList.textContent = filtered || '(Keine Treffer)';
-});
-
-exportShoppingBtn.addEventListener('click', () => {
-  const text = shoppingList.textContent;
-  if (!text.trim()) return;
-  const blob = new Blob([text], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `einkaufsliste_${new Date().toISOString().split('T')[0]}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-});
-
-exportBtn.addEventListener('click', async () => {
-  await waitForAppReady();
-  const payload = await repository.exportCookbook();
-  downloadJson(`kochbuch_${new Date().toISOString().split('T')[0]}.json`, payload);
-});
-
-importBtn.addEventListener('click', () => importFile.click());
-
-importFile.addEventListener('change', async (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  try {
-    await waitForAppReady();
-    const payload = JSON.parse(await file.text());
-    const summary = await repository.importCookbookPayload(payload);
-    alert(buildImportMessage(summary));
-    await refreshAppData({ silent: true });
-  } catch (error) {
-    alert(`Fehler beim Importieren: ${error.message}`);
-  } finally {
-    importFile.value = '';
-  }
-});
-
-migrateLocalBtn.addEventListener('click', async () => {
-  try {
-    await waitForAppReady();
-    const summary = await repository.migrateLegacyLocalData();
-    alert(summary.migrated ? buildImportMessage(summary) : 'Keine lokalen Daten für die Migration gefunden.');
-    await refreshAppData({ silent: true });
-  } catch (error) {
-    alert(`Migration fehlgeschlagen: ${error.message}`);
-  }
-});
-
-searchInput.addEventListener('input', renderRecipes);
-sortSelect.addEventListener('change', renderRecipes);
-toggleFavoritesBtn.addEventListener('click', toggleFavoritesFilter);
-clearTagFilterBtn.addEventListener('click', clearTagFilter);
-modalCloseBtn.addEventListener('click', () => closeRecipeModal());
-modalFavoriteBtn.addEventListener('click', async () => {
-  if (!currentModalRecipe) return;
-  await repository.toggleFavorite(currentModalRecipe.id);
-  await refreshAppData({ silent: true });
-  currentModalRecipe = recipes.find((recipe) => recipe.id === currentModalRecipe.id) || currentModalRecipe;
-  renderRecipeModal();
-});
-modalCookedBtn.addEventListener('click', async () => {
-  if (!currentModalRecipe) return;
-  await repository.markRecipeCooked(currentModalRecipe.id);
-  await refreshAppData({ silent: true });
-  currentModalRecipe = recipes.find((recipe) => recipe.id === currentModalRecipe.id) || currentModalRecipe;
-  renderRecipeModal();
-});
-modalEditBtn.addEventListener('click', editRecipeModal);
-modalServingsSelect.addEventListener('change', updateModalServings);
-confirmDeleteBtn.addEventListener('click', confirmDelete);
-cancelDeleteBtn.addEventListener('click', cancelDelete);
-deleteConfirm.addEventListener('click', (event) => {
-  if (event.target === deleteConfirm) {
-    cancelDelete();
-  }
-});
-REQUIRED_FIELDS.forEach((_message, input) => {
-  input.addEventListener('input', () => updateRequiredFieldValidity(input));
-  input.addEventListener('blur', () => updateRequiredFieldValidity(input));
-});
-
-document.addEventListener('input', (event) => {
-  if (event.target.matches('[data-day-picker-search]')) {
-    filterDayPicker(event.target.dataset.dayPickerSearch, event.target.value);
-  }
-});
-
-document.addEventListener('change', async (event) => {
-  if (event.target.matches('[data-day-picker-slot]')) {
-    activeDayPickerSlot = isValidMealSlot(event.target.value) ? event.target.value : 'abend';
-    const day = event.target.dataset.dayPickerSlot;
-    const list = document.getElementById(`picker-list-${day}`);
-    if (list) {
-      list.innerHTML = renderDayPickerItems(day, document.getElementById(`picker-search-${day}`)?.value || '');
-    }
-    return;
+    return true;
   }
 
-  if (event.target.matches('[data-action="plan-serving"]')) {
-    await updatePlanEntryServings(event.target.dataset.day, Number.parseInt(event.target.dataset.index, 10), Number.parseInt(event.target.value, 10));
-    return;
-  }
+  return false;
+}
 
-  if (event.target.matches('[data-action="plan-slot"]')) {
-    await updatePlanEntrySlot(event.target.dataset.day, Number.parseInt(event.target.dataset.index, 10), event.target.value);
-  }
-});
-
-document.addEventListener('click', async (event) => {
-  const actionTarget = event.target.closest('[data-action]');
-
-  if (actionTarget) {
-    const { action } = actionTarget.dataset;
-
-    if (action === 'filter-tag') {
-      setTagFilter(decodeURIComponent(actionTarget.dataset.tag));
-      return;
-    }
-
-    if (action === 'open-recipe') {
-      openRecipeModal(actionTarget.dataset.recipeId, {
-        servings: Number.parseInt(actionTarget.dataset.modalServings, 10),
-        trigger: actionTarget,
-      });
-      return;
-    }
-
-    if (action === 'toggle-favorite') {
-      await repository.toggleFavorite(actionTarget.dataset.recipeId);
-      await refreshAppData({ silent: true });
-      return;
-    }
-
-    if (action === 'mark-cooked') {
-      await repository.markRecipeCooked(actionTarget.dataset.recipeId);
-      await refreshAppData({ silent: true });
-      return;
-    }
-
-    if (action === 'delete-recipe') {
-      askDelete(actionTarget.dataset.recipeId, actionTarget);
-      return;
-    }
-
-    if (action === 'toggle-day-picker') {
-      toggleDayPicker(actionTarget.dataset.day);
-      return;
-    }
-
-    if (action === 'add-to-day') {
-      await addToDay(actionTarget.dataset.day, actionTarget.dataset.recipeId);
-      return;
-    }
-
-    if (action === 'remove-plan-entry') {
-      await removeFromDay(actionTarget.dataset.day, Number.parseInt(actionTarget.dataset.index, 10));
-      return;
-    }
-
-    if (action === 'open-form') {
-      openRecipeForm();
-      return;
-    }
-
-    if (action === 'open-import') {
-      if (latestAppData.capabilities?.canAdmin) {
-        importFile.click();
+bindAppEvents({
+  elements: {
+    googleLoginBtn,
+    browserTestLoginForm,
+    signOutBtn,
+    toggleFormBtn,
+    uploadImageBtn,
+    imageFileInput,
+    imageUrlInput,
+    recipeForm,
+    togglePlannerBtn,
+    clearPlanBtn,
+    shoppingSearchInput,
+    exportShoppingBtn,
+    exportBtn,
+    restoreImportBtn,
+    recipeImportBtn,
+    restoreImportFile,
+    recipeImportFile,
+    migrateLocalBtn,
+    searchInput,
+    sortSelect,
+    toggleFavoritesBtn,
+    clearTagFilterBtn,
+    modalCloseBtn,
+    modalFavoriteBtn,
+    modalCookedBtn,
+    modalEditBtn,
+    modalServingsSelect,
+    confirmDeleteBtn,
+    cancelDeleteBtn,
+    deleteConfirm,
+    recipeModal,
+  },
+  requiredFields: REQUIRED_FIELDS,
+  authService,
+  handlers: {
+    async onGoogleLogin() {
+      try {
+        googleLoginBtn.disabled = true;
+        await authService.signInWithGoogle();
+        renderAuthShell(authService.getSnapshot());
+      } catch (error) {
+        googleLoginBtn.disabled = false;
+        loginMessage.textContent = error.message || 'Google-Login fehlgeschlagen.';
       }
-      return;
-    }
-  }
+    },
 
-  if (activeDayPicker && !event.target.closest('.day-add-wrapper')) {
-    activeDayPicker = null;
-    renderWeekPlanner();
-  }
-});
+    async onBrowserTestLoginSubmit(event) {
+      event.preventDefault();
+      try {
+        await authService.signInForBrowserTest(browserTestEmail.value);
+        const snapshot = authService.getSnapshot();
+        renderAuthShell(snapshot);
+        if (snapshot.accessState === 'signed_in') {
+          await waitForAppReady();
+          await refreshAppData({ silent: true });
+        }
+      } catch (error) {
+        loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
+      }
+    },
 
-document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape') return;
+    async onSignOut() {
+      await authService.signOut();
+      renderAuthShell(authService.getSnapshot());
+      browserTestEmail.value = '';
+      googleLoginBtn.disabled = false;
+      state.recipes = [];
+      state.weekPlan = createEmptyWeekPlan();
+      state.activeDayPicker = null;
+      state.favoriteFilterActive = false;
+      state.activeTagFilter = null;
+      setPlannerOpen(false);
+      renderRecipes();
+    },
 
-  if (deleteConfirm.classList.contains('visible')) {
-    cancelDelete();
-    return;
-  }
+    onToggleRecipeForm() {
+      if (formContainer.classList.contains('visible')) {
+        closeRecipeForm();
+      } else {
+        openRecipeForm();
+      }
+    },
 
-  if (recipeModal.classList.contains('visible')) {
-    closeRecipeModal();
-    return;
-  }
+    onUploadImageClick() {
+      imageFileInput.click();
+    },
 
-  if (activeDayPicker) {
-    activeDayPicker = null;
-    renderWeekPlanner();
-  }
-});
+    async onImageFileChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      await formController.handleImageFileChange(file);
+    },
 
-recipeModal.addEventListener('click', (event) => {
-  if (event.target === recipeModal) {
-    closeRecipeModal();
-  }
-});
+    onImageUrlInput() {
+      formController.handleImageUrlInput({ isDataUrl, isExternalImageUrl });
+    },
 
-window.addEventListener('focus', async () => {
-  if (authService.getSnapshot().accessState === 'signed_in') {
-    await refreshAppData({ silent: true });
-  }
-});
+    onRecipeSubmit: handleRecipeSubmit,
 
-authService.onAuthStateChange(async (snapshot) => {
-  renderAuthShell(snapshot);
-  if (snapshot.accessState === 'signed_in') {
-    await refreshAppData({ silent: true });
-  }
+    onTogglePlanner() {
+      setPlannerOpen(!state.plannerOpen);
+      if (state.plannerOpen) {
+        renderPlanner();
+        updatePlannerShoppingList();
+      }
+    },
+
+    async onClearPlan() {
+      if (!DAYS.some((day) => (state.weekPlan[day] || []).length > 0)) return;
+      state.weekPlan = createEmptyWeekPlan();
+      await persistWeekPlan();
+    },
+
+    onShoppingSearch(event) {
+      const query = event.target.value.toLowerCase();
+      if (!query) {
+        shoppingList.textContent = state.fullShoppingList;
+        return;
+      }
+      const filtered = state.fullShoppingList.split('\n').filter((line) => line.toLowerCase().includes(query)).join('\n');
+      shoppingList.textContent = filtered || '(Keine Treffer)';
+    },
+
+    onExportShopping() {
+      const text = shoppingList.textContent;
+      if (!text.trim()) return;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `einkaufsliste_${new Date().toISOString().split('T')[0]}.txt`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
+
+    async onExportCookbook() {
+      await waitForAppReady();
+      const payload = await repository.exportCookbook();
+      downloadJson(`kochbuch_${new Date().toISOString().split('T')[0]}.json`, payload);
+    },
+
+    onOpenRestoreImport() {
+      restoreImportFile.click();
+    },
+
+    onOpenRecipeImport() {
+      recipeImportFile.click();
+    },
+
+    async onRestoreImportChange() {
+      await handleImport('restore', restoreImportFile);
+    },
+
+    async onRecipeImportChange() {
+      await handleImport('additive', recipeImportFile);
+    },
+
+    async onMigrateLocal() {
+      try {
+        await waitForAppReady();
+        const summary = await repository.migrateLegacyLocalData();
+        alert(summary.migrated ? buildImportMessage(summary) : 'Keine lokalen Daten für die Migration gefunden.');
+        await refreshAppData({ silent: true });
+      } catch (error) {
+        alert(`Migration fehlgeschlagen: ${error.message}`);
+      }
+    },
+
+    onSearchInput() {
+      renderRecipes();
+    },
+
+    onSortChange() {
+      renderRecipes();
+    },
+
+    onToggleFavoritesFilter() {
+      toggleFavoritesFilter();
+    },
+
+    onClearTagFilter() {
+      clearTagFilter();
+    },
+
+    onCloseModal() {
+      closeRecipeModal();
+    },
+
+    async onToggleModalFavorite() {
+      if (!state.currentModalRecipe) return;
+      await repository.toggleFavorite(state.currentModalRecipe.id);
+      await refreshAppData({ silent: true });
+      renderRecipeModal();
+    },
+
+    async onModalCooked() {
+      if (!state.currentModalRecipe) return;
+      await repository.markRecipeCooked(state.currentModalRecipe.id);
+      await refreshAppData({ silent: true });
+      renderRecipeModal();
+    },
+
+    onEditModal() {
+      editRecipeModal();
+    },
+
+    onModalServingsChange() {
+      updateModalServings();
+    },
+
+    onConfirmDelete: confirmDelete,
+
+    onCancelDelete() {
+      cancelDelete();
+    },
+
+    onDeleteOverlayClick(event) {
+      if (event.target === deleteConfirm) {
+        cancelDelete();
+      }
+    },
+
+    onRequiredFieldInput(input) {
+      formController.updateRequiredFieldValidity(input);
+    },
+
+    onRequiredFieldBlur(input) {
+      formController.updateRequiredFieldValidity(input);
+    },
+
+    onDocumentInput(event) {
+      if (event.target.matches('[data-day-picker-search]')) {
+        filterDayPicker(event.target.dataset.dayPickerSearch, event.target.value);
+      }
+    },
+
+    async onDocumentChange(event) {
+      if (event.target.matches('[data-day-picker-slot]')) {
+        state.activeDayPickerSlot = isValidMealSlot(event.target.value) ? event.target.value : 'abend';
+        const day = event.target.dataset.dayPickerSlot;
+        const query = document.getElementById(`picker-search-${day}`)?.value || '';
+        filterDayPicker(day, query);
+        return;
+      }
+
+      if (event.target.matches('[data-action="plan-serving"]')) {
+        await updatePlanEntryServings(
+          event.target.dataset.day,
+          Number.parseInt(event.target.dataset.index, 10),
+          Number.parseInt(event.target.value, 10),
+        );
+        return;
+      }
+
+      if (event.target.matches('[data-action="plan-slot"]')) {
+        await updatePlanEntrySlot(
+          event.target.dataset.day,
+          Number.parseInt(event.target.dataset.index, 10),
+          event.target.value,
+        );
+      }
+    },
+
+    async onDocumentClick(event) {
+      const actionTarget = event.target.closest('[data-action]');
+
+      if (actionTarget) {
+        const { action } = actionTarget.dataset;
+
+        if (action === 'filter-tag') {
+          setTagFilter(decodeURIComponent(actionTarget.dataset.tag));
+          return;
+        }
+
+        if (action === 'open-recipe') {
+          openRecipeModal(actionTarget.dataset.recipeId, {
+            servings: Number.parseInt(actionTarget.dataset.modalServings, 10),
+            trigger: actionTarget,
+          });
+          return;
+        }
+
+        if (action === 'toggle-favorite') {
+          await repository.toggleFavorite(actionTarget.dataset.recipeId);
+          await refreshAppData({ silent: true });
+          return;
+        }
+
+        if (action === 'mark-cooked') {
+          await repository.markRecipeCooked(actionTarget.dataset.recipeId);
+          await refreshAppData({ silent: true });
+          return;
+        }
+
+        if (action === 'delete-recipe') {
+          askDelete(actionTarget.dataset.recipeId, actionTarget);
+          return;
+        }
+
+        if (action === 'toggle-day-picker') {
+          toggleDayPicker(actionTarget.dataset.day);
+          return;
+        }
+
+        if (action === 'add-to-day') {
+          await addToDay(actionTarget.dataset.day, actionTarget.dataset.recipeId);
+          return;
+        }
+
+        if (action === 'remove-plan-entry') {
+          await removeFromDay(actionTarget.dataset.day, Number.parseInt(actionTarget.dataset.index, 10));
+          return;
+        }
+
+        if (action === 'open-form') {
+          openRecipeForm();
+          return;
+        }
+
+        if (action === 'open-import') {
+          if (state.latestAppData.capabilities?.canAdmin) {
+            recipeImportFile.click();
+          }
+          return;
+        }
+      }
+
+      if (state.activeDayPicker && !event.target.closest('.day-add-wrapper')) {
+        state.activeDayPicker = null;
+        renderPlanner();
+      }
+    },
+
+    onDocumentKeydown(event) {
+      if (deleteDialogController.handleKeydown(event)) return;
+      if (modalController.handleKeydown(event)) return;
+      if (handleDayPickerKeyboard(event)) return;
+
+      if (event.key !== 'Escape') return;
+
+      if (deleteDialogController.isOpen()) {
+        cancelDelete();
+        return;
+      }
+
+      if (modalController.isOpen()) {
+        closeRecipeModal();
+        return;
+      }
+
+      if (state.activeDayPicker) {
+        state.activeDayPicker = null;
+        renderPlanner();
+      }
+    },
+
+    onModalOverlayClick(event) {
+      if (event.target === recipeModal) {
+        closeRecipeModal();
+      }
+    },
+
+    async onWindowFocus() {
+      if (authService.getSnapshot().accessState === 'signed_in') {
+        await refreshAppData({ silent: true });
+      }
+    },
+
+    async onAuthStateChange(snapshot) {
+      renderAuthShell(snapshot);
+      if (snapshot.accessState === 'signed_in') {
+        await refreshAppData({ silent: true });
+      }
+    },
+  },
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
   renderAuthShell(authService.getSnapshot());
-  togglePlannerBtn.setAttribute('aria-expanded', 'false');
+  setPlannerOpen(false);
 
   await authService.initialize();
   const snapshot = authService.getSnapshot();
