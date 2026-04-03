@@ -582,6 +582,7 @@ export function createCookbookRepository({ config, authService }) {
           const targetRecipeId = mappedRecipeIdBySource.get(String(entry.recipeId)) || String(entry.recipeId);
           if (!recipeLookup.has(targetRecipeId)) return null;
           return {
+            planEntryId: entry.planEntryId,
             recipeId: targetRecipeId,
             servings: normalizePositiveInteger(entry.servings, recipeLookup.get(targetRecipeId)?.baseServings || 2),
             slot: entry.slot,

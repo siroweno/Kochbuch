@@ -32,6 +32,12 @@ export function bindAppEvents({
     modalCookedBtn,
     modalEditBtn,
     modalServingsSelect,
+    modalPlannerToggle,
+    modalPlannerSaveBtn,
+    modalPlannerCancelBtn,
+    modalPlannerDay,
+    modalPlannerSlot,
+    modalPlannerServings,
     confirmDeleteBtn,
     cancelDeleteBtn,
     deleteConfirm,
@@ -65,6 +71,12 @@ export function bindAppEvents({
   modalCookedBtn.addEventListener('click', handlers.onModalCooked);
   modalEditBtn.addEventListener('click', handlers.onEditModal);
   modalServingsSelect.addEventListener('change', handlers.onModalServingsChange);
+  modalPlannerToggle.addEventListener('click', handlers.onToggleModalPlanner);
+  modalPlannerSaveBtn.addEventListener('click', handlers.onSaveModalPlanner);
+  modalPlannerCancelBtn.addEventListener('click', handlers.onCancelModalPlanner);
+  modalPlannerDay.addEventListener('change', handlers.onModalPlannerDayChange);
+  modalPlannerSlot.addEventListener('change', handlers.onModalPlannerSlotChange);
+  modalPlannerServings.addEventListener('change', handlers.onModalPlannerServingsChange);
   confirmDeleteBtn.addEventListener('click', handlers.onConfirmDelete);
   cancelDeleteBtn.addEventListener('click', handlers.onCancelDelete);
   deleteConfirm.addEventListener('click', handlers.onDeleteOverlayClick);
@@ -79,6 +91,12 @@ export function bindAppEvents({
   document.addEventListener('change', handlers.onDocumentChange);
   document.addEventListener('click', handlers.onDocumentClick);
   document.addEventListener('keydown', handlers.onDocumentKeydown);
+  document.addEventListener('pointerdown', handlers.onDocumentPointerDown);
+  document.addEventListener('pointermove', handlers.onDocumentPointerMove);
+  document.addEventListener('pointerup', handlers.onDocumentPointerUp);
+  document.addEventListener('pointercancel', handlers.onDocumentPointerCancel);
+  document.addEventListener('mousemove', handlers.onDocumentMouseMove);
+  document.addEventListener('mouseup', handlers.onDocumentMouseUp);
   window.addEventListener('focus', handlers.onWindowFocus);
   authService.onAuthStateChange(handlers.onAuthStateChange);
 }

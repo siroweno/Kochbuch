@@ -328,4 +328,60 @@ test.describe('Privates Familien-Kochbuch', () => {
 
     await importContext.close();
   });
+
+  test('Modal kann Rezepte direkt in die Woche einplanen', async ({ browser }) => {
+    const adminSession = await openLoggedInPage(browser, 'admin@kochbuch.local');
+
+    await createRecipeViaUi(adminSession.page, {
+      title: 'Modal Auflauf',
+      tags: 'Ofen, Familie',
+      ingredients: '500 g Kartoffeln\n200 ml Sahne\n1 EL Butter',
+      instructions: 'Schichten und goldbraun backen',
+    });
+
+    await adminSession.page.locator('.recipe-card').filter({ hasText: 'Modal Auflauf' }).locator('[data-action="open-recipe"]').click();
+    await adminSession.page.locator('#modalServings').selectOption('4');
+    await adminSession.page.locator('#modalPlannerToggle').click();
+    await adminSession.page.locator('#modalPlannerDay').selectOption('Fr');
+    await adminSession.page.locator('#modalPlannerSlot').selectOption('mittag');
+    await adminSession.page.locator('#modalPlannerServings').fill('4');
+    await adminSession.page.locator('#modalPlannerSaveBtn').click();
+
+    await expect(adminSession.page.locator('#modalPlannerFeedback')).toContainText('Fr · Mittag · 4 P.');
+
+    await adminSession.page.locator('#modalCloseBtn').click();
+    await openPlanner(adminSession.page);
+    await expect(adminSession.page.locator('[data-action="plan-serving"][data-day="Fr"]').first()).toHaveValue('4');
+    await expect(adminSession.page.locator('[data-action="plan-slot"][data-day="Fr"]').first()).toHaveValue('mittag');
+
+    await adminSession.context.close();
+  });
+
+  test('Planner-Einträge lassen sich über den Verschieben-Pfad neu einsortieren', async ({ browser }) => {
+    const adminSession = await openLoggedInPage(browser, 'admin@kochbuch.local');
+
+    await createRecipeViaUi(adminSession.page, {
+      title: 'Verschiebe Curry',
+      tags: 'Curry, Schnell',
+      ingredients: '1 Zwiebel\n400 g Kichererbsen\n200 ml Kokosmilch',
+      instructions: 'Anbraten, köcheln, servieren',
+    });
+
+    await openPlanner(adminSession.page);
+    await addPlannedRecipe(adminSession.page, 'Di', 'Verschiebe Curry');
+    const planEntry = adminSession.page.locator('.day-recipe-chip').first();
+    const initialPlanEntryId = await planEntry.getAttribute('data-plan-entry-id');
+    await planEntry.locator('[data-action="move-plan-entry"]').click();
+    await adminSession.page.locator(`[data-action="move-entry-day"][data-plan-entry-id="${initialPlanEntryId}"]`).selectOption('Fr');
+    await adminSession.page.locator(`[data-action="move-entry-slot"][data-plan-entry-id="${initialPlanEntryId}"]`).selectOption('abend');
+    await adminSession.page.locator(`[data-action="confirm-move-entry"][data-plan-entry-id="${initialPlanEntryId}"]`).click();
+
+    await expect(adminSession.page.locator('[data-action="plan-serving"][data-day="Di"]')).toHaveCount(0);
+    await expect(adminSession.page.locator(`.day-recipe-chip[data-plan-entry-id="${initialPlanEntryId}"]`)).toHaveCount(1);
+    await expect(adminSession.page.locator('[data-action="plan-serving"][data-day="Fr"]').first()).toHaveValue('2');
+    await expect(adminSession.page.locator('[data-action="plan-slot"][data-day="Fr"]').first()).toHaveValue('abend');
+
+    await adminSession.context.close();
+  });
+
 });

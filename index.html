@@ -61,10 +61,11 @@
       justify-content: space-between;
       gap: 16px;
       padding: 14px 18px;
-      border: 1px solid #e1cdb6;
-      border-radius: 10px;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 8px 26px rgba(75, 52, 31, 0.06);
+      border: 1px solid #e4d4bf;
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255,252,245,0.96), rgba(247,239,226,0.98));
+      box-shadow: 0 10px 28px rgba(75, 52, 31, 0.08);
     }
 
     .auth-bar.visible { display: flex; }
@@ -88,15 +89,35 @@
     .auth-panel,
     .status-panel {
       display: none;
-      padding: 20px 22px;
-      border-radius: 10px;
-      border: 1px solid #e1cdb6;
-      background: rgba(255,255,255,0.92);
-      box-shadow: 0 10px 30px rgba(75, 52, 31, 0.06);
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid #e4d4bf;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.97), rgba(250,245,236,0.98));
+      box-shadow: 0 12px 34px rgba(75, 52, 31, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-panel::before,
+    .status-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at top right, rgba(212,165,116,0.10), transparent 30%),
+        radial-gradient(circle at bottom left, rgba(139,115,85,0.06), transparent 28%);
     }
 
     .auth-panel.visible,
     .status-panel.visible { display: block; }
+
+    .auth-panel-inner,
+    .status-panel-inner {
+      position: relative;
+      z-index: 1;
+    }
 
     .auth-panel h2,
     .status-panel h2 {
@@ -138,7 +159,7 @@
       min-width: 240px;
       padding: 12px 18px;
       border: 1px solid #d4a574;
-      border-radius: 4px;
+      border-radius: 14px;
       font-size: 15px;
       font-family: 'Lora', serif;
       background-color: #fff;
@@ -162,16 +183,139 @@
       color: #8b7355;
     }
 
+    .loading-scene {
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      padding: 14px 0 4px;
+    }
+
+    .loading-pot {
+      position: relative;
+      width: 112px;
+      height: 92px;
+      margin-top: 6px;
+      background: linear-gradient(180deg, #7d6b56 0%, #5f4b3c 100%);
+      border-radius: 20px 20px 24px 24px;
+      box-shadow: inset 0 -8px 0 rgba(255,255,255,0.08), 0 12px 26px rgba(75, 52, 31, 0.12);
+    }
+
+    .loading-pot::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: -12px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #f7efe2, #e9d7bf);
+      border: 1px solid #d4c0a6;
+      transform-origin: center bottom;
+      animation: lid-bob 2.8s ease-in-out infinite;
+    }
+
+    .loading-pot::after {
+      content: '';
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -8px;
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(125, 107, 86, 0.32);
+      filter: blur(8px);
+    }
+
+    .loading-handle,
+    .loading-handle::before {
+      content: '';
+      position: absolute;
+      top: 30px;
+      width: 20px;
+      height: 8px;
+      border: 2px solid #5f4b3c;
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      opacity: 0.85;
+    }
+
+    .loading-handle { left: -16px; }
+    .loading-handle::before { right: -16px; top: -2px; }
+
+    .loading-steam {
+      position: absolute;
+      inset: -58px auto auto 50%;
+      width: 76px;
+      height: 80px;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .loading-steam span {
+      position: absolute;
+      bottom: 0;
+      width: 14px;
+      height: 42px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,255,255,0));
+      filter: blur(1px);
+      animation: steam-rise 3s ease-in-out infinite;
+      opacity: 0.7;
+    }
+
+    .loading-steam span:nth-child(1) { left: 10px; animation-delay: 0s; }
+    .loading-steam span:nth-child(2) { left: 30px; animation-delay: 0.45s; }
+    .loading-steam span:nth-child(3) { left: 50px; animation-delay: 0.9s; }
+
+    .loading-caption {
+      text-align: center;
+      display: grid;
+      gap: 4px;
+    }
+
+    .loading-caption strong {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      color: #3d2817;
+    }
+
+    .loading-caption span {
+      color: #7a6248;
+      font-size: 14px;
+    }
+
     .app-shell-hidden { display: none; }
     .admin-hidden { display: none !important; }
 
     /* ── Controls bar ── */
+    .browse-toolbar {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
     .controls {
       display: flex;
       gap: 12px;
-      margin-bottom: 28px;
       flex-wrap: wrap;
       align-items: center;
+    }
+
+    .controls-primary {
+      padding: 16px 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(250,244,234,0.96));
+      border: 1px solid #e5d4bd;
+      border-radius: 20px;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.05);
+    }
+
+    .controls-secondary {
+      padding: 0;
+      background: transparent;
+    }
+
+    .planner-entry-btn {
+      margin-left: auto;
     }
 
     #searchInput {
@@ -217,6 +361,7 @@
       transition: all 0.25s ease;
       font-family: 'Playfair Display', serif;
       letter-spacing: 0.2px;
+      min-height: 44px;
     }
     button:focus-visible {
       outline: 3px solid rgba(212,165,116,0.35);
@@ -245,7 +390,7 @@
     }
     .btn-ghost:hover { background-color: #f5f2ed; transform: translateY(-1px); }
 
-    .backup-controls { display: flex; gap: 8px; }
+    .backup-controls { display: flex; gap: 8px; flex-wrap: wrap; }
     input[type="file"] { display: none; }
     .sr-only {
       position: absolute;
@@ -295,12 +440,48 @@
       margin-bottom: 24px;
     }
 
-    .summary-card {
-      background-color: #fff;
-      border: 1px solid #d4a574;
-      border-radius: 8px;
+    .summary-card,
+    .summary-feature {
+      background:
+        linear-gradient(180deg, rgba(255,252,245,0.98), rgba(250,243,232,0.98));
+      border: 1px solid #e5d4bd;
+      border-radius: 18px;
       padding: 18px 20px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+    }
+
+    .summary-feature {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .summary-feature-intro {
+      background: linear-gradient(135deg, #fff8ed, #f7eee0);
+      border: 1px solid #ebd8be;
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-feature-intro h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      line-height: 1.1;
+      color: #3d2817;
+    }
+
+    .summary-feature-intro p {
+      color: #6b5842;
+      font-size: 14px;
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 4px;
     }
     .summary-card strong {
       display: block;
@@ -321,21 +502,47 @@
       color: #6b5842;
       line-height: 1.5;
     }
+    .summary-card-kicker,
+    .summary-card-eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a0826d;
+      font-family: 'Playfair Display', serif;
+    }
+    .summary-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #7a6248;
+    }
+    .summary-card--lead,
+    .summary-card-featured {
+      background: linear-gradient(135deg, #fff8ed, #f6ecd9);
+      border-color: #e8d4b5;
+    }
+    .summary-card--support,
+    .summary-card-soft {
+      background: linear-gradient(180deg, rgba(255,252,245,0.98), rgba(248,241,231,0.98));
+    }
 
     /* ── Week Planner ── */
     .week-planner-container { margin-bottom: 28px; }
 
     .week-planner {
-      background-color: #fff;
+      background:
+        linear-gradient(180deg, rgba(255,252,245,0.98), rgba(249,243,234,0.98));
       padding: 24px;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      border: 1px solid #e8dcc8;
+      border-radius: 20px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.06);
+      border: 1px solid #e5d4bd;
     }
 
     .planner-summary {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      grid-template-columns: minmax(0, 1.4fr) repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -354,16 +561,17 @@
       gap: 12px;
     }
 
-    @media (max-width: 1100px) { .days-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 1400px) { .days-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
     @media (max-width: 760px) { .days-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 560px) { .days-grid { grid-template-columns: 1fr; } }
 
     .day-column {
-      background-color: #faf8f3;
-      border: 1px solid #e8dcc8;
-      border-radius: 6px;
-      padding: 12px 10px;
-      min-height: 132px;
+      background:
+        linear-gradient(180deg, rgba(255,253,248,0.98), rgba(248,240,228,0.98));
+      border: 1px solid #ead9c3;
+      border-radius: 16px;
+      padding: 14px 12px;
+      min-height: 150px;
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -383,10 +591,10 @@
     }
 
     .day-recipe-chip {
-      background-color: #d4a574;
+      background: linear-gradient(135deg, #d4a574, #c89263);
       color: #fff;
-      border-radius: 4px;
-      padding: 8px;
+      border-radius: 14px;
+      padding: 10px;
       font-size: 12px;
       font-family: 'Lora', serif;
       display: flex;
@@ -408,6 +616,7 @@
       font-family: 'Playfair Display', serif;
       letter-spacing: 0.4px;
       text-transform: uppercase;
+      pointer-events: none;
     }
 
     .day-empty {
@@ -415,6 +624,13 @@
       color: #a0826d;
       font-style: italic;
       min-height: 32px;
+    }
+
+    .day-slot-empty {
+      font-size: 11px;
+      color: #b09178;
+      font-style: italic;
+      padding: 4px 2px 0;
     }
 
     .chip-main {
@@ -499,12 +715,107 @@
       gap: 6px;
     }
 
+    .chip-drag-handle {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.92);
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0;
+      border-radius: 12px;
+      box-shadow: none;
+      font-size: 16px;
+      letter-spacing: -2px;
+      touch-action: none;
+      cursor: grab;
+    }
+    .chip-drag-handle:hover { transform: none; background: rgba(255,255,255,0.24); }
+
+    .chip-move {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.16);
+      padding: 0 10px;
+      min-height: 44px;
+      border-radius: 12px;
+      box-shadow: none;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .chip-move:hover { transform: none; background: rgba(255,255,255,0.22); }
+
+    .chip-move-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 249, 241, 0.86);
+      border: 1px solid rgba(230, 210, 188, 0.9);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .chip-move-panel select {
+      min-height: 40px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #5f4b3c;
+    }
+    .chip-move-confirm,
+    .chip-move-cancel {
+      min-height: 40px;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .chip-move-confirm {
+      background: #8b7355;
+      color: #fff;
+    }
+    .chip-move-cancel {
+      background: rgba(139,115,85,0.08);
+      color: #7a6248;
+      border: 1px solid rgba(139,115,85,0.24);
+    }
+
+    .chip-drop-zone {
+      display: none;
+      width: 100%;
+      min-height: 16px;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px dashed rgba(212,165,116,0.5);
+      background: rgba(255,248,240,0.5);
+      color: #8b7355;
+      box-shadow: none;
+      font-size: 11px;
+      justify-content: center;
+      align-items: center;
+    }
+    .chip-drop-zone.visible { display: flex; }
+    .chip-drop-zone-empty {
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 12px;
+    }
+    .chip-drop-zone.is-target {
+      border-style: solid;
+      background: rgba(255, 241, 225, 0.92);
+      color: #7a4d2b;
+    }
+    .day-recipe-chip.is-dragging {
+      opacity: 0.72;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+    }
+
     .chip-cooked {
       background: none;
       border: none;
       color: rgba(255,255,255,0.85);
       font-size: 13px;
       padding: 0;
+      min-width: 44px;
+      min-height: 44px;
       line-height: 1;
       box-shadow: none;
     }
@@ -517,6 +828,8 @@
       color: rgba(255,255,255,0.8);
       font-size: 14px;
       padding: 0;
+      min-width: 44px;
+      min-height: 44px;
       line-height: 1;
       cursor: pointer;
       flex-shrink: 0;
@@ -532,42 +845,45 @@
       border: 1px dashed #d4a574;
       color: #d4a574;
       font-size: 16px;
-      padding: 8px;
-      border-radius: 4px;
+      padding: 10px 12px;
+      border-radius: 12px;
       cursor: pointer;
       line-height: 1;
       box-shadow: none;
+      min-height: 44px;
     }
     .day-add-btn:hover { background-color: #f5f2ed; transform: none; box-shadow: none; }
 
     .day-picker {
       display: none;
       position: absolute;
-      bottom: calc(100% + 4px);
+      bottom: calc(100% + 6px);
       left: 0;
-      width: min(260px, 100%);
-      background: #fff;
-      border: 1px solid #d4a574;
-      border-radius: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      width: min(280px, 100%);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,245,236,0.99));
+      border: 1px solid #e0ccb2;
+      border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.10);
       z-index: 50;
-      max-height: 200px;
+      max-height: 240px;
       overflow-y: auto;
     }
     .day-picker.open { display: block; }
 
     .day-picker-search {
       width: 100%;
-      padding: 8px 10px;
+      padding: 12px 12px;
       border: none;
       border-bottom: 1px solid #e8dcc8;
       font-family: 'Lora', serif;
-      font-size: 12px;
+      font-size: 13px;
       background: #faf8f3;
+      min-height: 44px;
     }
 
     .day-picker-toolbar {
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-bottom: 1px solid #e8dcc8;
       background: #faf8f3;
       display: flex;
@@ -582,13 +898,14 @@
     }
 
     .day-picker-slot {
-      padding: 7px 9px;
+      padding: 10px 10px;
       font-size: 12px;
+      min-height: 44px;
     }
 
     .day-picker-item {
       width: 100%;
-      padding: 8px 10px;
+      padding: 12px 12px;
       font-size: 12px;
       font-family: 'Lora', serif;
       cursor: pointer;
@@ -598,15 +915,34 @@
       border: none;
       text-align: left;
       box-shadow: none;
+      min-height: 44px;
     }
     .day-picker-item:hover,
     .day-picker-item:focus-visible { background-color: #f5f2ed; transform: none; }
+
+    .day-picker-list {
+      display: grid;
+      gap: 2px;
+      padding: 4px;
+    }
+
+    .day-picker-item-title {
+      display: block;
+      font-weight: 600;
+    }
 
     .day-picker-item-meta {
       display: block;
       font-size: 10px;
       color: #a0826d;
       margin-top: 2px;
+    }
+
+    .day-picker-empty {
+      padding: 10px 12px;
+      color: #a0826d;
+      font-style: italic;
+      font-size: 12px;
     }
 
     @media (max-width: 560px) {
@@ -628,10 +964,18 @@
       margin-bottom: 12px;
     }
 
+    .planner-shopping {
+      background: linear-gradient(180deg, rgba(255,251,244,0.96), rgba(248,239,225,0.96));
+      border: 1px solid #e8d7c1;
+      border-radius: 18px;
+      padding: 18px;
+    }
+
     .shopping-list {
-      background-color: #f5f2ed;
+      background:
+        linear-gradient(180deg, #faf6ef, #f3e8d7);
       padding: 14px 16px;
-      border-radius: 4px;
+      border-radius: 14px;
       font-family: 'Lora', serif;
       font-size: 13px;
       color: #3d2817;
@@ -640,6 +984,7 @@
       overflow-y: auto;
       white-space: pre-wrap;
       word-wrap: break-word;
+      border: 1px solid #e6d4ba;
     }
     .shopping-list:empty::before { content: "Noch keine Rezepte eingeplant"; color: #a0826d; font-style: italic; }
 
@@ -653,12 +998,13 @@
 
     /* ── Form ── */
     .form-container {
-      background-color: #fff;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,243,235,0.98));
       padding: 30px 32px;
-      border-radius: 8px;
+      border-radius: 20px;
       margin-bottom: 28px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-      border: 1px solid #e8dcc8;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.06);
+      border: 1px solid #e5d4bd;
       display: none;
     }
     .form-container.visible { display: block; }
@@ -778,10 +1124,11 @@
     }
 
     .recipe-card {
-      background-color: #fff;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-      border: 1px solid #e8dcc8;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.99), rgba(250,245,238,0.99));
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.05);
+      border: 1px solid #ead8c3;
       cursor: pointer;
       transition: box-shadow 0.25s ease, transform 0.25s ease;
       overflow: hidden;
@@ -818,7 +1165,7 @@
     .card-image-placeholder {
       width: 100%;
       height: 170px;
-      background: linear-gradient(135deg, #f5f0e8 0%, #ede5d6 100%);
+      background: linear-gradient(135deg, #f7f0e5 0%, #efe2cf 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -856,7 +1203,9 @@
       background: none;
       color: #c9b89e;
       font-size: 16px;
-      padding: 4px 6px;
+      padding: 8px;
+      min-width: 44px;
+      min-height: 44px;
       box-shadow: none;
       line-height: 1;
       border: 1px solid transparent;
@@ -1009,8 +1358,9 @@
     .modal.visible { display: flex; align-items: flex-start; justify-content: center; padding-top: 40px; }
 
     .modal-content {
-      background-color: #faf8f3;
-      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,245,236,0.99));
+      border-radius: 20px;
       width: 100%;
       max-width: 750px;
       position: relative;
@@ -1036,7 +1386,7 @@
       cursor: pointer;
       color: #8b7355;
       padding: 0;
-      width: 36px; height: 36px;
+      width: 44px; height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1048,7 +1398,7 @@
 
     .modal-edit {
       position: absolute;
-      top: 16px; right: 108px;
+      top: 16px; right: 116px;
       background-color: #d4a574;
       color: #fff;
       border: none;
@@ -1084,8 +1434,8 @@
       right: 60px;
       background: rgba(250,248,243,0.92);
       color: #c9b89e;
-      width: 40px;
-      height: 36px;
+      width: 44px;
+      height: 44px;
       padding: 0;
       display: flex;
       align-items: center;
@@ -1146,7 +1496,7 @@
       align-items: center;
       gap: 14px;
       flex-wrap: wrap;
-      background-color: #f0ebe0;
+      background: linear-gradient(180deg, #f4ede3, #efe5d6);
       border-top: 1px solid #e8dcc8;
       border-bottom: 1px solid #e8dcc8;
     }
@@ -1158,14 +1508,15 @@
       font-size: 13px;
     }
     .modal-controls select {
-      padding: 7px 11px;
+      padding: 10px 12px;
       border: 1px solid #d4a574;
-      border-radius: 4px;
+      border-radius: 12px;
       font-size: 14px;
       font-family: 'Playfair Display', serif;
       font-weight: 600;
       background-color: #fff;
       width: auto;
+      min-height: 44px;
     }
 
     .modal-status {
@@ -1173,6 +1524,76 @@
       font-size: 12px;
       color: #8b7355;
       font-style: italic;
+    }
+
+    .modal-planner-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #8b7355;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .modal-planner-panel {
+      display: none;
+      padding: 18px 36px 0;
+    }
+
+    .modal-planner-panel.visible { display: block; }
+
+    .modal-planner-box {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid #e5d4bd;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fffaf1, #f6ecdf);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);
+    }
+
+    .modal-planner-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .modal-planner-field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .modal-planner-field label {
+      margin: 0;
+      font-size: 12px;
+      color: #7a6248;
+    }
+
+    .modal-planner-field select,
+    .modal-planner-field input {
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #d4a574;
+      border-radius: 12px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .modal-planner-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .modal-planner-feedback {
+      min-height: 20px;
+      color: #7a6248;
+      font-size: 13px;
     }
 
     .modal-body { padding: 32px 36px; }
@@ -1236,16 +1657,19 @@
       #sortSelect,
       #toggleFavoritesBtn,
       #toggleFormBtn,
+      .planner-entry-btn,
       .backup-controls,
       .backup-controls .btn-secondary { width: 100%; }
       .backup-controls { flex-wrap: wrap; }
       .week-planner { padding: 18px 16px; }
-      .modal-header, .modal-controls, .modal-body { padding: 20px; }
+      .modal-header, .modal-controls, .modal-body, .modal-planner-panel { padding-left: 20px; padding-right: 20px; }
+      .modal-planner-panel { padding-top: 14px; }
       .modal-header h1 { font-size: 28px; }
       .modal-section h2 { font-size: 20px; }
       .container { padding: 18px 16px 28px; }
       .collection-summary { grid-template-columns: 1fr; }
       .planner-summary { grid-template-columns: 1fr; }
+      .summary-feature { grid-template-columns: 1fr; }
       .empty-start { padding: 24px 20px; }
       .empty-start-copy h2 { font-size: 28px; }
       .form-container { padding: 24px 20px; }
@@ -1257,6 +1681,7 @@
       .modal-controls select,
       .modal-cooked { width: 100%; }
       .modal-status { margin-left: 0; width: 100%; }
+      .modal-planner-row { grid-template-columns: 1fr; }
       .day-recipe-chip { flex-direction: column; }
       .chip-field {
         width: 100%;
@@ -1270,11 +1695,20 @@
       .chip-actions {
         flex-direction: row;
         justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+      .chip-drag-handle,
+      .chip-move {
+        min-width: 44px;
+        min-height: 44px;
+      }
+      .chip-move-panel {
+        grid-template-columns: 1fr;
       }
       .chip-cooked,
       .chip-remove {
-        min-width: 32px;
-        min-height: 32px;
+        min-width: 44px;
+        min-height: 44px;
       }
     }
 
@@ -1290,7 +1724,7 @@
       .modal.visible { padding-top: 20px; }
       .modal-edit {
         top: 12px;
-        right: 96px;
+        right: 104px;
         padding: 7px 12px;
       }
       .modal-close {
@@ -1299,7 +1733,7 @@
       }
       .modal-favorite {
         top: 12px;
-        right: 52px;
+        right: 56px;
       }
     }
 
@@ -1350,6 +1784,47 @@
     }
     .btn-danger:hover { background-color: #963e3e; transform: translateY(-1px); }
 
+    @media (prefers-reduced-motion: reduce) {
+      html:focus-within { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .loading-pot::before,
+      .loading-steam span {
+        animation: none !important;
+      }
+      .recipe-card:hover,
+      .btn-primary:hover,
+      .btn-secondary:hover,
+      .btn-ghost:hover,
+      .tag:hover,
+      .day-add-btn:hover,
+      .day-picker-item:hover,
+      .icon-btn:hover,
+      .modal-close:hover,
+      .modal-edit:hover,
+      .modal-favorite:hover,
+      .modal-cooked:hover,
+      .chip-cooked:hover,
+      .chip-remove:hover {
+        transform: none !important;
+      }
+    }
+
+    @keyframes lid-bob {
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-4px) rotate(1deg); }
+    }
+
+    @keyframes steam-rise {
+      0% { transform: translateY(10px) scaleY(0.85); opacity: 0; }
+      20% { opacity: 0.65; }
+      100% { transform: translateY(-26px) scaleY(1.15); opacity: 0; }
+    }
+
   </style>
 </head>
 <body>
@@ -1370,64 +1845,105 @@
     </div>
 
     <section class="auth-panel" id="loginPanel">
-      <h2>Privates Familien-Kochbuch</h2>
-      <p id="loginIntro">Melde dich mit Google an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
-      <div class="auth-actions" id="googleLoginActions">
-        <button class="btn-primary" id="googleLoginBtn" type="button">Mit Google anmelden</button>
+      <div class="auth-panel-inner">
+        <h2>Privates Familien-Kochbuch</h2>
+        <p id="loginIntro">Melde dich mit Google an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
+        <div class="auth-actions" id="googleLoginActions">
+          <button class="btn-primary" id="googleLoginBtn" type="button">Mit Google anmelden</button>
+        </div>
+        <form class="auth-form test-login-panel" id="browserTestLoginForm" autocomplete="on">
+          <input type="email" id="browserTestEmail" name="username" placeholder="admin@kochbuch.local" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <button class="btn-primary" id="browserTestLoginBtn" type="submit">Test-Login</button>
+        </form>
+        <p class="auth-hint" id="authHint">Google ist der einzige sichtbare Login-Weg. Nach dem ersten Login bleibt deine Session auch auf mehreren Geräten parallel nutzbar.</p>
+        <p id="loginMessage" style="margin-top:12px; margin-bottom:0;"></p>
       </div>
-      <form class="auth-form test-login-panel" id="browserTestLoginForm" autocomplete="on">
-        <input type="email" id="browserTestEmail" name="username" placeholder="admin@kochbuch.local" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <button class="btn-primary" id="browserTestLoginBtn" type="submit">Test-Login</button>
-      </form>
-      <p class="auth-hint" id="authHint">Google ist der einzige sichtbare Login-Weg. Nach dem ersten Login bleibt deine Session auch auf mehreren Geräten parallel nutzbar.</p>
-      <p id="loginMessage" style="margin-top:12px; margin-bottom:0;"></p>
     </section>
 
     <section class="status-panel" id="loadingPanel">
-      <h2>App wird vorbereitet</h2>
-      <p>Authentifizierung und Kochbuchdaten werden geladen.</p>
+      <div class="status-panel-inner">
+        <div class="loading-scene" aria-hidden="true">
+          <div class="loading-pot">
+            <span class="loading-handle"></span>
+            <div class="loading-steam">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <div class="loading-caption">
+            <strong>Das Kochbuch wird warm.</strong>
+            <span>Authentifizierung und Kochbuchdaten werden vorbereitet.</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="status-panel" id="accessPanel">
-      <h2>Kein Zugriff</h2>
-      <p id="accessMessage">Dein Profil konnte gerade nicht geladen werden.</p>
+      <div class="status-panel-inner">
+        <h2>Kein Zugriff</h2>
+        <p id="accessMessage">Dein Profil konnte gerade nicht geladen werden.</p>
+      </div>
     </section>
 
     <section class="status-panel" id="configPanel">
-      <h2>Supabase-Konfiguration fehlt</h2>
-      <p>Lege eine lokale oder deployte Laufzeitkonfiguration an, damit Auth, Datenbank und Storage verbunden werden können.</p>
-      <small>Erwartet wird <code>window.__KOCHBUCH_CONFIG__</code> mit Supabase-URL und Anon-Key.</small>
+      <div class="status-panel-inner">
+        <h2>Supabase-Konfiguration fehlt</h2>
+        <p>Lege eine lokale oder deployte Laufzeitkonfiguration an, damit Auth, Datenbank und Storage verbunden werden können.</p>
+        <small>Erwartet wird <code>window.__KOCHBUCH_CONFIG__</code> mit Supabase-URL und Anon-Key.</small>
+      </div>
     </section>
   </div>
 
   <div id="appShell" class="app-shell-hidden">
 
   <!-- Controls -->
-  <div class="controls">
-    <input type="text" id="searchInput" placeholder="Rezepte durchsuchen — Titel, Zutaten, Tags …">
-    <select id="sortSelect">
-      <option value="newest">Neueste zuerst</option>
-      <option value="oldest">Älteste zuerst</option>
-      <option value="az">A – Z</option>
-      <option value="za">Z – A</option>
-      <option value="time">Kürzeste Zeit</option>
-      <option value="category">Hauptkategorie</option>
-      <option value="recent">Zuletzt gekocht</option>
-      <option value="favorites">Favoriten zuerst</option>
-    </select>
-    <button class="btn-ghost filter-toggle" id="toggleFavoritesBtn" type="button" aria-pressed="false">Nur Favoriten</button>
-    <button class="btn-primary" id="toggleFormBtn" type="button" data-admin-only>+ Neues Rezept</button>
-    <div class="backup-controls" data-admin-only>
-      <button class="btn-secondary" id="migrateLocalBtn" type="button">Lokale Daten migrieren</button>
-      <button class="btn-secondary" id="exportBtn" type="button">Exportieren</button>
-      <button class="btn-secondary" id="restoreImportBtn" type="button">Backup wiederherstellen</button>
-      <button class="btn-secondary" id="recipeImportBtn" type="button">Rezepte ergänzen</button>
-      <input type="file" id="restoreImportFile" accept=".json">
-      <input type="file" id="recipeImportFile" accept=".json">
+  <div class="browse-toolbar">
+    <div class="controls controls-primary">
+      <input type="text" id="searchInput" placeholder="Rezepte durchsuchen — Titel, Zutaten, Tags …">
+      <select id="sortSelect">
+        <option value="newest">Neueste zuerst</option>
+        <option value="oldest">Älteste zuerst</option>
+        <option value="az">A – Z</option>
+        <option value="za">Z – A</option>
+        <option value="time">Kürzeste Zeit</option>
+        <option value="category">Hauptkategorie</option>
+        <option value="recent">Zuletzt gekocht</option>
+        <option value="favorites">Favoriten zuerst</option>
+      </select>
+      <button class="btn-ghost filter-toggle" id="toggleFavoritesBtn" type="button" aria-pressed="false">Nur Favoriten</button>
+      <button class="btn-secondary planner-entry-btn" id="togglePlannerBtn" type="button" aria-expanded="false" aria-controls="weekPlanner">Wochenplaner &amp; Einkaufsliste</button>
+    </div>
+    <div class="controls controls-secondary" data-admin-only>
+      <button class="btn-primary" id="toggleFormBtn" type="button" data-admin-only>+ Neues Rezept</button>
+      <div class="backup-controls" data-admin-only>
+        <button class="btn-secondary" id="migrateLocalBtn" type="button">Lokale Daten migrieren</button>
+        <button class="btn-secondary" id="exportBtn" type="button">Exportieren</button>
+        <button class="btn-secondary" id="restoreImportBtn" type="button">Backup wiederherstellen</button>
+        <button class="btn-secondary" id="recipeImportBtn" type="button">Rezepte ergänzen</button>
+        <input type="file" id="restoreImportFile" accept=".json">
+        <input type="file" id="recipeImportFile" accept=".json">
+      </div>
     </div>
   </div>
 
   <div class="collection-summary" id="collectionSummary"></div>
+  <div class="summary-feature" id="summaryFeature" aria-label="Kochbuch Uebersicht">
+    <div class="summary-feature-intro">
+      <h2>Warm, ruhig und schnell bedienbar.</h2>
+      <p>Die wichtigsten Dinge bleiben sichtbar, alles andere liegt etwas leiser darunter.</p>
+    </div>
+    <div class="summary-card">
+      <strong>Planung</strong>
+      <div class="summary-card-value" id="summaryFeaturePlannerValue">—</div>
+      <p>Ein kurzer Blick auf die Woche, ohne die Sammlung zu ueberdecken.</p>
+    </div>
+    <div class="summary-card">
+      <strong>Favoriten</strong>
+      <div class="summary-card-value" id="summaryFeatureFavoriteValue">—</div>
+      <p>Die Lieblingsrezepte stehen weiter oben, aber nicht laut.</p>
+    </div>
+  </div>
 
   <!-- Active tag filter pill -->
   <div class="tag-filter-active" id="tagFilterPill">
@@ -1437,8 +1953,6 @@
 
   <!-- Week Planner -->
   <div class="week-planner-container">
-    <button class="btn-secondary" id="togglePlannerBtn" type="button" aria-expanded="false" aria-controls="weekPlanner" style="width:100%; text-align:left; margin-bottom:16px;">Wochenplaner &amp; Einkaufsliste</button>
-
     <div class="week-planner" id="weekPlanner" style="display:none;" hidden>
       <div class="planner-summary" id="plannerSummary"></div>
       <div class="planner-layout">
@@ -1598,8 +2112,45 @@
         <option value="12">12</option>
       </select>
       <button class="modal-cooked" id="modalCookedBtn" type="button">Heute gekocht</button>
+      <button class="modal-planner-toggle" id="modalPlannerToggle" type="button">In Woche einplanen</button>
       <span class="modal-status" id="modalCookedStatus"></span>
     </div>
+    <section class="modal-planner-panel" id="modalPlannerPanel" aria-live="polite" aria-label="Inline Wochenplanung" hidden>
+      <div class="modal-planner-box">
+        <div class="modal-planner-row">
+          <div class="modal-planner-field">
+            <label for="modalPlannerDay">Tag</label>
+            <select id="modalPlannerDay">
+              <option value="Mo">Montag</option>
+              <option value="Di">Dienstag</option>
+              <option value="Mi">Mittwoch</option>
+              <option value="Do">Donnerstag</option>
+              <option value="Fr">Freitag</option>
+              <option value="Sa">Samstag</option>
+              <option value="So">Sonntag</option>
+            </select>
+          </div>
+          <div class="modal-planner-field">
+            <label for="modalPlannerSlot">Slot</label>
+            <select id="modalPlannerSlot">
+              <option value="fruehstueck">Fruehstueck</option>
+              <option value="mittag">Mittag</option>
+              <option value="abend" selected>Abend</option>
+              <option value="snack">Snack</option>
+            </select>
+          </div>
+          <div class="modal-planner-field">
+            <label for="modalPlannerServings">Portionen</label>
+            <input id="modalPlannerServings" type="number" min="1" step="1" inputmode="numeric" value="2">
+          </div>
+        </div>
+        <div class="modal-planner-actions">
+          <button class="btn-primary" id="modalPlannerSaveBtn" type="button">Einplanen</button>
+          <button class="btn-ghost" id="modalPlannerCancelBtn" type="button">Abbrechen</button>
+        </div>
+        <p class="modal-planner-feedback" id="modalPlannerFeedback"></p>
+      </div>
+    </section>
 
     <div class="modal-body">
       <section class="modal-section" id="descriptionSectionModal" style="display:none;">
@@ -1628,6 +2179,8 @@
     </div>
   </div>
 </div>
+
+<div class="sr-only" id="uiAnnouncements" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Delete Confirmation -->
 <div class="confirm-overlay" id="deleteConfirm" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmName">

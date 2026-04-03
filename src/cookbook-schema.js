@@ -252,6 +252,18 @@ export function createStableLegacyRecipeId(rawRecipe = {}) {
   return createDeterministicUuid(`legacy:${legacyId}|${title}|${createdAt}`);
 }
 
+export function createPlanEntryId(seed = '') {
+  if (String(seed || '').trim()) {
+    return createDeterministicUuid(`plan:${String(seed).trim()}`);
+  }
+
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return createDeterministicUuid(`plan:${Date.now()}|${Math.random().toString(16).slice(2, 10)}`);
+}
+
 export function hasRequiredRecipeFields(recipe = {}) {
   return String(recipe.title || '').trim().length > 0
     && normalizeMultilineText(recipe.rawIngredients).length > 0
@@ -417,7 +429,7 @@ export function normalizeUserRecipeStateRecord(rawState = {}, fallbackRecipeId =
   };
 }
 
-export function normalizeWeekPlanEntry(entry, recipesById = new Map()) {
+export function normalizeWeekPlanEntry(entry, recipesById = new Map(), context = {}) {
   const recipeId = String(
     typeof entry === 'object' && entry !== null
       ? entry.recipeId ?? entry.recipe_id ?? entry.id ?? ''
@@ -431,11 +443,21 @@ export function normalizeWeekPlanEntry(entry, recipesById = new Map()) {
     typeof entry === 'object' && entry !== null ? entry.servings : '',
     fallbackServings,
   );
+  const slot = isValidMealSlot(typeof entry === 'object' && entry !== null ? entry.slot : '') ? entry.slot : 'abend';
+  const explicitPlanEntryId = String(
+    typeof entry === 'object' && entry !== null
+      ? entry.planEntryId ?? entry.plan_entry_id ?? ''
+      : '',
+  ).trim();
+  const planEntryId = explicitPlanEntryId || createPlanEntryId(
+    `${context.day || 'day'}|${Number.isInteger(context.index) ? context.index : 'idx'}|${recipeId}|${slot}|${servings}`,
+  );
 
   return {
+    planEntryId,
     recipeId,
     servings,
-    slot: isValidMealSlot(typeof entry === 'object' && entry !== null ? entry.slot : '') ? entry.slot : 'abend',
+    slot,
   };
 }
 
@@ -444,7 +466,7 @@ export function normalizeWeekPlan(rawWeekPlan, recipesById = new Map()) {
   return DAYS.reduce((plan, day) => {
     const entries = Array.isArray(candidate[day]) ? candidate[day] : [];
     plan[day] = entries
-      .map((entry) => normalizeWeekPlanEntry(entry, recipesById))
+      .map((entry, index) => normalizeWeekPlanEntry(entry, recipesById, { day, index }))
       .filter(Boolean);
     return plan;
   }, createEmptyWeekPlan());

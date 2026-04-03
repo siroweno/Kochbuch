@@ -10,14 +10,19 @@ import {
   renderRecipeModalContent,
 } from './ui/recipes-view.js';
 import {
+  getPlannerCandidates,
   buildShoppingListText,
   renderDayPickerItems,
   renderWeekPlanner,
 } from './ui/planner-view.js';
+import { createEffectsLayer } from './ui/effects-layer.js';
 import { setVisible } from './ui/view-helpers.js';
 import {
+  createPlanEntryId,
   createEmptyWeekPlan,
   DAYS,
+  getMealSlotLabel,
+  getPlannerStats,
   isDataUrl,
   isExternalImageUrl,
   isValidMealSlot,
@@ -58,6 +63,8 @@ const formTitle = document.getElementById('formTitle');
 const recipeForm = document.getElementById('recipeForm');
 const recipeGrid = document.getElementById('recipeGrid');
 const collectionSummary = document.getElementById('collectionSummary');
+const summaryFeaturePlannerValue = document.getElementById('summaryFeaturePlannerValue');
+const summaryFeatureFavoriteValue = document.getElementById('summaryFeatureFavoriteValue');
 const searchInput = document.getElementById('searchInput');
 const sortSelect = document.getElementById('sortSelect');
 const titleInput = document.getElementById('title');
@@ -93,6 +100,7 @@ const tagFilterPill = document.getElementById('tagFilterPill');
 const tagFilterLabel = document.getElementById('tagFilterLabel');
 const clearTagFilterBtn = document.getElementById('clearTagFilterBtn');
 const recipeCount = document.getElementById('recipeCount');
+const uiAnnouncements = document.getElementById('uiAnnouncements');
 
 const recipeModal = document.getElementById('recipeModal');
 const recipeModalContent = recipeModal.querySelector('.modal-content');
@@ -111,6 +119,14 @@ const modalIngredients = document.getElementById('modalIngredients');
 const modalInstructions = document.getElementById('modalInstructions');
 const modalPlating = document.getElementById('modalPlating');
 const modalTips = document.getElementById('modalTips');
+const modalPlannerToggle = document.getElementById('modalPlannerToggle');
+const modalPlannerPanel = document.getElementById('modalPlannerPanel');
+const modalPlannerDay = document.getElementById('modalPlannerDay');
+const modalPlannerSlot = document.getElementById('modalPlannerSlot');
+const modalPlannerServings = document.getElementById('modalPlannerServings');
+const modalPlannerSaveBtn = document.getElementById('modalPlannerSaveBtn');
+const modalPlannerCancelBtn = document.getElementById('modalPlannerCancelBtn');
+const modalPlannerFeedback = document.getElementById('modalPlannerFeedback');
 const descriptionSection = document.getElementById('descriptionSectionModal');
 const platingWrapper = document.getElementById('modalPlatingWrapper');
 const tipsSection = document.getElementById('tipsSectionModal');
@@ -176,9 +192,254 @@ const deleteDialogController = createDialogController({
   },
 });
 
+const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
+const effectsLayer = createEffectsLayer({
+  liveRegion: uiAnnouncements,
+  reducedMotion: reducedMotionQuery?.matches || false,
+});
+state.motionMode = reducedMotionQuery?.matches ? 'reduce' : 'full';
+
 function syncBodyScrollLock() {
   const shouldLock = modalController.isOpen() || deleteDialogController.isOpen();
   document.body.style.overflow = shouldLock ? 'hidden' : '';
+}
+
+function escapeSelectorValue(value) {
+  const stringValue = String(value ?? '');
+  return globalThis.CSS?.escape ? globalThis.CSS.escape(stringValue) : stringValue.replace(/"/g, '\\"');
+}
+
+function cloneWeekPlan(plan) {
+  return JSON.parse(JSON.stringify(plan || createEmptyWeekPlan()));
+}
+
+function getActiveWeekPlan() {
+  return state.plannerDraftWeekPlan || state.weekPlan;
+}
+
+function getTodayDayKey() {
+  const mapping = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  return mapping[new Date().getDay()] || 'Mo';
+}
+
+function updateMotionMode(reduceMotion) {
+  state.motionMode = reduceMotion ? 'reduce' : 'full';
+  effectsLayer.setReducedMotion(reduceMotion);
+}
+
+function clearLoadingDelay() {
+  if (state.loadingDelayTimer) {
+    window.clearTimeout(state.loadingDelayTimer);
+    state.loadingDelayTimer = null;
+  }
+}
+
+function setLoadingVisible(visible) {
+  state.loadingVisible = visible;
+  setVisible(loadingPanel, visible);
+}
+
+function syncLoadingPanel(snapshot) {
+  if (snapshot.accessState === 'loading') {
+    if (state.loadingVisible || state.loadingDelayTimer) return;
+    state.loadingDelayTimer = window.setTimeout(() => {
+      state.loadingDelayTimer = null;
+      if (state.latestAuthSnapshot.accessState === 'loading') {
+        setLoadingVisible(true);
+      }
+    }, 250);
+    return;
+  }
+
+  clearLoadingDelay();
+  setLoadingVisible(false);
+}
+
+function announceUi(message) {
+  state.uiAnnouncement = String(message || '').trim();
+  if (!state.uiAnnouncement) return;
+  effectsLayer.announce(state.uiAnnouncement);
+}
+
+function setPendingFocusTarget(target) {
+  state.pendingFocusTarget = target || null;
+}
+
+function getPendingFocusElement(target = state.pendingFocusTarget) {
+  if (!target) return null;
+
+  if (target.selector) {
+    return document.querySelector(target.selector);
+  }
+
+  if (target.type === 'favorite-grid' && target.recipeId) {
+    return document.querySelector(`[data-action="toggle-favorite"][data-recipe-id="${escapeSelectorValue(target.recipeId)}"]`);
+  }
+
+  if (target.type === 'modal-favorite') {
+    return modalFavoriteBtn;
+  }
+
+  if (target.type === 'modal-planner-toggle') {
+    return modalPlannerToggle;
+  }
+
+  if (target.type === 'modal-planner-feedback') {
+    return modalPlannerFeedback;
+  }
+
+  if (target.type === 'day-picker-trigger' && target.day) {
+    return document.querySelector(`[data-action="toggle-day-picker"][data-day="${escapeSelectorValue(target.day)}"]`);
+  }
+
+  if (target.type === 'plan-entry' && target.planEntryId) {
+    const baseSelector = `[data-plan-entry-id="${escapeSelectorValue(target.planEntryId)}"]`;
+    if (target.action) {
+      return document.querySelector(`${baseSelector}[data-action="${escapeSelectorValue(target.action)}"]`);
+    }
+    return document.querySelector(baseSelector);
+  }
+
+  return null;
+}
+
+function restorePendingFocusTarget() {
+  if (!state.pendingFocusTarget) return;
+  const target = state.pendingFocusTarget;
+
+  window.requestAnimationFrame(() => {
+    const element = getPendingFocusElement(target);
+    if (element && typeof element.focus === 'function') {
+      element.focus();
+      state.pendingFocusTarget = null;
+    }
+  });
+}
+
+function resetPlannerDraftState() {
+  state.plannerDraftWeekPlan = null;
+  state.dragState = null;
+  state.activeMoveEntryId = null;
+  state.moveEntryDraftDay = null;
+  state.moveEntryDraftSlot = state.lastPlannerSlot || 'abend';
+}
+
+function updateSummaryFeatureValues() {
+  if (!summaryFeaturePlannerValue || !summaryFeatureFavoriteValue) return;
+  const plannerStats = getPlannerStats(state.weekPlan, state.recipes);
+  summaryFeaturePlannerValue.textContent = String(plannerStats.entries);
+  summaryFeatureFavoriteValue.textContent = String(state.recipes.filter((recipe) => recipe.favorite).length);
+}
+
+function ensureModalPlanningDefaults() {
+  if (!state.modalPlanningDay) {
+    state.modalPlanningDay = getTodayDayKey();
+  }
+  state.modalPlanningSlot = isValidMealSlot(state.modalPlanningSlot) ? state.modalPlanningSlot : (state.lastPlannerSlot || 'abend');
+}
+
+function syncModalPlanningUi() {
+  ensureModalPlanningDefaults();
+  modalPlannerToggle?.setAttribute('aria-expanded', String(state.modalPlanningOpen));
+  if (modalPlannerPanel) {
+    modalPlannerPanel.classList.toggle('visible', state.modalPlanningOpen);
+    modalPlannerPanel.toggleAttribute('hidden', !state.modalPlanningOpen);
+  }
+  if (modalPlannerDay) modalPlannerDay.value = state.modalPlanningDay || getTodayDayKey();
+  if (modalPlannerSlot) modalPlannerSlot.value = state.modalPlanningSlot || 'abend';
+  if (modalPlannerServings) {
+    modalPlannerServings.value = String(normalizePositiveInteger(modalPlannerServings.value, state.currentModalServings || 2));
+    if (state.currentModalServings) {
+      modalPlannerServings.value = String(state.currentModalServings);
+    }
+  }
+  if (modalPlannerFeedback) {
+    modalPlannerFeedback.textContent = state.modalPlanningFeedback || '';
+    modalPlannerFeedback.tabIndex = -1;
+  }
+}
+
+function initializeModalPlanningState() {
+  state.modalPlanningOpen = false;
+  state.modalPlanningDay = getTodayDayKey();
+  state.modalPlanningSlot = state.lastPlannerSlot || 'abend';
+  state.modalPlanningFeedback = '';
+}
+
+function setModalPlanningOpen(open) {
+  state.modalPlanningOpen = open;
+  if (!open) {
+    state.modalPlanningFeedback = state.modalPlanningFeedback || '';
+  } else {
+    state.modalPlanningFeedback = '';
+  }
+  syncModalPlanningUi();
+}
+
+function findPlanEntryLocation(planEntryId, plan = state.weekPlan) {
+  for (const day of DAYS) {
+    const index = (plan[day] || []).findIndex((entry) => String(entry.planEntryId || '') === String(planEntryId));
+    if (index !== -1) {
+      return {
+        day,
+        index,
+        entry: plan[day][index],
+      };
+    }
+  }
+  return null;
+}
+
+function replaceDayEntries(plan, day, entries) {
+  plan[day] = entries;
+  return plan;
+}
+
+function recomposeDayEntries(entriesBySlot) {
+  return ['fruehstueck', 'mittag', 'abend', 'snack']
+    .flatMap((slot) => entriesBySlot.get(slot) || []);
+}
+
+function movePlanEntryWithinPlan(plan, planEntryId, { day: targetDay, slot: targetSlot, position = null }) {
+  const nextPlan = cloneWeekPlan(plan);
+  const source = findPlanEntryLocation(planEntryId, nextPlan);
+  if (!source || !isValidMealSlot(targetSlot) || !DAYS.includes(targetDay)) {
+    return nextPlan;
+  }
+
+  const movingEntry = { ...source.entry, slot: targetSlot };
+  const sourceSlotEntries = (nextPlan[source.day] || []).filter((entry) => entry.slot === source.entry.slot);
+  const sourceSlotIndex = sourceSlotEntries.findIndex((entry) => String(entry.planEntryId || '') === String(planEntryId));
+  const sourceEntriesBySlot = new Map();
+  const targetEntriesBySlot = source.day === targetDay ? sourceEntriesBySlot : new Map();
+
+  ['fruehstueck', 'mittag', 'abend', 'snack'].forEach((slot) => {
+    sourceEntriesBySlot.set(slot, (nextPlan[source.day] || []).filter((entry) => entry.slot === slot && entry.planEntryId !== planEntryId));
+    if (source.day !== targetDay) {
+      targetEntriesBySlot.set(slot, (nextPlan[targetDay] || []).filter((entry) => entry.slot === slot));
+    }
+  });
+
+  const targetSlotEntries = [...(targetEntriesBySlot.get(targetSlot) || [])];
+  let insertAt = Number.isInteger(position)
+    ? Math.max(0, Math.min(position, targetSlotEntries.length))
+    : targetSlotEntries.length;
+  if (source.day === targetDay && source.entry.slot === targetSlot && sourceSlotIndex !== -1 && insertAt > sourceSlotIndex) {
+    insertAt -= 1;
+  }
+  targetSlotEntries.splice(insertAt, 0, movingEntry);
+  targetEntriesBySlot.set(targetSlot, targetSlotEntries);
+
+  replaceDayEntries(nextPlan, source.day, recomposeDayEntries(sourceEntriesBySlot));
+  replaceDayEntries(
+    nextPlan,
+    targetDay,
+    source.day === targetDay
+      ? recomposeDayEntries(targetEntriesBySlot)
+      : recomposeDayEntries(targetEntriesBySlot),
+  );
+
+  return nextPlan;
 }
 
 function getServingOptionValues(selected) {
@@ -259,7 +520,7 @@ function renderAuthShell(snapshot) {
   setVisible(googleLoginActions, config.backend !== 'browser-test');
   setVisible(browserTestLoginForm, config.backend === 'browser-test');
   setVisible(loginPanel, snapshot.accessState === 'signed_out');
-  setVisible(loadingPanel, snapshot.accessState === 'loading');
+  syncLoadingPanel(snapshot);
   setVisible(accessPanel, snapshot.accessState === 'no_access');
   setVisible(configPanel, snapshot.accessState === 'config_missing');
   appShell.classList.toggle('app-shell-hidden', snapshot.accessState !== 'signed_in');
@@ -305,6 +566,8 @@ function renderRecipeModal() {
       tipsSection,
     },
   });
+  syncModalPlanningUi();
+  restorePendingFocusTarget();
 }
 
 function renderRecipes() {
@@ -315,6 +578,7 @@ function renderRecipes() {
     recipes: state.recipes,
     weekPlan: state.weekPlan,
   });
+  updateSummaryFeatureValues();
 
   renderRecipeGrid({
     recipeGrid,
@@ -330,6 +594,8 @@ function renderRecipes() {
   if (modalController.isOpen()) {
     renderRecipeModal();
   }
+
+  restorePendingFocusTarget();
 }
 
 function updatePlannerShoppingList() {
@@ -345,13 +611,19 @@ function renderPlanner() {
   renderWeekPlanner({
     daysGrid,
     plannerSummary,
-    weekPlan: state.weekPlan,
+    weekPlan: getActiveWeekPlan(),
     recipes: state.recipes,
     activeDayPicker: state.activeDayPicker,
     activeDayPickerSlot: state.activeDayPickerSlot,
+    activeDayPickerQuery: state.activeDayPickerQuery,
+    activeMoveEntryId: state.activeMoveEntryId,
+    moveEntryDraftDay: state.moveEntryDraftDay,
+    moveEntryDraftSlot: state.moveEntryDraftSlot,
+    dragState: state.dragState,
     renderServingOptions: renderPlannerServingOptions,
     renderMealSlotOptions,
   });
+  restorePendingFocusTarget();
 }
 
 function refreshPlannerViews() {
@@ -364,10 +636,13 @@ function applyLoadResult(result) {
   state.latestAppData = result;
   state.recipes = result.recipes || [];
   state.weekPlan = result.weekPlan || createEmptyWeekPlan();
+  state.plannerDraftWeekPlan = null;
+  state.dragState = null;
   applyRoleUi(result.capabilities?.canAdmin);
   renderRecipes();
   refreshPlannerViews();
   migrateLocalBtn.style.display = result.capabilities?.canAdmin && result.migration?.hasLegacyData && !result.migration?.alreadyMigrated ? '' : 'none';
+  restorePendingFocusTarget();
 }
 
 async function refreshAppData({ silent = false } = {}) {
@@ -430,6 +705,7 @@ function openRecipeModal(recipeId, options = {}) {
   if (!recipe) return;
   state.currentModalRecipe = recipe;
   state.currentModalServings = normalizePositiveInteger(options.servings, recipe.baseServings);
+  initializeModalPlanningState();
   renderRecipeModal();
   modalController.open({
     trigger: options.trigger || document.activeElement,
@@ -437,12 +713,17 @@ function openRecipeModal(recipeId, options = {}) {
 }
 
 function closeRecipeModal({ restoreFocus = true } = {}) {
+  state.modalPlanningOpen = false;
+  state.modalPlanningFeedback = '';
   modalController.close({ restoreFocus });
 }
 
 function updateModalServings() {
   if (!state.currentModalRecipe) return;
   state.currentModalServings = normalizePositiveInteger(modalServingsSelect.value, state.currentModalRecipe.baseServings);
+  if (modalPlannerServings) {
+    modalPlannerServings.value = String(state.currentModalServings);
+  }
   renderRecipeModal();
 }
 
@@ -497,10 +778,12 @@ function focusDayPickerSearch(day) {
 
 function toggleDayPicker(day) {
   if (state.activeDayPicker === day) {
+    setPendingFocusTarget({ type: 'day-picker-trigger', day });
     state.activeDayPicker = null;
   } else {
     state.activeDayPicker = day;
-    state.activeDayPickerSlot = 'abend';
+    state.activeDayPickerSlot = state.lastPlannerSlot || 'abend';
+    state.activeDayPickerQuery = '';
   }
 
   renderPlanner();
@@ -511,13 +794,25 @@ function toggleDayPicker(day) {
 
 function filterDayPicker(day, query) {
   const list = document.getElementById(`picker-list-${day}`);
+  const status = document.getElementById(`picker-status-${day}`);
+  const normalizedQuery = String(query || '');
+  const matches = getPlannerCandidates({
+    recipes: state.recipes,
+    query: normalizedQuery,
+  });
+  state.activeDayPickerQuery = normalizedQuery;
   if (!list) return;
   list.innerHTML = renderDayPickerItems({
     day,
-    query,
+    query: normalizedQuery,
     recipes: state.recipes,
     activeDayPickerSlot: state.activeDayPickerSlot,
   });
+  if (status) {
+    status.textContent = matches.length
+      ? `${matches.length} Rezept${matches.length !== 1 ? 'e' : ''} für ${day} verfügbar.`
+      : 'Keine passenden Rezepte gefunden.';
+  }
 }
 
 async function persistWeekPlan() {
@@ -525,34 +820,269 @@ async function persistWeekPlan() {
   await refreshAppData({ silent: true });
 }
 
-async function addToDay(day, recipeId) {
+async function addToDay(day, recipeId, options = {}) {
   const recipe = state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
 
   state.weekPlan[day].push({
+    planEntryId: createPlanEntryId(),
     recipeId: recipe.id,
-    servings: recipe.baseServings,
-    slot: state.activeDayPickerSlot,
+    servings: normalizePositiveInteger(options.servings, recipe.baseServings),
+    slot: isValidMealSlot(options.slot) ? options.slot : state.activeDayPickerSlot,
   });
+  state.lastPlannerSlot = isValidMealSlot(options.slot) ? options.slot : state.activeDayPickerSlot;
   state.activeDayPicker = null;
+  state.activeDayPickerQuery = '';
   await persistWeekPlan();
 }
 
-async function removeFromDay(day, index) {
+async function removeFromDay(planEntryId, fallbackDay, fallbackIndex) {
+  const location = planEntryId ? findPlanEntryLocation(planEntryId) : null;
+  const day = location?.day || fallbackDay;
+  const index = location?.index ?? fallbackIndex;
+  if (!day || !Number.isInteger(index) || !state.weekPlan[day]?.[index]) return;
   state.weekPlan[day].splice(index, 1);
   await persistWeekPlan();
 }
 
-async function updatePlanEntryServings(day, index, servings) {
+async function updatePlanEntryServings(planEntryId, fallbackDay, fallbackIndex, servings) {
+  const location = planEntryId ? findPlanEntryLocation(planEntryId) : null;
+  const day = location?.day || fallbackDay;
+  const index = location?.index ?? fallbackIndex;
   if (!state.weekPlan[day] || !state.weekPlan[day][index]) return;
   state.weekPlan[day][index].servings = normalizePositiveInteger(servings, state.weekPlan[day][index].servings);
   await persistWeekPlan();
 }
 
-async function updatePlanEntrySlot(day, index, slot) {
+async function updatePlanEntrySlot(planEntryId, fallbackDay, fallbackIndex, slot) {
+  const location = planEntryId ? findPlanEntryLocation(planEntryId) : null;
+  const day = location?.day || fallbackDay;
+  const index = location?.index ?? fallbackIndex;
   if (!state.weekPlan[day] || !state.weekPlan[day][index] || !isValidMealSlot(slot)) return;
   state.weekPlan[day][index].slot = slot;
+  state.lastPlannerSlot = slot;
   await persistWeekPlan();
+}
+
+async function saveModalPlannerEntry() {
+  if (!state.currentModalRecipe) return;
+  const day = DAYS.includes(modalPlannerDay.value) ? modalPlannerDay.value : getTodayDayKey();
+  const slot = isValidMealSlot(modalPlannerSlot.value) ? modalPlannerSlot.value : (state.lastPlannerSlot || 'abend');
+  const servings = normalizePositiveInteger(modalPlannerServings.value, state.currentModalServings || state.currentModalRecipe.baseServings);
+  state.modalPlanningFeedback = '';
+  await addToDay(day, state.currentModalRecipe.id, {
+    slot,
+    servings,
+  });
+  state.modalPlanningOpen = false;
+  state.modalPlanningDay = day;
+  state.modalPlanningSlot = slot;
+  state.modalPlanningFeedback = `Für ${day} · ${getMealSlotLabel(slot)} · ${servings} P. eingeplant.`;
+  setPendingFocusTarget({ type: 'modal-planner-feedback' });
+  announceUi(state.modalPlanningFeedback);
+  renderRecipeModal();
+}
+
+function toggleMoveEntryComposer(planEntryId) {
+  const location = findPlanEntryLocation(planEntryId, getActiveWeekPlan());
+  if (!location) return;
+
+  if (state.activeMoveEntryId === planEntryId) {
+    state.activeMoveEntryId = null;
+    state.moveEntryDraftDay = null;
+    state.moveEntryDraftSlot = state.lastPlannerSlot || 'abend';
+  } else {
+    state.activeMoveEntryId = planEntryId;
+    state.moveEntryDraftDay = location.day;
+    state.moveEntryDraftSlot = location.entry.slot;
+  }
+
+  renderPlanner();
+}
+
+async function confirmMoveEntry(planEntryId) {
+  if (!state.activeMoveEntryId || state.activeMoveEntryId !== planEntryId) return;
+  const nextDay = DAYS.includes(state.moveEntryDraftDay) ? state.moveEntryDraftDay : getTodayDayKey();
+  const nextSlot = isValidMealSlot(state.moveEntryDraftSlot) ? state.moveEntryDraftSlot : 'abend';
+  state.weekPlan = movePlanEntryWithinPlan(state.weekPlan, planEntryId, {
+    day: nextDay,
+    slot: nextSlot,
+  });
+  state.lastPlannerSlot = nextSlot;
+  state.activeMoveEntryId = null;
+  setPendingFocusTarget({ type: 'plan-entry', planEntryId, action: 'move-plan-entry' });
+  announceUi(`Eintrag nach ${nextDay} · ${getMealSlotLabel(nextSlot)} verschoben.`);
+  await persistWeekPlan();
+}
+
+function clearDragPreviewClasses() {
+  document.querySelectorAll('.chip-drop-zone.is-target').forEach((element) => element.classList.remove('is-target'));
+  document.querySelectorAll('.day-recipe-chip.is-dragging').forEach((element) => element.classList.remove('is-dragging'));
+}
+
+function highlightDropTarget(planEntryId, over) {
+  clearDragPreviewClasses();
+  if (planEntryId) {
+    document.querySelectorAll(`.day-recipe-chip[data-plan-entry-id="${escapeSelectorValue(planEntryId)}"]`).forEach((element) => {
+      element.classList.add('is-dragging');
+    });
+  }
+  if (!over) return;
+  const selector = `.chip-drop-zone[data-drop-day="${escapeSelectorValue(over.day)}"][data-drop-slot="${escapeSelectorValue(over.slot)}"][data-drop-position="${escapeSelectorValue(over.position)}"]`;
+  document.querySelectorAll(selector).forEach((element) => element.classList.add('is-target'));
+}
+
+function cancelPendingDrag() {
+  if (state.dragState?.holdTimer) {
+    window.clearTimeout(state.dragState.holdTimer);
+  }
+  clearDragPreviewClasses();
+  state.dragState = null;
+  state.plannerDraftWeekPlan = null;
+  if (state.plannerOpen) {
+    renderPlanner();
+  }
+}
+
+function startPlanDrag({ planEntryId, day, index, pointerId, pointerType, clientX, clientY }) {
+  state.dragState = {
+    planEntryId,
+    day,
+    index,
+    pointerId,
+    pointerType,
+    active: true,
+    holdTimer: null,
+    originX: clientX,
+    originY: clientY,
+    over: null,
+  };
+  state.plannerDraftWeekPlan = cloneWeekPlan(state.weekPlan);
+  renderPlanner();
+  highlightDropTarget(planEntryId, null);
+}
+
+function updateDragTarget(clientX, clientY) {
+  if (!state.dragState?.active) return;
+
+  const element = document.elementFromPoint(clientX, clientY)?.closest?.('[data-drop-zone]');
+  if (!element) {
+    state.dragState.over = null;
+    highlightDropTarget(state.dragState.planEntryId, null);
+    return;
+  }
+
+  state.dragState.over = {
+    day: element.dataset.dropDay,
+    slot: element.dataset.dropSlot,
+    position: Number.parseInt(element.dataset.dropPosition, 10),
+  };
+  highlightDropTarget(state.dragState.planEntryId, state.dragState.over);
+
+  const edgeThreshold = 72;
+  if (clientY < edgeThreshold) {
+    window.scrollBy({ top: -18, behavior: 'auto' });
+  } else if (window.innerHeight - clientY < edgeThreshold) {
+    window.scrollBy({ top: 18, behavior: 'auto' });
+  }
+}
+
+function getDropTargetAtPoint(clientX, clientY) {
+  const pointElement = document.elementFromPoint(clientX, clientY);
+  const dropZone = pointElement?.closest?.('[data-drop-zone]');
+  if (dropZone) {
+    return {
+      day: dropZone.dataset.dropDay,
+      slot: dropZone.dataset.dropSlot,
+      position: Number.parseInt(dropZone.dataset.dropPosition, 10),
+    };
+  }
+
+  const dayColumn = pointElement?.closest?.('[data-day-column]');
+  if (!dayColumn) return null;
+
+  const slotSections = Array.from(dayColumn.querySelectorAll('[data-slot-section]'));
+  const matchingSection = slotSections.find((section) => {
+    const rect = section.getBoundingClientRect();
+    return clientY >= rect.top && clientY <= rect.bottom;
+  }) || slotSections
+    .map((section) => ({ section, rect: section.getBoundingClientRect() }))
+    .sort((a, b) => {
+      const distanceA = Math.min(Math.abs(clientY - a.rect.top), Math.abs(clientY - a.rect.bottom));
+      const distanceB = Math.min(Math.abs(clientY - b.rect.top), Math.abs(clientY - b.rect.bottom));
+      return distanceA - distanceB;
+    })[0]?.section;
+
+  if (!matchingSection) return null;
+
+  return {
+    day: dayColumn.dataset.dayColumn,
+    slot: matchingSection.dataset.slotSection,
+    position: Number.parseInt(matchingSection.dataset.slotEntryCount || '0', 10),
+  };
+}
+
+async function finishPlanDrag(clientX = null, clientY = null) {
+  if (!state.dragState?.active) {
+    cancelPendingDrag();
+    return;
+  }
+
+  const { planEntryId } = state.dragState;
+  const over = state.dragState.over || (
+    typeof clientX === 'number' && typeof clientY === 'number'
+      ? getDropTargetAtPoint(clientX, clientY)
+      : null
+  );
+  clearDragPreviewClasses();
+
+  if (over && DAYS.includes(over.day) && isValidMealSlot(over.slot)) {
+    state.weekPlan = movePlanEntryWithinPlan(state.weekPlan, planEntryId, over);
+    state.lastPlannerSlot = over.slot;
+    setPendingFocusTarget({ type: 'plan-entry', planEntryId, action: 'start-plan-drag' });
+    announceUi(`Eintrag nach ${over.day} · ${getMealSlotLabel(over.slot)} verschoben.`);
+    state.dragState = null;
+    state.plannerDraftWeekPlan = null;
+    await persistWeekPlan();
+    return;
+  }
+
+  state.dragState = null;
+  state.plannerDraftWeekPlan = null;
+  renderPlanner();
+}
+
+async function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
+  const recipe = state.recipes.find((item) => item.id === String(recipeId));
+  if (!recipe) return;
+
+  const isLike = !recipe.favorite;
+  const anchorRect = anchor?.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+
+  if (surface === 'modal') {
+    setPendingFocusTarget({ type: 'modal-favorite' });
+  } else {
+    setPendingFocusTarget({ type: 'favorite-grid', recipeId });
+  }
+
+  if (isLike) {
+    effectsLayer.playFavoriteBurst({
+      anchor,
+      anchorRect,
+      surface,
+    });
+  } else if (state.motionMode !== 'reduce') {
+    effectsLayer.playHeartPop({ anchor, anchorRect });
+  }
+
+  await repository.toggleFavorite(recipeId);
+  if (!isLike) {
+    announceUi('Aus Favoriten entfernt');
+  }
+  await refreshAppData({ silent: true });
+  if (surface === 'modal') {
+    renderRecipeModal();
+  }
 }
 
 function downloadJson(filename, payload) {
@@ -671,7 +1201,9 @@ function handleDayPickerKeyboard(event) {
 
   if (event.key === 'Escape' && event.target.closest('.day-picker')) {
     event.preventDefault();
+    setPendingFocusTarget({ type: 'day-picker-trigger', day: state.activeDayPicker });
     state.activeDayPicker = null;
+    state.activeDayPickerQuery = '';
     renderPlanner();
     return true;
   }
@@ -741,6 +1273,12 @@ bindAppEvents({
     modalCookedBtn,
     modalEditBtn,
     modalServingsSelect,
+    modalPlannerToggle,
+    modalPlannerSaveBtn,
+    modalPlannerCancelBtn,
+    modalPlannerDay,
+    modalPlannerSlot,
+    modalPlannerServings,
     confirmDeleteBtn,
     cancelDeleteBtn,
     deleteConfirm,
@@ -783,8 +1321,12 @@ bindAppEvents({
       state.recipes = [];
       state.weekPlan = createEmptyWeekPlan();
       state.activeDayPicker = null;
+      state.activeDayPickerQuery = '';
       state.favoriteFilterActive = false;
       state.activeTagFilter = null;
+      state.pendingFocusTarget = null;
+      state.modalPlanningFeedback = '';
+      resetPlannerDraftState();
       setPlannerOpen(false);
       renderRecipes();
     },
@@ -818,12 +1360,17 @@ bindAppEvents({
       if (state.plannerOpen) {
         renderPlanner();
         updatePlannerShoppingList();
+      } else {
+        state.activeDayPicker = null;
+        state.activeDayPickerQuery = '';
+        resetPlannerDraftState();
       }
     },
 
     async onClearPlan() {
       if (!DAYS.some((day) => (state.weekPlan[day] || []).length > 0)) return;
       state.weekPlan = createEmptyWeekPlan();
+      resetPlannerDraftState();
       await persistWeekPlan();
     },
 
@@ -904,14 +1451,18 @@ bindAppEvents({
 
     async onToggleModalFavorite() {
       if (!state.currentModalRecipe) return;
-      await repository.toggleFavorite(state.currentModalRecipe.id);
-      await refreshAppData({ silent: true });
-      renderRecipeModal();
+      await toggleFavoriteWithEffect({
+        recipeId: state.currentModalRecipe.id,
+        anchor: modalFavoriteBtn,
+        surface: 'modal',
+      });
     },
 
     async onModalCooked() {
       if (!state.currentModalRecipe) return;
+      setPendingFocusTarget({ selector: '#modalCookedBtn' });
       await repository.markRecipeCooked(state.currentModalRecipe.id);
+      announceUi('Heute gekocht markiert');
       await refreshAppData({ silent: true });
       renderRecipeModal();
     },
@@ -922,6 +1473,43 @@ bindAppEvents({
 
     onModalServingsChange() {
       updateModalServings();
+    },
+
+    onToggleModalPlanner() {
+      state.modalPlanningOpen = !state.modalPlanningOpen;
+      if (state.modalPlanningOpen) {
+        state.modalPlanningFeedback = '';
+      }
+      syncModalPlanningUi();
+      if (state.modalPlanningOpen) {
+        modalPlannerDay?.focus();
+      } else {
+        setPendingFocusTarget({ type: 'modal-planner-toggle' });
+        restorePendingFocusTarget();
+      }
+    },
+
+    async onSaveModalPlanner() {
+      await saveModalPlannerEntry();
+    },
+
+    onCancelModalPlanner() {
+      state.modalPlanningOpen = false;
+      syncModalPlanningUi();
+      setPendingFocusTarget({ type: 'modal-planner-toggle' });
+      restorePendingFocusTarget();
+    },
+
+    onModalPlannerDayChange(event) {
+      state.modalPlanningDay = event.target.value;
+    },
+
+    onModalPlannerSlotChange(event) {
+      state.modalPlanningSlot = isValidMealSlot(event.target.value) ? event.target.value : 'abend';
+    },
+
+    onModalPlannerServingsChange(event) {
+      event.target.value = String(normalizePositiveInteger(event.target.value, state.currentModalServings || 2));
     },
 
     onConfirmDelete: confirmDelete,
@@ -961,6 +1549,7 @@ bindAppEvents({
 
       if (event.target.matches('[data-action="plan-serving"]')) {
         await updatePlanEntryServings(
+          event.target.dataset.planEntryId,
           event.target.dataset.day,
           Number.parseInt(event.target.dataset.index, 10),
           Number.parseInt(event.target.value, 10),
@@ -970,10 +1559,21 @@ bindAppEvents({
 
       if (event.target.matches('[data-action="plan-slot"]')) {
         await updatePlanEntrySlot(
+          event.target.dataset.planEntryId,
           event.target.dataset.day,
           Number.parseInt(event.target.dataset.index, 10),
           event.target.value,
         );
+        return;
+      }
+
+      if (event.target.matches('[data-action="move-entry-day"]')) {
+        state.moveEntryDraftDay = event.target.value;
+        return;
+      }
+
+      if (event.target.matches('[data-action="move-entry-slot"]')) {
+        state.moveEntryDraftSlot = isValidMealSlot(event.target.value) ? event.target.value : 'abend';
       }
     },
 
@@ -997,13 +1597,20 @@ bindAppEvents({
         }
 
         if (action === 'toggle-favorite') {
-          await repository.toggleFavorite(actionTarget.dataset.recipeId);
-          await refreshAppData({ silent: true });
+          await toggleFavoriteWithEffect({
+            recipeId: actionTarget.dataset.recipeId,
+            anchor: actionTarget,
+            surface: actionTarget.dataset.favoriteSurface || 'grid',
+          });
           return;
         }
 
         if (action === 'mark-cooked') {
+          if (actionTarget.dataset.planEntryId) {
+            setPendingFocusTarget({ type: 'plan-entry', planEntryId: actionTarget.dataset.planEntryId, action: 'mark-cooked' });
+          }
           await repository.markRecipeCooked(actionTarget.dataset.recipeId);
+          announceUi('Heute gekocht markiert');
           await refreshAppData({ silent: true });
           return;
         }
@@ -1019,12 +1626,34 @@ bindAppEvents({
         }
 
         if (action === 'add-to-day') {
+          setPendingFocusTarget({ type: 'day-picker-trigger', day: actionTarget.dataset.day });
           await addToDay(actionTarget.dataset.day, actionTarget.dataset.recipeId);
           return;
         }
 
         if (action === 'remove-plan-entry') {
-          await removeFromDay(actionTarget.dataset.day, Number.parseInt(actionTarget.dataset.index, 10));
+          setPendingFocusTarget({ type: 'day-picker-trigger', day: actionTarget.dataset.day });
+          await removeFromDay(
+            actionTarget.dataset.planEntryId,
+            actionTarget.dataset.day,
+            Number.parseInt(actionTarget.dataset.index, 10),
+          );
+          return;
+        }
+
+        if (action === 'move-plan-entry') {
+          toggleMoveEntryComposer(actionTarget.dataset.planEntryId);
+          return;
+        }
+
+        if (action === 'confirm-move-entry') {
+          await confirmMoveEntry(actionTarget.dataset.planEntryId);
+          return;
+        }
+
+        if (action === 'cancel-move-entry') {
+          state.activeMoveEntryId = null;
+          renderPlanner();
           return;
         }
 
@@ -1042,7 +1671,9 @@ bindAppEvents({
       }
 
       if (state.activeDayPicker && !event.target.closest('.day-add-wrapper')) {
+        setPendingFocusTarget({ type: 'day-picker-trigger', day: state.activeDayPicker });
         state.activeDayPicker = null;
+        state.activeDayPickerQuery = '';
         renderPlanner();
       }
     },
@@ -1053,6 +1684,12 @@ bindAppEvents({
       if (handleDayPickerKeyboard(event)) return;
 
       if (event.key !== 'Escape') return;
+
+      if (state.activeMoveEntryId) {
+        state.activeMoveEntryId = null;
+        renderPlanner();
+        return;
+      }
 
       if (deleteDialogController.isOpen()) {
         cancelDelete();
@@ -1065,9 +1702,75 @@ bindAppEvents({
       }
 
       if (state.activeDayPicker) {
+        setPendingFocusTarget({ type: 'day-picker-trigger', day: state.activeDayPicker });
         state.activeDayPicker = null;
+        state.activeDayPickerQuery = '';
         renderPlanner();
       }
+    },
+
+    onDocumentPointerDown(event) {
+      const dragHandle = event.target.closest('[data-action="start-plan-drag"]');
+      if (!dragHandle) return;
+      event.preventDefault();
+      const startPayload = {
+        planEntryId: dragHandle.dataset.planEntryId,
+        day: dragHandle.dataset.day,
+        index: Number.parseInt(dragHandle.dataset.index, 10),
+        pointerId: event.pointerId,
+        pointerType: event.pointerType || 'mouse',
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
+
+      if ((event.pointerType || 'mouse') === 'touch') {
+        state.dragState = {
+          ...startPayload,
+          active: false,
+          originX: event.clientX,
+          originY: event.clientY,
+          holdTimer: window.setTimeout(() => {
+            startPlanDrag(startPayload);
+          }, 280),
+        };
+        return;
+      }
+
+      startPlanDrag(startPayload);
+    },
+
+    onDocumentPointerMove(event) {
+      if (!state.dragState) return;
+
+      if (!state.dragState.active) {
+        const deltaX = Math.abs(event.clientX - state.dragState.originX);
+        const deltaY = Math.abs(event.clientY - state.dragState.originY);
+        if (deltaX > 8 || deltaY > 8) {
+          cancelPendingDrag();
+        }
+        return;
+      }
+
+      updateDragTarget(event.clientX, event.clientY);
+    },
+
+    async onDocumentPointerUp(event) {
+      if (!state.dragState) return;
+      await finishPlanDrag(event.clientX, event.clientY);
+    },
+
+    onDocumentPointerCancel() {
+      cancelPendingDrag();
+    },
+
+    onDocumentMouseMove(event) {
+      if (!state.dragState?.active) return;
+      updateDragTarget(event.clientX, event.clientY);
+    },
+
+    async onDocumentMouseUp(event) {
+      if (!state.dragState) return;
+      await finishPlanDrag(event.clientX, event.clientY);
     },
 
     onModalOverlayClick(event) {
@@ -1091,7 +1794,19 @@ bindAppEvents({
   },
 });
 
+if (reducedMotionQuery) {
+  const handleReducedMotionChange = (event) => {
+    updateMotionMode(event.matches);
+  };
+  if (typeof reducedMotionQuery.addEventListener === 'function') {
+    reducedMotionQuery.addEventListener('change', handleReducedMotionChange);
+  } else if (typeof reducedMotionQuery.addListener === 'function') {
+    reducedMotionQuery.addListener(handleReducedMotionChange);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  updateMotionMode(reducedMotionQuery?.matches || false);
   renderAuthShell(authService.getSnapshot());
   setPlannerOpen(false);
 

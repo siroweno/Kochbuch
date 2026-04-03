@@ -93,27 +93,45 @@ export function renderCollectionSummary({ collectionSummary, recipes, weekPlan }
   const favoriteRecipes = recipes.filter((recipe) => recipe.favorite).length;
   const cookedRecipes = recipes.filter((recipe) => recipe.lastCookedAt).length;
   const plannerStats = getPlannerStats(weekPlan, recipes);
+  const readyToCook = recipes.filter((recipe) => recipe.favorite || recipe.lastCookedAt).length;
+  const plannedFavorites = plannerStats.favoriteEntries;
 
   collectionSummary.innerHTML = `
-    <div class="summary-card">
-      <strong>Rezepte im Regal</strong>
+    <article class="summary-card summary-card--lead">
+      <div class="summary-card-kicker">Kochbuch auf einen Blick</div>
       <div class="summary-card-value">${totalRecipes}</div>
-      <p>${totalRecipes ? 'Suche, Tags und Sortierung greifen ueber die ganze Sammlung.' : 'Lege dein erstes Rezept an oder importiere eine vorhandene Sammlung.'}</p>
-    </div>
-    <div class="summary-card">
+      <p>${totalRecipes
+        ? `Die Sammlung ist lebendig: ${favoriteRecipes} Favoriten, ${plannerStats.entries} geplante Mahlzeiten und ${cookedRecipes} Rezepte mit Kochspur.`
+        : 'Lege dein erstes Rezept an oder importiere eine vorhandene Sammlung, damit hier schnell Leben reinkommt.'}
+      </p>
+      <div class="summary-card-meta">
+        <span>${readyToCook ? `${readyToCook} Rezepte sind sofort alltagstauglich` : 'Favoriten markieren die ersten Alltagshilfen'}</span>
+        <span>${plannerStats.plannedDays ? `${plannerStats.plannedDays} Tage sind schon belegt` : 'Der Wochenplan wartet noch auf den ersten Eintrag'}</span>
+      </div>
+    </article>
+    <div class="summary-card summary-card--support">
       <strong>Favoriten</strong>
       <div class="summary-card-value">${favoriteRecipes}</div>
-      <p>${favoriteRecipes ? 'Lieblingsrezepte lassen sich separat filtern und stehen im Picker weiter oben.' : 'Markiere alltagstaugliche Rezepte mit dem Herz fuer schnellere Planung.'}</p>
+      <p>${favoriteRecipes
+        ? `${plannedFavorites} Eintraege davon stehen bereits im Wochenplan und bleiben dadurch nah an deinem Alltag.`
+        : 'Markiere alltagstaugliche Rezepte mit dem Herz, damit sie fuer Planung und Suche weiter oben stehen.'}
+      </p>
     </div>
-    <div class="summary-card">
+    <div class="summary-card summary-card--support">
       <strong>Wochenplan</strong>
       <div class="summary-card-value">${plannerStats.entries}</div>
-      <p>${plannerStats.entries ? `${plannerStats.plannedDays} Tage sind belegt, ${plannerStats.favoriteEntries} Eintraege davon sind Favoriten.` : 'Plane Mahlzeiten mit Portionen und Slot direkt in die Woche ein.'}</p>
+      <p>${plannerStats.entries
+        ? `${plannerStats.plannedDays} Tage sind belegt, ${plannerStats.uniqueRecipes} verschiedene Rezepte sind im Umlauf.`
+        : 'Plane Mahlzeiten mit Portionen und Slot direkt in die Woche ein.'}
+      </p>
     </div>
-    <div class="summary-card">
-      <strong>Schon gekocht</strong>
+    <div class="summary-card summary-card--support">
+      <strong>Zuletzt gekocht</strong>
       <div class="summary-card-value">${cookedRecipes}</div>
-      <p>${cookedRecipes ? 'Zuletzt gekochte Rezepte tauchen in Karte, Sortierung und Picker direkt wieder auf.' : 'Markiere im Modal oder Planner, was du heute gekocht hast.'}</p>
+      <p>${cookedRecipes
+        ? 'Zuletzt gekochte Rezepte tauchen in Karte, Sortierung und Picker wieder oben auf.'
+        : 'Markiere im Modal oder Planner, was du heute gekocht hast.'}
+      </p>
     </div>
   `;
 }
@@ -192,7 +210,7 @@ export function renderRecipeGrid({
         <div class="card-footer">
           <div class="card-tags">${tagsHtml}</div>
           <div class="card-actions">
-            <button type="button" class="icon-btn favorite-btn${recipe.favorite ? ' active' : ''}" data-action="toggle-favorite" data-recipe-id="${recipe.id}" aria-pressed="${String(recipe.favorite)}" aria-label="${recipe.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${recipe.favorite ? '♥' : '♡'}</button>
+            <button type="button" class="icon-btn favorite-btn${recipe.favorite ? ' active' : ''}" data-action="toggle-favorite" data-recipe-id="${recipe.id}" data-favorite-surface="grid" data-focus-key="favorite-${escapeAttribute(recipe.id)}" aria-pressed="${String(recipe.favorite)}" aria-label="${recipe.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">${recipe.favorite ? '♥' : '♡'}</button>
             ${canAdmin ? `<button type="button" class="icon-btn delete-btn" data-action="delete-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} löschen">✕</button>` : ''}
           </div>
         </div>

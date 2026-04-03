@@ -36,6 +36,8 @@ async function openLoggedInPage(browser, email) {
 }
 
 async function createRecipeViaUi(page, recipe, { imageBuffer = null, imageName = 'recipe.png' } = {}) {
+  const matchingCards = page.locator('.recipe-card').filter({ hasText: recipe.title });
+  const previousCount = await matchingCards.count();
   await page.getByRole('button', { name: /\+ Neues Rezept/ }).click();
   await page.getByLabel('Rezeptname *').fill(recipe.title);
   await page.getByLabel('Tags (kommagetrennt)').fill(recipe.tags || '');
@@ -79,7 +81,7 @@ async function createRecipeViaUi(page, recipe, { imageBuffer = null, imageName =
   }
 
   await page.getByRole('button', { name: 'Rezept speichern' }).click();
-  await expect(page.locator('.recipe-card').filter({ hasText: recipe.title })).toHaveCount(1);
+  await expect(matchingCards).toHaveCount(previousCount + 1);
 }
 
 async function openPlanner(page) {
