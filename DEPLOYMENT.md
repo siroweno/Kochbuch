@@ -6,17 +6,18 @@ Diese App ist für GitHub Pages + Supabase gedacht. Kein Next.js, kein SSR, kein
 
 - Standard-Live-URL: `https://siroweno.github.io/Kochbuch/`
 - Falls eine Custom Domain genutzt wird, ersetzt diese URL alle Supabase-Redirect-Einstellungen.
-- Die Live-Seite muss `index.html` direkt aus dem Repo ausliefern.
+- Die Live-Seite soll das gebaute `dist/`-Artefakt ausliefern.
 
 ## 2. Runtime-Config
 
 - Die produktive Konfiguration läuft über `window.__KOCHBUCH_CONFIG__`.
 - In diesem Repo liegt die öffentliche Live-Konfiguration in [runtime-config.js](./runtime-config.js).
-- Der Dateiname ist bewusst produktiv und nicht lokal: GitHub Pages lädt diese Datei direkt aus dem Repo.
+- Der Dateiname bleibt bewusst produktiv und wird im Build unter derselben URL `runtime-config.js` ausgeliefert.
 - Für die Live-Seite müssen folgende Werte gesetzt sein:
   - `backend: 'supabase'`
   - `supabaseUrl`
   - `supabaseAnonKey`
+- `allowBrowserTest` bleibt in Live-Builds ungesetzt oder `false`.
 - Der `anon`/`publishable` Key darf öffentlich im Frontend stehen.
 - Ein `service_role` Key darf niemals ins Repo oder ins Frontend.
 
@@ -89,8 +90,11 @@ Prüfe auf der GitHub-Pages-URL:
 
 ## 8. Lokale Entwicklung
 
-- Browser-Test-Modus: `npm test`
-- Lokales Browser-Test-Backend: `npm run serve`
+- UI-Entwicklung: `npm run dev`
+- Produktionsbuild: `npm run build`
+- Build lokal prüfen: `npm run preview`
+- Browser-Test-Modus gegen das gebaute Artefakt: `npm test`
+- Lokales Browser-Test-Backend direkt: `npm run serve`
 - Lokaler Supabase-Stack ist optional und nicht Voraussetzung für Phase 1.
 
 ## 9. Release-Check

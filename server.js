@@ -6,9 +6,12 @@ const { randomUUID } = require('crypto');
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.PORT || 4173);
 const ROOT_DIR = __dirname;
+const DIST_DIR = path.join(ROOT_DIR, 'dist');
+const DATA_DIR = path.join(ROOT_DIR, 'data');
+const RUNTIME_CONFIG_PATH = path.join(ROOT_DIR, 'runtime-config.js');
 const ADMIN_TEST_EMAIL = 'admin@kochbuch.local';
 const ALLOWED_STATIC_PATHS = new Set(['/index.html', '/runtime-config.js']);
-const ALLOWED_STATIC_PREFIXES = ['/src/', '/data/'];
+const ALLOWED_STATIC_PREFIXES = ['/assets/', '/data/'];
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -21,6 +24,53 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8',
 };
+
+function getStaticPath(requestPath) {
+  const relativePath = requestPath === '/' ? '/index.html' : requestPath;
+
+  if (relativePath === '/runtime-config.js') {
+    return { kind: 'runtime-config', relativePath };
+  }
+
+  if (relativePath === '/index.html') {
+    return {
+      kind: 'file',
+      relativePath,
+      absolutePath: path.join(DIST_DIR, 'index.html'),
+    };
+  }
+
+  if (relativePath.startsWith('/assets/')) {
+    return {
+      kind: 'file',
+      relativePath,
+      absolutePath: path.join(DIST_DIR, relativePath.replace(/^\/+/, '')),
+    };
+  }
+
+  if (relativePath.startsWith('/data/')) {
+    return {
+      kind: 'file',
+      relativePath,
+      absolutePath: path.join(DATA_DIR, relativePath.slice('/data/'.length)),
+    };
+  }
+
+  return null;
+}
+
+function buildBrowserTestRuntimeConfig() {
+  const source = fs.readFileSync(RUNTIME_CONFIG_PATH, 'utf8');
+  return `${source}
+
+window.__KOCHBUCH_CONFIG__ = {
+  ...(window.__KOCHBUCH_CONFIG__ || {}),
+  backend: 'browser-test',
+  allowBrowserTest: true,
+  browserTestBasePath: '/api/browser-test',
+};
+`;
+}
 
 function createEmptyWeekPlan() {
   return { Mo: [], Di: [], Mi: [], Do: [], Fr: [], Sa: [], So: [] };
@@ -400,9 +450,25 @@ function serveStaticFile(requestPath, response) {
     return;
   }
 
-  const absolutePath = path.resolve(ROOT_DIR, `.${relativePath}`);
+  const staticPath = getStaticPath(relativePath);
+  if (!staticPath) {
+    writeJson(response, 404, { error: 'Not found' });
+    return;
+  }
 
-  if (!absolutePath.startsWith(ROOT_DIR)) {
+  if (staticPath.kind === 'runtime-config') {
+    const source = buildBrowserTestRuntimeConfig();
+    response.writeHead(200, {
+      'Content-Type': MIME_TYPES['.js'],
+      'Cache-Control': 'no-store',
+    });
+    response.end(source);
+    return;
+  }
+
+  const absolutePath = path.resolve(staticPath.absolutePath);
+  const allowedRoot = staticPath.relativePath.startsWith('/data/') ? DATA_DIR : DIST_DIR;
+  if (!absolutePath.startsWith(allowedRoot)) {
     writeJson(response, 403, { error: 'Forbidden' });
     return;
   }

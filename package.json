@@ -3,8 +3,13 @@
   "version": "1.0.0",
   "description": "Statische Kochbuch-App mit lokalem Browser-Testsetup",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
     "serve": "node server.js",
-    "test": "playwright test",
+    "serve:test": "node server.js",
+    "test": "npm run test:smoke",
+    "test:smoke": "playwright test",
     "test:supabase": "npm run test:supabase:contracts && npm run test:supabase:local",
     "test:supabase:browser": "playwright test --config tests/supabase/playwright.config.js --grep @browser",
     "test:supabase:contracts": "playwright test --config tests/supabase/playwright.config.js --grep @contracts",
@@ -23,7 +28,8 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@playwright/test": "^1.59.1"
+    "@playwright/test": "^1.59.1",
+    "vite": "^7.1.10"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1"

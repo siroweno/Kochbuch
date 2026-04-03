@@ -28,13 +28,24 @@ async function countButtons(page, name) {
   return page.getByRole('button', { name }).count();
 }
 
+async function expectBuiltAssetsServed(request) {
+  const indexResponse = await request.get('/index.html');
+  expect(indexResponse.ok(), 'expected /index.html to be served').toBeTruthy();
+  const html = await indexResponse.text();
+
+  const assetPaths = Array.from(html.matchAll(/(?:href|src)="\.?\/?(assets\/[^"]+)"/g))
+    .map((match) => `/${match[1]}`);
+  expect(assetPaths.length, 'expected built asset references in index.html').toBeGreaterThan(0);
+
+  for (const pathname of ['/runtime-config.js', ...assetPaths, '/data/familienkochbuch-import.json']) {
+    const response = await request.get(pathname);
+    expect(response.ok(), `expected ${pathname} to be served`).toBeTruthy();
+  }
+}
+
 test.describe('Kochbuch Supabase contracts', () => {
   test('@contracts local server only exposes the allowlisted app assets', async ({ request }) => {
-    const okPaths = ['/index.html', '/runtime-config.js', '/src/main.js', '/data/familienkochbuch-import.json'];
-    for (const pathname of okPaths) {
-      const response = await request.get(pathname);
-      expect(response.ok(), `expected ${pathname} to be served`).toBeTruthy();
-    }
+    await expectBuiltAssetsServed(request);
 
     const blockedPaths = ['/package.json', '/server.js', '/README.md', '/supabase/seed.sql'];
     for (const pathname of blockedPaths) {

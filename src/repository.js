@@ -12,13 +12,11 @@ import {
   normalizeImportPayload,
   normalizeRecipeRecord,
   normalizePositiveInteger,
-  normalizeUserRecipeStateRecord,
   normalizeWeekPlan,
   readLegacyLocalSnapshot,
 } from './cookbook-schema.js';
 
 const MIGRATION_MARKER_KEY = 'cookbook_cloud_migration_done_v1';
-const STORAGE_BUCKET = 'recipe-images';
 
 function ensureSession(snapshot) {
   if (snapshot.accessState !== 'signed_in' || !snapshot.sessionUser) {
@@ -31,61 +29,6 @@ function ensureAdmin(snapshot) {
   if (!snapshot.canAdmin) {
     throw new Error('Nur Admins duerfen diese Aktion ausfuehren.');
   }
-}
-
-async function parseJsonResponse(response) {
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : {};
-  if (!response.ok) {
-    const error = new Error(payload.error || payload.message || `Request failed with ${response.status}`);
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
-  }
-  return payload;
-}
-
-function mapRecipeRecordToRow(recipe, userId) {
-  return {
-    id: recipe.id,
-    title: recipe.title,
-    base_servings: recipe.baseServings,
-    prep_time: recipe.prepTime,
-    cook_time: recipe.cookTime,
-    tags: recipe.tags,
-    description: recipe.description,
-    raw_ingredients: recipe.rawIngredients,
-    parsed_ingredients: recipe.parsedIngredients,
-    instructions: recipe.instructions,
-    plating: recipe.plating,
-    tips: recipe.tips,
-    image_path: recipe.imagePath,
-    external_image_url: recipe.externalImageUrl,
-    created_at: recipe.createdAt,
-    updated_at: recipe.updatedAt,
-    created_by: userId || null,
-    updated_by: userId || null,
-  };
-}
-
-function dataUrlToBlob(dataUrl) {
-  const [header, body] = String(dataUrl || '').split(',');
-  const mimeMatch = header?.match(/^data:(.*?);base64$/);
-  const mimeType = mimeMatch?.[1] || 'application/octet-stream';
-  const binary = window.atob(body || '');
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return new Blob([bytes], { type: mimeType });
-}
-
-function createImagePath(filename = '') {
-  const safeName = String(filename || 'rezeptbild.jpg')
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    || 'rezeptbild.jpg';
-  return `recipes/${Date.now()}-${Math.random().toString(16).slice(2, 10)}-${safeName}`;
 }
 
 function isCompleteRecipeRecord(recipe) {
@@ -132,18 +75,7 @@ async function fetchImageDataUrl(imageUrl) {
   return blobToDataUrl(await response.blob());
 }
 
-function extractResolvedImageUrls(rawRecipes = []) {
-  return rawRecipes.reduce((map, rawRecipe) => {
-    const recipeId = String(rawRecipe.id || '');
-    const resolved = rawRecipe.resolvedImageUrl || rawRecipe.resolved_image_url || '';
-    if (recipeId && resolved) {
-      map.set(recipeId, resolved);
-    }
-    return map;
-  }, new Map());
-}
-
-export function createCookbookRepository({ config, authService }) {
+export function createCookbookRepository({ authService, createDriver }) {
   const cache = {
     sharedRecipes: [],
     personalStateMap: new Map(),
@@ -168,252 +100,6 @@ export function createCookbookRepository({ config, authService }) {
       },
       migration: getLegacyLocalStateSummary(),
     };
-  }
-
-  async function resolveSupabaseImageUrls(sharedRecipes, supabase) {
-    const imageUrlByRecipeId = new Map();
-
-    await Promise.all(sharedRecipes.map(async (recipe) => {
-      if (!recipe.imagePath) return;
-      const { data } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(recipe.imagePath, 60 * 60);
-      if (data?.signedUrl) {
-        imageUrlByRecipeId.set(recipe.id, data.signedUrl);
-      }
-    }));
-
-    return imageUrlByRecipeId;
-  }
-
-  function createSupabaseDriver() {
-    const supabase = authService.getSupabaseClient();
-
-    return {
-      async loadBundle() {
-        const snapshot = getSnapshot();
-        ensureSession(snapshot);
-
-        if (typeof authService.syncProfileForCurrentUser === 'function') {
-          await authService.syncProfileForCurrentUser();
-        }
-
-        const [recipesResponse, stateResponse, planResponse] = await Promise.all([
-          supabase
-            .from('recipes')
-            .select('*')
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('user_recipe_state')
-            .select('recipe_id,favorite,last_cooked_at')
-            .eq('user_id', snapshot.sessionUser.id),
-          supabase
-            .from('user_week_plan')
-            .select('plan')
-            .eq('user_id', snapshot.sessionUser.id)
-            .maybeSingle(),
-        ]);
-
-        if (recipesResponse.error) throw recipesResponse.error;
-        if (stateResponse.error) throw stateResponse.error;
-        if (planResponse.error) throw planResponse.error;
-
-        const rawRecipes = recipesResponse.data || [];
-        const sharedRecipes = rawRecipes.map((row) => normalizeRecipeRecord({
-          id: row.id,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          title: row.title,
-          baseServings: row.base_servings,
-          prepTime: row.prep_time,
-          cookTime: row.cook_time,
-          tags: row.tags,
-          description: row.description,
-          rawIngredients: row.raw_ingredients,
-          parsedIngredients: row.parsed_ingredients,
-          instructions: row.instructions,
-          plating: row.plating,
-          tips: row.tips,
-          imagePath: row.image_path,
-          externalImageUrl: row.external_image_url,
-        })).filter(isCompleteRecipeRecord);
-
-        const personalStateRecords = (stateResponse.data || []).map((row) => normalizeUserRecipeStateRecord({
-          recipeId: row.recipe_id,
-          favorite: row.favorite,
-          lastCookedAt: row.last_cooked_at,
-        }));
-
-        const weekPlan = normalizeWeekPlan(planResponse.data?.plan || createEmptyWeekPlan(), new Map(sharedRecipes.map((recipe) => [recipe.id, recipe])));
-        const imageUrlByRecipeId = await resolveSupabaseImageUrls(sharedRecipes, supabase);
-
-        return {
-          sharedRecipes,
-          personalStateRecords,
-          weekPlan,
-          imageUrlByRecipeId,
-        };
-      },
-
-      async saveRecipeRecord(recipe) {
-        const snapshot = getSnapshot();
-        ensureAdmin(snapshot);
-        if (!isCompleteRecipeRecord(recipe)) {
-          throw new Error('Bitte gib Titel, Zutaten und Zubereitung an.');
-        }
-        const { error } = await supabase.from('recipes').upsert(mapRecipeRecordToRow(recipe, snapshot.sessionUser.id));
-        if (error) throw error;
-      },
-
-      async deleteRecipeRecord(recipeId) {
-        const { error } = await supabase.from('recipes').delete().eq('id', recipeId);
-        if (error) throw error;
-      },
-
-      async upsertUserRecipeState(recipeId, patch) {
-        const snapshot = getSnapshot();
-        ensureSession(snapshot);
-        const payload = {
-          user_id: snapshot.sessionUser.id,
-          recipe_id: recipeId,
-          favorite: Boolean(patch.favorite),
-          last_cooked_at: patch.lastCookedAt || null,
-        };
-        const { error } = await supabase.from('user_recipe_state').upsert(payload);
-        if (error) throw error;
-      },
-
-      async deleteUserRecipeState(recipeId) {
-        const snapshot = getSnapshot();
-        ensureSession(snapshot);
-        const { error } = await supabase
-          .from('user_recipe_state')
-          .delete()
-          .eq('user_id', snapshot.sessionUser.id)
-          .eq('recipe_id', recipeId);
-        if (error) throw error;
-      },
-
-      async saveWeekPlan(plan) {
-        const snapshot = getSnapshot();
-        ensureSession(snapshot);
-        const { error } = await supabase.from('user_week_plan').upsert({
-          user_id: snapshot.sessionUser.id,
-          plan,
-        });
-        if (error) throw error;
-      },
-
-      async uploadImageDataUrl(dataUrl, filename) {
-        const blob = dataUrlToBlob(dataUrl);
-        const imagePath = createImagePath(filename);
-        const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(imagePath, blob, {
-          upsert: true,
-          contentType: blob.type,
-        });
-        if (error) throw error;
-        return { imagePath };
-      },
-
-      async deleteImage(imagePath) {
-        if (!imagePath) return;
-        await supabase.storage.from(STORAGE_BUCKET).remove([imagePath]);
-      },
-    };
-  }
-
-  function createBrowserTestDriver() {
-    function getHeaders() {
-      return {
-        'Content-Type': 'application/json',
-        ...authService.getBrowserTestHeaders(),
-      };
-    }
-
-    async function request(pathname, options = {}) {
-      const response = await fetch(`${config.browserTestBasePath}${pathname}`, {
-        headers: getHeaders(),
-        ...options,
-      });
-      return parseJsonResponse(response);
-    }
-
-    return {
-      async loadBundle() {
-        const payload = await request('/cookbook', { method: 'GET' });
-        const sharedRecipes = (payload.recipes || []).map((recipe) => normalizeRecipeRecord(recipe)).filter(isCompleteRecipeRecord);
-        const imageUrlByRecipeId = extractResolvedImageUrls(payload.recipes || []);
-        const personalStateRecords = (payload.userRecipeState || []).map((state) => normalizeUserRecipeStateRecord(state));
-        const weekPlan = normalizeWeekPlan(payload.weekPlan || createEmptyWeekPlan(), new Map(sharedRecipes.map((recipe) => [recipe.id, recipe])));
-        return {
-          sharedRecipes,
-          personalStateRecords,
-          weekPlan,
-          imageUrlByRecipeId,
-        };
-      },
-
-      async saveRecipeRecord(recipe) {
-        if (!isCompleteRecipeRecord(recipe)) {
-          throw new Error('Bitte gib Titel, Zutaten und Zubereitung an.');
-        }
-        const pathname = recipe.id && cache.sharedRecipes.some((existing) => existing.id === recipe.id)
-          ? `/recipes/${encodeURIComponent(recipe.id)}`
-          : '/recipes';
-        const method = pathname === '/recipes' ? 'POST' : 'PUT';
-        await request(pathname, {
-          method,
-          body: JSON.stringify({ recipe }),
-        });
-      },
-
-      async deleteRecipeRecord(recipeId) {
-        await request(`/recipes/${encodeURIComponent(recipeId)}`, {
-          method: 'DELETE',
-        });
-      },
-
-      async upsertUserRecipeState(recipeId, patch) {
-        await request(`/user-recipe-state/${encodeURIComponent(recipeId)}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            favorite: Boolean(patch.favorite),
-            lastCookedAt: patch.lastCookedAt || null,
-          }),
-        });
-      },
-
-      async deleteUserRecipeState(recipeId) {
-        await request(`/user-recipe-state/${encodeURIComponent(recipeId)}`, {
-          method: 'DELETE',
-        });
-      },
-
-      async saveWeekPlan(plan) {
-        await request('/week-plan', {
-          method: 'PUT',
-          body: JSON.stringify({ plan }),
-        });
-      },
-
-      async uploadImageDataUrl(dataUrl, filename) {
-        const payload = await request('/upload', {
-          method: 'POST',
-          body: JSON.stringify({ dataUrl, filename }),
-        });
-        return {
-          imagePath: payload.imagePath,
-        };
-      },
-
-      async deleteImage(_imagePath) {
-        // browser-test mode keeps image payloads in server memory; recipe deletion is enough
-      },
-    };
-  }
-
-  function createDriver() {
-    return config.backend === 'browser-test'
-      ? createBrowserTestDriver()
-      : createSupabaseDriver();
   }
 
   async function applyCacheFromBundle(bundle) {
@@ -538,6 +224,8 @@ export function createCookbookRepository({ config, authService }) {
       externalImageUrl,
       updatedAt: new Date().toISOString(),
       createdAt: existing?.createdAt || normalized.createdAt,
+    }, {
+      existingRecipeIds: cache.sharedRecipes.map((recipe) => recipe.id),
     });
   }
 
@@ -732,6 +420,8 @@ export function createCookbookRepository({ config, authService }) {
           ...recipeToSave,
           imagePath: image.imagePath,
           externalImageUrl: image.externalImageUrl,
+        }, {
+          existingRecipeIds: Array.from(workingRecipesById.keys()),
         });
         workingRecipesById.set(recipeToSave.id, {
           ...recipeToSave,

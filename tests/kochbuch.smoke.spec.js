@@ -2,6 +2,7 @@ const { test, expect } = require('@playwright/test');
 const {
   addPlannedRecipe,
   createRecipeViaUi,
+  expectNotification,
   dragPlannedRecipeToSlot,
   exportCookbook,
   importCookbook,
@@ -38,17 +39,28 @@ async function seedLegacyLocalStorage(page) {
   });
 }
 
+async function expectBuiltAssetsServed(request) {
+  const indexResponse = await request.get('/index.html');
+  expect(indexResponse.ok(), 'expected /index.html to be served').toBeTruthy();
+  const html = await indexResponse.text();
+
+  const assetPaths = Array.from(html.matchAll(/(?:href|src)="\.?\/?(assets\/[^"]+)"/g))
+    .map((match) => `/${match[1]}`);
+  expect(assetPaths.length, 'expected built asset references in index.html').toBeGreaterThan(0);
+
+  for (const pathname of ['/runtime-config.js', ...assetPaths, '/data/familienkochbuch-import.json']) {
+    const response = await request.get(pathname);
+    expect(response.ok(), `expected ${pathname} to be served`).toBeTruthy();
+  }
+}
+
 test.describe('Privates Familien-Kochbuch', () => {
   test.beforeEach(async ({ request }) => {
     await resetBrowserTestBackend(request);
   });
 
   test('lokaler Testserver liefert nur erlaubte App-Assets aus', async ({ request }) => {
-    const allowed = ['/index.html', '/runtime-config.js', '/src/main.js', '/data/familienkochbuch-import.json'];
-    for (const pathname of allowed) {
-      const response = await request.get(pathname);
-      expect(response.ok(), `expected ${pathname} to be served`).toBeTruthy();
-    }
+    await expectBuiltAssetsServed(request);
 
     const blocked = ['/package.json', '/server.js', '/README.md', '/supabase/seed.sql'];
     for (const pathname of blocked) {
@@ -149,11 +161,8 @@ test.describe('Privates Familien-Kochbuch', () => {
 
     const migrateButton = page.getByRole('button', { name: /Lokale Daten migrieren/i });
     await expect(migrateButton).toBeVisible();
-    const migrationDialogPromise = page.waitForEvent('dialog');
     await migrateButton.click();
-    const migrationDialog = await migrationDialogPromise;
-    expect(migrationDialog.message()).toMatch(/(importiert|wiederhergestellt)/i);
-    await migrationDialog.accept();
+    await expectNotification(page, /(importiert|wiederhergestellt)/i);
 
     await expect(page.locator('.recipe-card').filter({ hasText: 'Legacy Suppe' })).toHaveCount(1);
     await expect(page.locator('.recipe-card').filter({ hasText: 'Legacy Suppe' }).locator('img')).toBeVisible();

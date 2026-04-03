@@ -1,11 +1,15 @@
 const { expect } = require('@playwright/test');
 
-const APP_PATH = '/index.html?backend=browser-test';
+const APP_PATH = '/index.html';
 const RESET_ENDPOINT = '/api/browser-test/reset';
 const TEST_IMAGE_BUFFER = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7X8J0AAAAASUVORK5CYII=',
   'base64',
 );
+
+async function expectNotification(page, messagePattern) {
+  await expect(page.locator('#notificationStack')).toContainText(messagePattern);
+}
 
 async function resetBrowserTestBackend(request, seed) {
   const response = await request.post(
@@ -161,16 +165,13 @@ function getImportSelectors(mode = 'restore') {
 
 async function importCookbook(page, payload, { mode = 'restore' } = {}) {
   const selectors = getImportSelectors(mode);
-  const dialogPromise = page.waitForEvent('dialog');
   await page.locator(selectors.button).click();
   await page.locator(selectors.input).setInputFiles({
     name: 'kochbuch-import.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
   });
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toMatch(/(importiert|wiederhergestellt|ergänzt)/i);
-  await dialog.accept();
+  await expectNotification(page, /(importiert|wiederhergestellt|ergänzt)/i);
 }
 
 async function importCookbookViaButton(page, buttonName, payload, { mode = null } = {}) {
@@ -182,15 +183,12 @@ async function importCookbookViaButton(page, buttonName, payload, { mode = null 
     await page.locator(selectors.button).click();
   }
 
-  const dialogPromise = page.waitForEvent('dialog');
   await page.locator(selectors.input).setInputFiles({
     name: 'kochbuch-import.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(payload), 'utf8'),
   });
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toMatch(/(importiert|wiederhergestellt|ergänzt)/i);
-  await dialog.accept();
+  await expectNotification(page, /(importiert|wiederhergestellt|ergänzt)/i);
 }
 
 module.exports = {
@@ -198,6 +196,7 @@ module.exports = {
   TEST_IMAGE_BUFFER,
   addPlannedRecipe,
   createRecipeViaUi,
+  expectNotification,
   exportCookbook,
   importCookbook,
   loginViaUi,

@@ -20,10 +20,10 @@ module.exports = defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: `node ${ROOT_SERVER}`,
-    url: 'http://127.0.0.1:4173/index.html?backend=browser-test',
-    reuseExistingServer: true,
-    timeout: 15_000,
+    command: `npm run build && node ${ROOT_SERVER}`,
+    url: 'http://127.0.0.1:4173/index.html',
+    reuseExistingServer: false,
+    timeout: 30_000,
   },
   outputDir: path.join(__dirname, '../../test-results/supabase'),
 });

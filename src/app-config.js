@@ -8,14 +8,10 @@ function readRuntimeConfig() {
 
 export function getAppConfig() {
   const runtime = readRuntimeConfig();
-  const params = new URLSearchParams(window.location.search);
-  const backendOverride = params.get('backend');
-
-  const backend = backendOverride === 'browser-test'
+  const allowBrowserTest = runtime.allowBrowserTest === true;
+  const backend = allowBrowserTest && runtime.backend === 'browser-test'
     ? 'browser-test'
-    : runtime.backend === 'browser-test'
-      ? 'browser-test'
-      : 'supabase';
+    : 'supabase';
 
   const redirectTo = runtime.redirectTo || `${window.location.origin}${window.location.pathname}`;
   const supabaseUrl = String(runtime.supabaseUrl || '').trim();
@@ -24,6 +20,7 @@ export function getAppConfig() {
 
   return {
     backend,
+    allowBrowserTest,
     redirectTo,
     supabaseUrl,
     supabaseAnonKey,
