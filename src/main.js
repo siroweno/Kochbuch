@@ -573,11 +573,30 @@ function renderAuthShell(snapshot) {
 
   setVisible(googleLoginActions, config.backend !== 'browser-test');
   setVisible(browserTestLoginForm, config.backend === 'browser-test');
-  setVisible(loginPanel, snapshot.accessState === 'signed_out');
+  // Login-Panel: animierter Übergang beim Einloggen
+  if (snapshot.accessState !== 'signed_out' && loginPanel.classList.contains('visible')) {
+    // Statt sofort: animierte Buchseiten-Wende
+    loginPanel.classList.add('closing');
+    loginPanel.addEventListener('animationend', () => {
+      loginPanel.classList.remove('visible', 'closing');
+      loginPanel.style.display = 'none';
+    }, { once: true });
+  } else {
+    setVisible(loginPanel, snapshot.accessState === 'signed_out');
+  }
   syncLoadingPanel(snapshot);
   setVisible(accessPanel, snapshot.accessState === 'no_access');
   setVisible(configPanel, snapshot.accessState === 'config_missing');
-  appShell.classList.toggle('app-shell-hidden', snapshot.accessState !== 'signed_in');
+  // App-Shell: animiertes Aufdecken beim Einloggen
+  if (snapshot.accessState === 'signed_in' && appShell.classList.contains('app-shell-hidden')) {
+    appShell.classList.remove('app-shell-hidden');
+    appShell.classList.add('app-shell-opening');
+    appShell.addEventListener('animationend', () => {
+      appShell.classList.remove('app-shell-opening');
+    }, { once: true });
+  } else {
+    appShell.classList.toggle('app-shell-hidden', snapshot.accessState !== 'signed_in');
+  }
   applyRoleUi(snapshot.canAdmin);
 }
 
@@ -923,10 +942,22 @@ function highlightDropTarget(planEntryId, over) {
 function removeGhost() {
   const ghost = state.dragState?.ghost;
   if (!ghost) return;
-  ghost.style.transition = 'all 0.2s ease';
-  ghost.style.opacity = '0';
-  ghost.style.transform = 'rotate(3deg) scale(0.85)';
-  setTimeout(() => ghost.remove(), 220);
+
+  const targetZone = document.querySelector('.chip-drop-zone.is-target');
+  if (targetZone) {
+    // Ghost gleitet zur Drop-Zone
+    const rect = targetZone.getBoundingClientRect();
+    ghost.style.transition = 'all 0.25s cubic-bezier(0.23, 1, 0.32, 1)';
+    ghost.style.left = `${rect.left + rect.width / 2 - ghost.offsetWidth / 2}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.transform = 'scale(0.6) rotate(0deg)';
+    ghost.style.opacity = '0.4';
+  } else {
+    ghost.style.transition = 'all 0.2s ease';
+    ghost.style.opacity = '0';
+    ghost.style.transform = 'rotate(6deg) scale(0.8)';
+  }
+  setTimeout(() => ghost.remove(), 300);
   state.dragState.ghost = null;
 }
 
@@ -1448,6 +1479,14 @@ async function initializeApp() {
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
     browserTestEmail.value = 'admin@kochbuch.local';
   }
+
+  // Cursor "Umrühr"-Animation beim Klicken
+  document.addEventListener('mousedown', () => {
+    document.body.classList.add('cursor-stir');
+  });
+  document.addEventListener('mouseup', () => {
+    setTimeout(() => document.body.classList.remove('cursor-stir'), 120);
+  });
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);
   if (legacySnapshot.hasLegacyData && snapshot.accessState !== 'signed_in') {

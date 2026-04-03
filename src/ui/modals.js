@@ -88,9 +88,17 @@ export function createDialogController({
 
   function close({ restoreFocus = true } = {}) {
     overlay.classList.remove('visible');
-    if (appShell) {
-      setTreeInert(appShell, false);
-    }
+
+    // Inert erst nach CSS-Transition entfernen (damit die Animation sichtbar bleibt)
+    const cleanup = () => {
+      if (!isOpen() && appShell) {
+        setTreeInert(appShell, false);
+      }
+    };
+    overlay.addEventListener('transitionend', cleanup, { once: true });
+    // Fallback falls keine Transition (z.B. prefers-reduced-motion)
+    setTimeout(cleanup, 500);
+
     onClose?.({ restoreFocus, lastTrigger });
     if (restoreFocus && lastTrigger?.isConnected) {
       lastTrigger.focus();
