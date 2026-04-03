@@ -1,5 +1,14 @@
 let runtimeConfigPromise = null;
 
+function getRuntimeConfigUrl() {
+  const viteBaseUrl = typeof import.meta !== 'undefined' ? import.meta.env?.BASE_URL : undefined;
+  if (typeof viteBaseUrl === 'string' && viteBaseUrl) {
+    return `${viteBaseUrl}runtime-config.js`;
+  }
+
+  return new URL('runtime-config.js', document.baseURI).toString();
+}
+
 export function loadRuntimeConfig() {
   if (window.__KOCHBUCH_CONFIG__ && typeof window.__KOCHBUCH_CONFIG__ === 'object') {
     return Promise.resolve(window.__KOCHBUCH_CONFIG__);
@@ -11,7 +20,7 @@ export function loadRuntimeConfig() {
 
   runtimeConfigPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = `${import.meta.env.BASE_URL}runtime-config.js`;
+    script.src = getRuntimeConfigUrl();
     script.async = false;
     script.onload = () => resolve(window.__KOCHBUCH_CONFIG__ || {});
     script.onerror = () => reject(new Error('Runtime-Konfiguration konnte nicht geladen werden.'));

@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mein Kochbuch</title>
+  <script>
+    (function configureBasePath() {
+      var isGitHubPages = window.location.hostname.endsWith('github.io');
+      var segments = window.location.pathname.split('/').filter(Boolean);
+      var projectBase = isGitHubPages && segments.length ? '/' + segments[0] + '/' : '/';
+      var base = document.createElement('base');
+      base.href = projectBase;
+      document.head.appendChild(base);
+    }());
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lora:ital@0;1&display=swap" rel="stylesheet">
