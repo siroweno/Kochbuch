@@ -10,7 +10,7 @@ Statische Kochbuch-App mit Vite-Build, GitHub Pages und Supabase.
 - `server.js` dient als lokaler Build-Host plus Browser-Test-Backend.
 - `supabase/` enthält Migration, Policies, Seed und lokale Supabase-Config.
 - `tests/kochbuch.smoke.spec.js` deckt Login, Rechte, Migration und Export/Import ab.
-- `runtime-config.js` ist die öffentliche Laufzeitkonfiguration für GitHub Pages.
+- `public/runtime-config.js` ist die öffentliche Laufzeitkonfiguration für GitHub Pages.
 
 ## Schnellstart
 
@@ -75,7 +75,8 @@ npm run serve
 ## Wichtige Dateien
 
 - [DEPLOYMENT.md](./DEPLOYMENT.md)
-- [runtime-config.js](./runtime-config.js)
+- [public/runtime-config.js](./public/runtime-config.js)
+- [.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml)
 - [supabase/migrations/20260402110000_initial_family_cookbook.sql](./supabase/migrations/20260402110000_initial_family_cookbook.sql)
 - [supabase/migrations/20260402235900_google_auth_roles.sql](./supabase/migrations/20260402235900_google_auth_roles.sql)
 - [supabase/migrations/20260403003000_admin_email_config.sql](./supabase/migrations/20260403003000_admin_email_config.sql)

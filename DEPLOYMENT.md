@@ -7,11 +7,13 @@ Diese App ist für GitHub Pages + Supabase gedacht. Kein Next.js, kein SSR, kein
 - Standard-Live-URL: `https://siroweno.github.io/Kochbuch/`
 - Falls eine Custom Domain genutzt wird, ersetzt diese URL alle Supabase-Redirect-Einstellungen.
 - Die Live-Seite soll das gebaute `dist/`-Artefakt ausliefern.
+- GitHub Pages soll über `GitHub Actions` deployen, nicht direkt den Branch-Root ausliefern.
+- Der Workflow dafür liegt in [.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml).
 
 ## 2. Runtime-Config
 
 - Die produktive Konfiguration läuft über `window.__KOCHBUCH_CONFIG__`.
-- In diesem Repo liegt die öffentliche Live-Konfiguration in [runtime-config.js](./runtime-config.js).
+- In diesem Repo liegt die öffentliche Live-Konfiguration in [public/runtime-config.js](./public/runtime-config.js).
 - Der Dateiname bleibt bewusst produktiv und wird im Build unter derselben URL `runtime-config.js` ausgeliefert.
 - Für die Live-Seite müssen folgende Werte gesetzt sein:
   - `backend: 'supabase'`
