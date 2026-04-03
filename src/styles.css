@@ -43,19 +43,63 @@
       z-index: 9999;
     }
 
-    /* ─── Custom Cursor: Holzlöffel ──────────── */
-    body {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cellipse cx='8' cy='6' rx='6' ry='5' fill='%23c9956f' stroke='%238b6914' stroke-width='0.8'/%3E%3Crect x='6.5' y='10' width='3' height='16' rx='1.5' fill='%23b8844a' stroke='%238b6914' stroke-width='0.6'/%3E%3Cellipse cx='8' cy='6' rx='4' ry='3.2' fill='%23dbb07a' opacity='0.5'/%3E%3C/svg%3E") 8 4, auto;
+    /* ─── Custom Cursor: Holzlöffel (Kelle unten, Stiel oben, leicht schräg) ─── */
+    body, body * {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Crect x='14.8' y='3' width='2' height='12' rx='1' fill='%23c99a60' opacity='0.4'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3Cellipse cx='15' cy='20.5' rx='2.5' ry='1.8' fill='%23e8c99a' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E") 6 28, auto;
     }
 
-    body.cursor-stir {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cg transform='rotate(-15 14 14)'%3E%3Cellipse cx='8' cy='6' rx='6' ry='5' fill='%23c9956f' stroke='%238b6914' stroke-width='0.8'/%3E%3Crect x='6.5' y='10' width='3' height='16' rx='1.5' fill='%23b8844a' stroke='%238b6914' stroke-width='0.6'/%3E%3Cellipse cx='8' cy='6' rx='4' ry='3.2' fill='%23dbb07a' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E") 8 4, auto;
+    /* Interaktive Elemente: leuchtender Löffel */
+    a, button, [role="button"], select, label,
+    input[type="submit"], input[type="file"],
+    .recipe-card, .tag, .filter-toggle, .favorite-btn,
+    .modal-favorite, .modal-close, .modal-edit, .modal-cooked,
+    .chip-drop-zone, .toolbar-toggle, .toolbar-close,
+    .btn-primary, .btn-secondary, .btn-ghost, .btn-planner,
+    .day-recipe-chip, .icon-btn {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Crect x='14.8' y='3' width='2' height='12' rx='1' fill='%23c99a60' opacity='0.4'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23d4a574' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23e8c99a' opacity='0.5'/%3E%3Cellipse cx='15' cy='20.5' rx='2.5' ry='1.8' fill='%23f0ddb8' opacity='0.35'/%3E%3Ccircle cx='16' cy='22' r='8.5' fill='none' stroke='%23d4a574' stroke-width='1.2' opacity='0.2'/%3E%3C/g%3E%3C/svg%3E") 6 28, auto !important;
     }
 
-    /* Interaktive Elemente behalten pointer mit Löffel */
-    a, button, [role="button"], select, input[type="submit"],
-    .recipe-card, .tag, .filter-toggle, .favorite-btn {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cellipse cx='8' cy='6' rx='6' ry='5' fill='%23d4a574' stroke='%238b6914' stroke-width='0.8'/%3E%3Crect x='6.5' y='10' width='3' height='16' rx='1.5' fill='%23c9956f' stroke='%238b6914' stroke-width='0.6'/%3E%3Cellipse cx='8' cy='6' rx='4' ry='3.2' fill='%23e8c99a' opacity='0.5'/%3E%3C/svg%3E") 8 4, pointer;
+    /* Klick: Löffel rührt (stärkere Neigung) */
+    body.cursor-stir, body.cursor-stir * {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(35 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Crect x='14.8' y='3' width='2' height='12' rx='1' fill='%23c99a60' opacity='0.4'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, auto !important;
+    }
+
+    /* Partikel-Container */
+    .stir-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      opacity: 0.8;
+      animation: stir-particle-fly 0.5s ease-out forwards;
+    }
+
+    @keyframes stir-particle-fly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* Grab-Cursor beim Drag behält Löffel */
+    .day-recipe-chip {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, grab !important;
+    }
+
+    .planner-drag-active .day-recipe-chip {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(35 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, grabbing !important;
+    }
+
+    /* Text-Inputs: Löffel */
+    input[type="text"], input[type="email"], input[type="search"], textarea {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(15 16 16)'%3E%3Crect x='14' y='2' width='4' height='16' rx='2' fill='%23b8844a' stroke='%23805a2e' stroke-width='0.7'/%3E%3Cellipse cx='16' cy='22' rx='7' ry='6' fill='%23c9956f' stroke='%23805a2e' stroke-width='0.8'/%3E%3Cellipse cx='16' cy='21.5' rx='5' ry='4' fill='%23dbb07a' opacity='0.45'/%3E%3C/g%3E%3C/svg%3E") 6 28, text;
     }
 
     .container {
