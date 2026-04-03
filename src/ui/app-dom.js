@@ -112,5 +112,11 @@ export function getAppDom(root = document) {
       confirmBtn: byId('confirmDeleteBtn'),
       cancelBtn: byId('cancelDeleteBtn'),
     },
+    toolbar: {
+      toolbarToggle: byId('toolbarToggle'),
+      toolbarPanel: byId('toolbarPanel'),
+      toolbarOverlay: byId('toolbarOverlay'),
+      toolbarClose: byId('toolbarClose'),
+    },
   };
 }

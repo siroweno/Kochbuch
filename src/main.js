@@ -29,6 +29,7 @@ import {
   renderMealSlotOptions,
   SERVING_OPTIONS,
 } from './cookbook-schema.js';
+import { renderSkeletonRecipes } from './ui/recipes-view.js';
 
 await loadRuntimeConfig();
 
@@ -36,7 +37,7 @@ const { config, authService, repository } = createAppServices();
 const state = createUiState(authService);
 
 const dom = getAppDom();
-const { shell, auth, recipes, planner, modal, deleteDialog } = dom;
+const { shell, auth, recipes, planner, modal, deleteDialog, toolbar } = dom;
 const {
   appShell,
   loadingPanel,
@@ -793,6 +794,8 @@ async function addToDay(day, recipeId, options = {}) {
   const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
 
+  const previousWeekPlan = JSON.parse(JSON.stringify(state.weekPlan));
+
   state.weekPlan[day].push({
     planEntryId: createPlanEntryId(),
     recipeId: recipe.id,
@@ -802,16 +805,34 @@ async function addToDay(day, recipeId, options = {}) {
   state.lastPlannerSlot = isValidMealSlot(options.slot) ? options.slot : state.activeDayPickerSlot;
   state.activeDayPicker = null;
   state.activeDayPickerQuery = '';
-  await persistWeekPlan();
+  plannerController.render();
+  updatePlannerShoppingList();
+
+  persistWeekPlan().catch(() => {
+    state.weekPlan = previousWeekPlan;
+    plannerController.render();
+    updatePlannerShoppingList();
+    notifications.error('Konnte nicht gespeichert werden.');
+  });
 }
 
-async function removeFromDay(planEntryId, fallbackDay, fallbackIndex) {
+function removeFromDay(planEntryId, fallbackDay, fallbackIndex) {
   const location = planEntryId ? findPlanEntryLocation(planEntryId) : null;
   const day = location?.day || fallbackDay;
   const index = location?.index ?? fallbackIndex;
   if (!day || !Number.isInteger(index) || !state.weekPlan[day]?.[index]) return;
+
+  const previousWeekPlan = JSON.parse(JSON.stringify(state.weekPlan));
   state.weekPlan[day].splice(index, 1);
-  await persistWeekPlan();
+  plannerController.render();
+  updatePlannerShoppingList();
+
+  persistWeekPlan().catch(() => {
+    state.weekPlan = previousWeekPlan;
+    plannerController.render();
+    updatePlannerShoppingList();
+    notifications.error('Konnte nicht gespeichert werden.');
+  });
 }
 
 async function updatePlanEntryServings(planEntryId, fallbackDay, fallbackIndex, servings) {
@@ -839,7 +860,7 @@ async function saveModalPlannerEntry() {
   const slot = isValidMealSlot(modalPlannerSlot.value) ? modalPlannerSlot.value : (state.lastPlannerSlot || 'abend');
   const servings = normalizePositiveInteger(modalPlannerServings.value, state.currentModalServings || state.currentModalRecipe.baseServings);
   state.modalPlanningFeedback = '';
-  await addToDay(day, state.currentModalRecipe.id, {
+  addToDay(day, state.currentModalRecipe.id, {
     slot,
     servings,
   });
@@ -908,10 +929,21 @@ function highlightDropTarget(planEntryId, over) {
   document.querySelectorAll(selector).forEach((element) => element.classList.add('is-target'));
 }
 
+function removeGhost() {
+  const ghost = state.dragState?.ghost;
+  if (!ghost) return;
+  ghost.style.transition = 'all 0.2s ease';
+  ghost.style.opacity = '0';
+  ghost.style.transform = 'rotate(3deg) scale(0.85)';
+  setTimeout(() => ghost.remove(), 220);
+  state.dragState.ghost = null;
+}
+
 function cancelPendingDrag() {
   if (state.dragState?.holdTimer) {
     window.clearTimeout(state.dragState.holdTimer);
   }
+  removeGhost();
   clearDragPreviewClasses();
   setDropZonesVisible(false);
   state.dragState = null;
@@ -934,10 +966,36 @@ function startPlanDrag({ planEntryId, day, index, pointerId, pointerType, client
   state.plannerDraftWeekPlan = cloneWeekPlan(state.weekPlan);
   setDropZonesVisible(true);
   highlightDropTarget(planEntryId, null);
+  // Ghost erstellen
+  const chipEl = document.querySelector(`[data-action="start-plan-drag"][data-plan-entry-id="${planEntryId}"]`)?.closest('.day-recipe-chip');
+  if (chipEl) {
+    const rect = chipEl.getBoundingClientRect();
+    const ghost = chipEl.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    ghost.removeAttribute('data-action');
+    ghost.style.cssText = `
+      position: fixed;
+      left: ${rect.left}px;
+      top: ${rect.top}px;
+      width: ${rect.width}px;
+      pointer-events: none;
+      z-index: 1000;
+    `;
+    document.body.appendChild(ghost);
+    state.dragState.ghost = ghost;
+    state.dragState.ghostOffsetX = clientX - rect.left;
+    state.dragState.ghostOffsetY = clientY - rect.top;
+  }
 }
 
 function updateDragTarget(clientX, clientY) {
   if (!state.dragState?.active) return;
+  // Ghost dem Cursor folgen lassen
+  const ghost = state.dragState?.ghost;
+  if (ghost) {
+    ghost.style.left = `${clientX - state.dragState.ghostOffsetX}px`;
+    ghost.style.top = `${clientY - state.dragState.ghostOffsetY}px`;
+  }
 
   const over = getDropTargetAtPoint(clientX, clientY);
   if (!over) {
@@ -1027,18 +1085,20 @@ async function finishPlanDrag(clientX = null, clientY = null) {
     state.lastPlannerSlot = over.slot;
     setPendingFocusTarget({ type: 'plan-entry', planEntryId, action: 'start-plan-drag' });
     announceUi(`Eintrag nach ${over.day} · ${getMealSlotLabel(over.slot)} verschoben.`);
+    removeGhost();
     state.dragState = null;
     state.plannerDraftWeekPlan = null;
     await persistWeekPlan();
     return;
   }
 
+  removeGhost();
   state.dragState = null;
   state.plannerDraftWeekPlan = null;
   plannerController.render();
 }
 
-async function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
+function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
   const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
 
@@ -1061,11 +1121,29 @@ async function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
     effectsLayer.playHeartPop({ anchor, anchorRect });
   }
 
-  const result = await repository.toggleFavorite(recipeId);
+  // Optimistic update: flip favorite immediately
+  recipe.favorite = isLike;
+  recipesController.render();
+  if (state.currentModalRecipe?.id === String(recipeId)) {
+    renderRecipeModal();
+  }
   if (!isLike) {
     announceUi('Aus Favoriten entfernt');
   }
-  applyLoadResult(result, { scope: 'recipes' });
+
+  repository.toggleFavorite(recipeId)
+    .then((result) => {
+      applyLoadResult(result, { scope: 'recipes' });
+    })
+    .catch(() => {
+      // Rollback
+      recipe.favorite = !isLike;
+      recipesController.render();
+      if (state.currentModalRecipe?.id === String(recipeId)) {
+        renderRecipeModal();
+      }
+      notifications.error('Favorit konnte nicht gespeichert werden.');
+    });
 }
 
 function downloadJson(filename, payload) {
@@ -1266,6 +1344,9 @@ bindAppEvents({
     cancelDeleteBtn,
     deleteConfirm,
     recipeModal,
+    toolbarToggle: toolbar.toolbarToggle,
+    toolbarClose: toolbar.toolbarClose,
+    toolbarOverlay: toolbar.toolbarOverlay,
   },
   requiredFields: REQUIRED_FIELDS,
   authService,
@@ -1343,6 +1424,7 @@ bindAppEvents({
     cancelPendingDrag,
     confirmMoveEntry,
     setTagFilter,
+    toolbar,
   }),
 });
 
@@ -1367,6 +1449,10 @@ async function initializeApp() {
   renderAuthShell(snapshot);
 
   if (snapshot.accessState === 'signed_in') {
+    // Skeletons zeigen während Rezepte laden
+    if (recipeGrid) {
+      renderSkeletonRecipes(recipeGrid, 8);
+    }
     await refreshAppData({ silent: true });
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
     browserTestEmail.value = 'admin@kochbuch.local';

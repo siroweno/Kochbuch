@@ -181,7 +181,7 @@ export function renderRecipeGrid({
     return;
   }
 
-  recipeGrid.innerHTML = filteredRecipes.map((recipe) => {
+  recipeGrid.innerHTML = filteredRecipes.map((recipe, index) => {
     const tagsHtml = (recipe.tags || []).map((tag) => `
       <button type="button" class="tag${activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
         data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase())}">${escapeHtml(tag)}</button>
@@ -198,7 +198,7 @@ export function renderRecipeGrid({
       : '<div class="card-image-placeholder">✦</div>';
 
     return `
-      <article class="recipe-card">
+      <article class="recipe-card" style="animation-delay: ${index * 0.04}s">
         <button type="button" class="recipe-card-main" data-action="open-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} öffnen">
           ${imageHtml}
           <div class="card-body">
@@ -316,4 +316,20 @@ export function renderRecipeModalContent({
   } else {
     tipsSection.style.display = 'none';
   }
+}
+
+function buildSkeletonCard() {
+  return `
+    <div class="recipe-card recipe-card--skeleton" aria-hidden="true">
+      <div class="skeleton-image"></div>
+      <div class="card-body" style="padding: 12px 14px 10px;">
+        <div class="skeleton-title"></div>
+        <div class="skeleton-meta" style="margin-top: 8px;"></div>
+      </div>
+    </div>
+  `;
+}
+
+export function renderSkeletonRecipes(container, count = 8) {
+  container.innerHTML = Array.from({ length: count }, buildSkeletonCard).join('');
 }

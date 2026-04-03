@@ -96,7 +96,15 @@
 
   <div id="appShell" class="app-shell-hidden">
 
+  <!-- Toolbar Toggle -->
+  <button id="toolbarToggle" class="toolbar-toggle" aria-label="Werkzeuge öffnen" aria-expanded="false" aria-controls="toolbarPanel">
+    <span aria-hidden="true">⚙</span>
+  </button>
+  <div id="toolbarOverlay" class="toolbar-overlay" role="presentation"></div>
+
   <!-- Controls -->
+  <aside id="toolbarPanel" class="toolbar-panel">
+  <button class="toolbar-close" id="toolbarClose" aria-label="Werkzeuge schließen">✕</button>
   <div class="browse-toolbar">
     <div class="controls controls-primary">
       <input type="text" id="searchInput" placeholder="Rezepte durchsuchen — Titel, Zutaten, Tags …">
@@ -125,6 +133,7 @@
       </div>
     </div>
   </div>
+  </aside>
 
   <div class="collection-summary" id="collectionSummary"></div>
   <div class="summary-feature" id="summaryFeature" aria-label="Kochbuch Uebersicht">

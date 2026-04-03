@@ -44,6 +44,11 @@ export function bindAppEvents({
     recipeModal,
   } = elements;
 
+  // Toolbar Panel
+  elements.toolbarToggle?.addEventListener('click', handlers.onToolbarToggle);
+  elements.toolbarClose?.addEventListener('click', handlers.onToolbarClose);
+  elements.toolbarOverlay?.addEventListener('click', handlers.onToolbarOverlayClick);
+
   googleLoginBtn.addEventListener('click', handlers.onGoogleLogin);
   browserTestLoginForm.addEventListener('submit', handlers.onBrowserTestLoginSubmit);
   signOutBtn.addEventListener('click', handlers.onSignOut);

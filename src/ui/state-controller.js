@@ -43,5 +43,6 @@ export function createUiState(authService) {
     pendingImageUpload: null,
     inflightRefreshPromise: null,
     importMode: 'restore',
+    pendingUpdates: new Map(),
   };
 }
