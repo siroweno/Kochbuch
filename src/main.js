@@ -68,9 +68,6 @@ const {
   formTitle,
   recipeForm,
   recipeGrid,
-  collectionSummary,
-  summaryFeaturePlannerValue,
-  summaryFeatureFavoriteValue,
   searchInput,
   sortSelect,
   recipeCount,
@@ -102,7 +99,6 @@ const {
 const {
   togglePlannerBtn,
   weekPlanner,
-  plannerSummary,
   daysGrid,
   shoppingList,
   shoppingSearchInput,
@@ -246,9 +242,6 @@ const recipesController = createRecipesController({
     toggleFavoritesBtn,
     tagFilterPill,
     tagFilterLabel,
-    collectionSummary,
-    summaryFeaturePlannerValue,
-    summaryFeatureFavoriteValue,
     recipeGrid,
     recipeCount,
     searchInput,
@@ -264,7 +257,6 @@ const plannerController = createPlannerController({
   state,
   elements: {
     daysGrid,
-    plannerSummary,
     shoppingList,
     shoppingSearchInput,
   },
@@ -599,7 +591,6 @@ function applyLoadResult(result, { scope = 'full' } = {}) {
   applyRoleUi(result.capabilities?.canAdmin);
 
   if (scope === 'planner') {
-    recipesController.renderSummary();
     plannerController.refresh();
   } else if (scope === 'recipes') {
     recipesController.render();

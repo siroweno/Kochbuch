@@ -5,7 +5,6 @@ import {
   formatLastCooked,
   getCookedTimestamp,
   getMealSlotLabel,
-  getPlannerStats,
 } from '../cookbook-schema.js';
 import { escapeAttribute, escapeHtml } from './view-helpers.js';
 
@@ -57,50 +56,6 @@ function renderDropZone({ day, slot, position, dragState, empty = false }) {
   `;
 }
 
-function renderPlannerSummaryCard({ eyebrow, title, value, body, tone = 'default' }) {
-  return `
-    <article class="summary-card summary-card-${tone}">
-      <p class="summary-card-eyebrow">${escapeHtml(eyebrow)}</p>
-      <strong>${escapeHtml(title)}</strong>
-      <div class="summary-card-value">${escapeHtml(String(value))}</div>
-      <p>${escapeHtml(body)}</p>
-    </article>
-  `;
-}
-
-export function renderPlannerSummary({ plannerSummary, weekPlan, recipes }) {
-  const stats = getPlannerStats(weekPlan, recipes);
-  plannerSummary.innerHTML = `
-    ${renderPlannerSummaryCard({
-      eyebrow: 'Wochenbrett',
-      title: 'Diese Woche im Blick',
-      value: stats.entries,
-      body: stats.entries
-        ? `${stats.uniqueRecipes} Rezepte sind auf ${stats.plannedDays} Tag${stats.plannedDays === 1 ? '' : 'e'} verteilt.`
-        : 'Noch leer: Oeffne einen Tag und lege direkt ein Rezept in einen Slot.',
-      tone: 'featured',
-    })}
-    ${renderPlannerSummaryCard({
-      eyebrow: 'Rhythmus',
-      title: 'Belegte Tage',
-      value: stats.plannedDays,
-      body: stats.plannedDays
-        ? 'Slots und Portionen bleiben pro Eintrag gespeichert und lassen sich schnell nachziehen.'
-        : 'Praktisch fuer wiederkehrende Wochenmuster oder spontane Alltagsplanung.',
-      tone: 'soft',
-    })}
-    ${renderPlannerSummaryCard({
-      eyebrow: 'Lieblingsrezepte',
-      title: 'Favoriten im Plan',
-      value: stats.favoriteEntries,
-      body: stats.favoriteEntries
-        ? 'Herzrezepte stehen im Picker vorne und landen dadurch schneller auf dem Tisch.'
-        : 'Favoriten helfen besonders, wenn es unter der Woche schnell gehen soll.',
-      tone: 'soft',
-    })}
-  `;
-}
-
 export function renderDayPickerItems({
   day,
   query = '',
@@ -131,7 +86,6 @@ export function renderDayPickerItems({
 
 export function renderWeekPlanner({
   daysGrid,
-  plannerSummary,
   weekPlan,
   recipes,
   recipeById = null,
@@ -145,7 +99,6 @@ export function renderWeekPlanner({
   renderServingOptions,
   renderMealSlotOptions,
 }) {
-  renderPlannerSummary({ plannerSummary, weekPlan, recipes });
   daysGrid.innerHTML = DAYS.map((day) => {
     const entries = (weekPlan[day] || [])
       .map((entry, index) => ({

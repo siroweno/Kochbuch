@@ -14,7 +14,6 @@ export function createPlannerController({
   function render() {
     renderWeekPlanner({
       daysGrid: elements.daysGrid,
-      plannerSummary: elements.plannerSummary,
       weekPlan: getActiveWeekPlan(),
       recipes: state.recipes,
       recipeById: state.recipeLookup,

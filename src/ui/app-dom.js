@@ -34,9 +34,6 @@ export function getAppDom(root = document) {
       formTitle: byId('formTitle'),
       recipeForm: byId('recipeForm'),
       recipeGrid: byId('recipeGrid'),
-      collectionSummary: byId('collectionSummary'),
-      summaryFeaturePlannerValue: byId('summaryFeaturePlannerValue'),
-      summaryFeatureFavoriteValue: byId('summaryFeatureFavoriteValue'),
       searchInput: byId('searchInput'),
       sortSelect: byId('sortSelect'),
       recipeCount: byId('recipeCount'),
@@ -68,7 +65,6 @@ export function getAppDom(root = document) {
     planner: {
       togglePlannerBtn: byId('togglePlannerBtn'),
       weekPlanner: byId('weekPlanner'),
-      plannerSummary: byId('plannerSummary'),
       daysGrid: byId('daysGrid'),
       shoppingList: byId('shoppingList'),
       shoppingSearchInput: byId('shoppingSearchInput'),

@@ -1,7 +1,5 @@
-import { getPlannerStats } from '../cookbook-schema.js';
 import {
   getFilteredSortedRecipes,
-  renderCollectionSummary,
   renderRecipeGrid,
 } from './recipes-view.js';
 
@@ -35,18 +33,6 @@ export function createRecipesController({
     });
   }
 
-  function renderSummary() {
-    renderCollectionSummary({
-      collectionSummary: elements.collectionSummary,
-      recipes: state.recipes,
-      weekPlan: state.weekPlan,
-    });
-
-    const plannerStats = getPlannerStats(state.weekPlan, state.recipes);
-    elements.summaryFeaturePlannerValue.textContent = String(plannerStats.entries);
-    elements.summaryFeatureFavoriteValue.textContent = String(state.recipes.filter((recipe) => recipe.favorite).length);
-  }
-
   function renderGrid() {
     updateFavoriteFilterButton();
     updateTagFilterPill();
@@ -70,13 +56,11 @@ export function createRecipesController({
   }
 
   function render() {
-    renderSummary();
     renderGrid();
   }
 
   return {
     buildFilteredRecipes,
-    renderSummary,
     renderGrid,
     render,
   };

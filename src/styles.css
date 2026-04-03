@@ -70,31 +70,37 @@
       display: none;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 14px 18px;
+      gap: 10px;
+      padding: 6px 14px;
       border: 1px solid #e4d4bf;
-      border-radius: 18px;
-      background:
-        linear-gradient(135deg, rgba(255,252,245,0.96), rgba(247,239,226,0.98));
-      box-shadow: 0 10px 28px rgba(75, 52, 31, 0.08);
+      border-radius: 10px;
+      background: rgba(255,252,245,0.96);
+      font-size: 13px;
     }
 
     .auth-bar.visible { display: flex; }
 
     .auth-bar-copy {
-      display: grid;
-      gap: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       text-align: left;
     }
 
     .auth-bar-copy strong {
-      font-family: 'Playfair Display', serif;
-      font-size: 16px;
+      font-size: 13px;
+      font-weight: 600;
     }
 
     .auth-bar-copy span {
       color: var(--color-secondary);
-      font-size: 13px;
+      font-size: 12px;
+    }
+
+    .auth-bar .btn-secondary {
+      padding: 4px 10px;
+      font-size: 12px;
+      min-height: unset;
     }
 
     .auth-panel,
@@ -455,102 +461,6 @@
       border-color: var(--color-primary);
     }
 
-    .collection-summary {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .summary-card,
-    .summary-feature {
-      background:
-        linear-gradient(180deg, rgba(255,252,245,0.98), rgba(250,243,232,0.98));
-      border: 1px solid #e5d4bd;
-      border-radius: 18px;
-      padding: 18px 20px;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.05);
-    }
-
-    .summary-feature {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .summary-feature-intro {
-      background: linear-gradient(135deg, #fff8ed, #f7eee0);
-      border: 1px solid #ebd8be;
-      border-radius: 14px;
-      padding: 16px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .summary-feature-intro h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 24px;
-      line-height: 1.1;
-      color: var(--color-text);
-    }
-
-    .summary-feature-intro p {
-      color: var(--color-text-muted);
-      font-size: 14px;
-    }
-
-    .summary-card {
-      display: grid;
-      gap: 4px;
-      min-width: 0;
-    }
-    .summary-card strong {
-      display: block;
-      font-family: 'Playfair Display', serif;
-      font-size: 15px;
-      color: #7c5b36;
-      margin-bottom: 4px;
-    }
-    .summary-card-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 28px;
-      line-height: 1;
-      color: var(--color-text);
-      margin-bottom: 8px;
-    }
-    .summary-card p {
-      font-size: 13px;
-      color: var(--color-text-muted);
-      line-height: 1.5;
-    }
-    .summary-card-kicker,
-    .summary-card-eyebrow {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #a0826d;
-      font-family: 'Playfair Display', serif;
-    }
-    .summary-card-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #7a6248;
-    }
-    .summary-card--lead,
-    .summary-card-featured {
-      background: linear-gradient(135deg, #fff8ed, #f6ecd9);
-      border-color: #e8d4b5;
-    }
-    .summary-card--support,
-    .summary-card-soft {
-      background: linear-gradient(180deg, rgba(255,252,245,0.98), rgba(248,241,231,0.98));
-    }
-
     /* ── Week Planner ── */
     .week-planner-container { margin-bottom: 28px; }
 
@@ -563,21 +473,13 @@
       border: 1px solid #e5d4bd;
     }
 
-    .planner-summary {
-      display: grid;
-      grid-template-columns: minmax(0, 1.4fr) repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
     .planner-layout {
       display: grid;
       grid-template-columns: minmax(0, 1.12fr) 340px;
       gap: 28px;
     }
 
-    .planner-layout > *,
-    .planner-summary > * {
+    .planner-layout > * {
       min-width: 0;
     }
 
@@ -1732,9 +1634,6 @@
       .modal-header h1 { font-size: 28px; }
       .modal-section h2 { font-size: 20px; }
       .container { padding: 18px 16px 28px; }
-      .collection-summary { grid-template-columns: 1fr; }
-      .planner-summary { grid-template-columns: 1fr; }
-      .summary-feature { grid-template-columns: 1fr; }
       .empty-start { padding: 24px 20px; }
       .empty-start-copy h2 { font-size: 28px; }
       .form-container { padding: 24px 20px; }
@@ -2071,4 +1970,57 @@
 
     .toolbar-overlay.visible {
       display: block;
+    }
+
+    /* ─── Top Bar (Suche + Wochenplaner) ───────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      margin-bottom: 8px;
+    }
+
+    .top-bar-search {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 16px;
+      border: 1px solid rgba(139, 115, 85, 0.25);
+      border-radius: var(--radius-base, 10px);
+      font-size: 15px;
+      background: white;
+      color: var(--color-text, #3d2817);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .top-bar-search:focus {
+      outline: none;
+      border-color: var(--color-primary, #d4a574);
+      box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
+    }
+
+    .btn-planner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      padding: 10px 20px;
+      background: var(--color-primary, #d4a574);
+      color: white;
+      border: none;
+      border-radius: var(--radius-base, 10px);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      box-shadow: 0 2px 8px rgba(212, 165, 116, 0.3);
+    }
+
+    .btn-planner:hover {
+      background: var(--color-primary-hover, #c9956f);
+      box-shadow: 0 4px 16px rgba(212, 165, 116, 0.4);
+    }
+
+    .btn-planner[aria-expanded="true"] {
+      background: var(--color-secondary, #8b7355);
     }
