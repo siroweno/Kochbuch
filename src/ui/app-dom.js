@@ -2,6 +2,7 @@ export function getAppDom(root = document) {
   const byId = root.getElementById.bind(root);
   const recipeModal = byId('recipeModal');
   const deleteConfirm = byId('deleteConfirm');
+  const clearPlanConfirm = byId('clearPlanConfirm');
 
   return {
     shell: {
@@ -30,6 +31,7 @@ export function getAppDom(root = document) {
     recipes: {
       toggleFormBtn: byId('toggleFormBtn'),
       toggleFavoritesBtn: byId('toggleFavoritesBtn'),
+      topBarFavoritesBtn: byId('topBarFavoritesBtn'),
       formContainer: byId('formContainer'),
       formTitle: byId('formTitle'),
       recipeForm: byId('recipeForm'),
@@ -44,6 +46,7 @@ export function getAppDom(root = document) {
       servingsInput: byId('servings'),
       prepTimeInput: byId('prepTime'),
       cookTimeInput: byId('cookTime'),
+      categorySelect: byId('category'),
       tagsInput: byId('tags'),
       imageUrlInput: byId('imageUrl'),
       imageFileInput: byId('imageFile'),
@@ -61,6 +64,9 @@ export function getAppDom(root = document) {
       restoreImportFile: byId('restoreImportFile'),
       recipeImportFile: byId('recipeImportFile'),
       migrateLocalBtn: byId('migrateLocalBtn'),
+      tagBar: byId('tagBar'),
+      tagBarList: byId('tagBarList'),
+      tagBarExpand: byId('tagBarExpand'),
     },
     planner: {
       togglePlannerBtn: byId('togglePlannerBtn'),
@@ -107,6 +113,12 @@ export function getAppDom(root = document) {
       name: byId('deleteConfirmName'),
       confirmBtn: byId('confirmDeleteBtn'),
       cancelBtn: byId('cancelDeleteBtn'),
+    },
+    clearPlanDialog: {
+      overlay: clearPlanConfirm,
+      content: clearPlanConfirm?.querySelector('.confirm-box'),
+      confirmBtn: byId('confirmClearPlanBtn'),
+      cancelBtn: byId('cancelClearPlanBtn'),
     },
     toolbar: {
       toolbarToggle: byId('toolbarToggle'),

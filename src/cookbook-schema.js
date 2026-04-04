@@ -1,6 +1,25 @@
 export const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 export const SERVING_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 export const EXPORT_SCHEMA_VERSION = 4;
+
+export const RECIPE_CATEGORIES = [
+  { id: 'hauptgericht', label: 'Hauptgericht', icon: '\u{1F37D}' },
+  { id: 'vorspeise', label: 'Vorspeise', icon: '\u{1F957}' },
+  { id: 'nachspeise', label: 'Nachspeise', icon: '\u{1F370}' },
+  { id: 'fruehstueck', label: 'Fruehstueck', icon: '\u2600' },
+  { id: 'snack', label: 'Snack', icon: '\u{1F968}' },
+  { id: 'getraenk', label: 'Getraenk', icon: '\u{1F375}' },
+  { id: 'beilage', label: 'Beilage', icon: '\u{1F96C}' },
+  { id: 'sauce', label: 'Sauce & Dip', icon: '\u{1FAD9}' },
+];
+
+export function normalizeTagForSearch(tag) {
+  return tag.toLowerCase()
+    .replace(/ue/g, '\u00FC').replace(/ae/g, '\u00E4').replace(/oe/g, '\u00F6')
+    .replace(/\u00FC/g, 'u').replace(/\u00E4/g, 'a').replace(/\u00F6/g, 'o')
+    .replace(/ss/g, 's')
+    .trim();
+}
 export const LEGACY_EXPORT_SCHEMA_VERSION = 2;
 export const MEAL_SLOTS = [
   { id: 'fruehstueck', label: 'Fruehstueck', short: 'Frueh' },

@@ -1,10 +1,11 @@
-import { normalizeMultilineText } from '../cookbook-schema.js';
+import { normalizeMultilineText, normalizeTags } from '../cookbook-schema.js';
 
 export function createRecipeFormController({
   elements,
   requiredFields,
   defaultServings = '2',
   onOpenChange = null,
+  recipeCategories = [],
 }) {
   const {
     recipeForm,
@@ -18,6 +19,7 @@ export function createRecipeFormController({
     imageFileInput,
     prepTimeInput,
     cookTimeInput,
+    categorySelect,
     tagsInput,
     descriptionInput,
     ingredientsInput,
@@ -26,6 +28,8 @@ export function createRecipeFormController({
     tipsInput,
     formTitle,
   } = elements;
+
+  const categoryIds = new Set(recipeCategories.map((c) => c.id));
 
   let pendingImageUpload = null;
 
@@ -109,13 +113,34 @@ export function createRecipeFormController({
     resetForm();
   }
 
+  function buildTagsWithCategory() {
+    const selectedCategoryId = categorySelect ? categorySelect.value : '';
+    const freeTags = normalizeTags(tagsInput.value);
+    if (selectedCategoryId) {
+      const match = recipeCategories.find((c) => c.id === selectedCategoryId);
+      const categoryLabel = match ? match.label : selectedCategoryId;
+      return [categoryLabel, ...freeTags.filter((t) => t !== categoryLabel && t !== selectedCategoryId)];
+    }
+    return freeTags;
+  }
+
   function prefillRecipeForm(recipe) {
     pendingImageUpload = null;
     titleInput.value = recipe.title;
     servingsInput.value = String(recipe.baseServings);
     prepTimeInput.value = recipe.prepTime || '';
     cookTimeInput.value = recipe.cookTime || '';
-    tagsInput.value = (recipe.tags || []).join(', ');
+    // Split tags into category (first tag if it matches a known category by id or label) and free tags
+    const tags = recipe.tags || [];
+    const firstTag = tags[0] || '';
+    const matchedCategory = recipeCategories.find((c) => c.id === firstTag || c.label === firstTag);
+    if (categorySelect && matchedCategory) {
+      categorySelect.value = matchedCategory.id;
+      tagsInput.value = tags.slice(1).join(', ');
+    } else {
+      if (categorySelect) categorySelect.value = '';
+      tagsInput.value = tags.join(', ');
+    }
     imageUrlInput.value = recipe.imageEditorValue || '';
     if (recipe.imageUrl) {
       previewImg.src = recipe.imageUrl;
@@ -171,6 +196,7 @@ export function createRecipeFormController({
   }
 
   return {
+    buildTagsWithCategory,
     clearPendingImageUpload,
     closeRecipeForm,
     getPendingImageUpload,

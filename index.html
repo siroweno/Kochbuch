@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mein Kochbuch</title>
+  <title>Kitab</title>
   <script>
     (function configureBasePath() {
       var isGitHubPages = window.location.hostname.endsWith('github.io');
@@ -16,7 +16,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Kotta+One&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rakkas&family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./src/styles.css">
   <script type="importmap">
     {
@@ -30,8 +30,8 @@
 <div class="container">
 
   <header>
-    <h1>Mein Kochbuch</h1>
-    <p class="subtitle">Deine Rezepte, deine Sammlung</p>
+    <h1>Kitab</h1>
+    <p class="subtitle">Deine Rezepte. Dein Kitab.</p>
   </header>
 
   <div class="auth-shell">
@@ -45,8 +45,8 @@
 
     <section class="auth-panel" id="loginPanel">
       <div class="auth-panel-inner">
-        <h2>Privates Familien-Kochbuch</h2>
-        <p id="loginIntro">Melde dich mit Google an, um dein persönliches Kochbuch mit Favoriten und Wochenplan zu öffnen.</p>
+        <h2>Willkommen im Kitab</h2>
+        <p id="loginIntro">Melde dich mit Google an, um dein persönliches Kitab mit Favoriten und Wochenplan zu öffnen.</p>
         <div class="auth-actions" id="googleLoginActions">
           <button class="btn-primary" id="googleLoginBtn" type="button">Mit Google anmelden</button>
         </div>
@@ -71,8 +71,8 @@
             </div>
           </div>
           <div class="loading-caption">
-            <strong>Das Kochbuch wird warm.</strong>
-            <span>Authentifizierung und Kochbuchdaten werden vorbereitet.</span>
+            <strong>Das Kitab wird warm.</strong>
+            <span>Authentifizierung und Rezepte werden vorbereitet.</span>
           </div>
         </div>
       </div>
@@ -96,10 +96,32 @@
 
   <div id="appShell" class="app-shell-hidden">
 
+  <div class="user-menu" id="userMenu">
+    <button class="user-menu-trigger" id="userMenuTrigger" type="button" aria-label="Benutzermenue">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 4-7 8-7s8 3 8 7"/>
+      </svg>
+    </button>
+    <div class="user-menu-dropdown" id="userMenuDropdown">
+      <div class="user-menu-info">
+        <strong id="userMenuName">Angemeldet</strong>
+        <span id="userMenuMeta"></span>
+      </div>
+      <button class="user-menu-logout" id="userMenuLogout" type="button">Abmelden</button>
+    </div>
+  </div>
+
   <!-- Immer sichtbare Top-Bar: Suche + Wochenplaner -->
   <div class="top-bar" id="topBar">
     <input type="text" id="searchInput" class="top-bar-search" placeholder="Rezepte durchsuchen — Titel, Zutaten, Tags …">
+    <button class="btn-favorites-filter" id="topBarFavoritesBtn" type="button" aria-pressed="false" aria-label="Nur Favoriten anzeigen" title="Nur Favoriten">&#9825;</button>
     <button class="btn-planner" id="togglePlannerBtn" type="button" aria-expanded="false" aria-controls="weekPlanner">Wochenplaner</button>
+  </div>
+
+  <div class="tag-bar" id="tagBar">
+    <div class="tag-bar-list" id="tagBarList"></div>
+    <button class="tag-bar-expand" id="tagBarExpand" type="button">Alle Tags</button>
   </div>
 
   <!-- Toolbar Toggle für Sortierung/Filter/Admin -->
@@ -217,9 +239,17 @@
       </div>
 
       <div class="form-group">
-        <label for="tags">Tags (kommagetrennt)</label>
-        <input type="text" id="tags" placeholder="z.B. Pasta, Vegetarisch, Schnell, Italienisch">
-        <p class="note">Erstes Tag = Hauptkategorie für die Sortierung nach Kategorie</p>
+        <label for="category">Kategorie</label>
+        <select id="category">
+          <option value="">— Kategorie waehlen —</option>
+        </select>
+        <p class="note">Bestimmt die Haupt-Einordnung deines Rezepts</p>
+      </div>
+
+      <div class="form-group">
+        <label for="tags">Zusaetzliche Tags (kommagetrennt)</label>
+        <input type="text" id="tags" placeholder="z.B. Vegetarisch, Schnell, Italienisch">
+        <p class="note">Fuer Eigenschaften wie Vegetarisch, Schnell, Italienisch etc.</p>
       </div>
 
       <div class="form-group">
@@ -303,9 +333,9 @@
         <option value="10">10</option>
         <option value="12">12</option>
       </select>
-      <button class="modal-cooked" id="modalCookedBtn" type="button">Heute gekocht</button>
+      <button class="modal-cooked" id="modalCookedBtn" type="button" style="display:none">Heute gekocht</button>
       <button class="modal-planner-toggle" id="modalPlannerToggle" type="button">In Woche einplanen</button>
-      <span class="modal-status" id="modalCookedStatus"></span>
+      <span class="modal-status" id="modalCookedStatus" style="display:none"></span>
     </div>
     <section class="modal-planner-panel" id="modalPlannerPanel" aria-live="polite" aria-label="Inline Wochenplanung" hidden>
       <div class="modal-planner-box">
@@ -346,7 +376,7 @@
 
     <div class="modal-body">
       <section class="modal-section" id="descriptionSectionModal" style="display:none;">
-        <div id="modalDescription" class="instructions-text" style="font-style:italic; color:#6b5842;"></div>
+        <div id="modalDescription" class="instructions-text" style="font-style:italic; color:#9AA5B8;"></div>
       </section>
 
       <section class="modal-section">
@@ -383,6 +413,18 @@
     <div class="confirm-buttons">
       <button class="btn-danger" id="confirmDeleteBtn" type="button">Löschen</button>
       <button class="btn-ghost" id="cancelDeleteBtn" type="button">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear Week Plan Confirmation -->
+<div class="confirm-overlay" id="clearPlanConfirm" role="dialog" aria-modal="true" aria-label="Wochenplan leeren">
+  <div class="confirm-box">
+    <p>Woche leeren?</p>
+    <p class="confirm-sub">Alle geplanten Rezepte werden entfernt.</p>
+    <div class="confirm-buttons">
+      <button class="btn-danger" id="confirmClearPlanBtn" type="button">Leeren</button>
+      <button class="btn-ghost" id="cancelClearPlanBtn" type="button">Abbrechen</button>
     </div>
   </div>
 </div>

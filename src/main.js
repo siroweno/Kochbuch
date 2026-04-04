@@ -11,6 +11,7 @@ import { createPlannerController } from './ui/planner-controller.js';
 import { createModalRecipeController } from './ui/modal-recipe-controller.js';
 import { getPlannerCandidates, renderDayPickerItems } from './ui/planner-view.js';
 import { createEffectsLayer } from './ui/effects-layer.js';
+import { createBackgroundParticles } from './ui/bg-particles.js';
 import { createNotificationCenter } from './ui/notifications.js';
 import { setVisible } from './ui/view-helpers.js';
 import {
@@ -24,9 +25,11 @@ import {
   normalizeMultilineText,
   normalizePositiveInteger,
   normalizeTags,
+  normalizeTagForSearch,
   parseIngredientsText,
   readLegacyLocalSnapshot,
   renderMealSlotOptions,
+  RECIPE_CATEGORIES,
   SERVING_OPTIONS,
 } from './cookbook-schema.js';
 import { renderSkeletonRecipes } from './ui/recipes-view.js';
@@ -37,7 +40,7 @@ const { config, authService, repository } = createAppServices();
 const state = createUiState(authService);
 
 const dom = getAppDom();
-const { shell, auth, recipes, planner, modal, deleteDialog, toolbar } = dom;
+const { shell, auth, recipes, planner, modal, deleteDialog, clearPlanDialog, toolbar } = dom;
 const {
   appShell,
   loadingPanel,
@@ -64,6 +67,7 @@ const {
 const {
   toggleFormBtn,
   toggleFavoritesBtn,
+  topBarFavoritesBtn,
   formContainer,
   formTitle,
   recipeForm,
@@ -78,6 +82,7 @@ const {
   servingsInput,
   prepTimeInput,
   cookTimeInput,
+  categorySelect,
   tagsInput,
   imageUrlInput,
   imageFileInput,
@@ -95,6 +100,9 @@ const {
   restoreImportFile,
   recipeImportFile,
   migrateLocalBtn,
+  tagBar,
+  tagBarList,
+  tagBarExpand,
 } = recipes;
 const {
   togglePlannerBtn,
@@ -142,12 +150,26 @@ const {
   confirmBtn: confirmDeleteBtn,
   cancelBtn: cancelDeleteBtn,
 } = deleteDialog;
+const {
+  overlay: clearPlanConfirm,
+  content: clearPlanConfirmBox,
+  confirmBtn: confirmClearPlanBtn,
+  cancelBtn: cancelClearPlanBtn,
+} = clearPlanDialog;
 
 const REQUIRED_FIELDS = new Map([
   [titleInput, 'Bitte gib einen Rezeptnamen ein.'],
   [ingredientsInput, 'Bitte trage mindestens eine Zutat ein.'],
   [instructionsInput, 'Bitte trage eine Zubereitung ein.'],
 ]);
+
+// Populate category dropdown from RECIPE_CATEGORIES
+RECIPE_CATEGORIES.forEach((cat) => {
+  const option = document.createElement('option');
+  option.value = cat.id;
+  option.textContent = `${cat.icon} ${cat.label}`;
+  categorySelect.appendChild(option);
+});
 
 const formController = createRecipeFormController({
   elements: {
@@ -162,6 +184,7 @@ const formController = createRecipeFormController({
     imageFileInput,
     prepTimeInput,
     cookTimeInput,
+    categorySelect,
     tagsInput,
     descriptionInput,
     ingredientsInput,
@@ -171,6 +194,7 @@ const formController = createRecipeFormController({
     formTitle,
   },
   requiredFields: REQUIRED_FIELDS,
+  recipeCategories: RECIPE_CATEGORIES,
 });
 
 const modalController = createDialogController({
@@ -196,6 +220,15 @@ const deleteDialogController = createDialogController({
     state.pendingDeleteId = null;
     syncBodyScrollLock();
   },
+});
+
+const clearPlanDialogController = createDialogController({
+  overlay: clearPlanConfirm,
+  content: clearPlanConfirmBox,
+  appShell,
+  initialFocus: () => cancelClearPlanBtn,
+  onOpen: syncBodyScrollLock,
+  onClose: syncBodyScrollLock,
 });
 
 const reducedMotionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
@@ -240,6 +273,7 @@ const recipesController = createRecipesController({
   state,
   elements: {
     toggleFavoritesBtn,
+    topBarFavoritesBtn,
     tagFilterPill,
     tagFilterLabel,
     recipeGrid,
@@ -273,7 +307,7 @@ const updatePlannerShoppingList = () => plannerController.updateShoppingList();
 const refreshPlannerViews = () => plannerController.refresh();
 
 function syncBodyScrollLock() {
-  const shouldLock = modalController.isOpen() || deleteDialogController.isOpen();
+  const shouldLock = modalController.isOpen() || deleteDialogController.isOpen() || clearPlanDialogController.isOpen();
   document.body.style.overflow = shouldLock ? 'hidden' : '';
 }
 
@@ -562,6 +596,10 @@ function renderAuthShell(snapshot) {
   authBarMeta.textContent = snapshot.profile
     ? `${snapshot.profile.role === 'admin' ? 'Admin' : 'Reader'} · ${config.backend === 'browser-test' ? 'Browser-Test' : 'Supabase'}`
     : config.backend === 'browser-test' ? 'Browser-Test' : 'Supabase';
+  const userMenuName = document.getElementById('userMenuName');
+  const userMenuMeta = document.getElementById('userMenuMeta');
+  if (userMenuName) userMenuName.textContent = authBarName.textContent;
+  if (userMenuMeta) userMenuMeta.textContent = authBarMeta.textContent;
   loginMessage.textContent = snapshot.message || '';
   accessMessage.textContent = snapshot.message || 'Dein Profil konnte gerade nicht geladen werden.';
   loginIntro.textContent = config.backend === 'browser-test'
@@ -613,11 +651,13 @@ function applyLoadResult(result, { scope = 'full' } = {}) {
     plannerController.refresh();
   } else if (scope === 'recipes') {
     recipesController.render();
+    renderTagBar();
     if (state.plannerOpen) {
       plannerController.render();
     }
   } else {
     recipesController.render();
+    renderTagBar();
     plannerController.refresh();
   }
 
@@ -660,8 +700,33 @@ async function waitForAppReady() {
   }
 }
 
+function renderTagBar() {
+  if (!tagBarList) return;
+  const tagCounts = new Map();
+  state.recipes.forEach((recipe) => {
+    (recipe.tags || []).forEach((tag) => {
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    });
+  });
+  const sorted = Array.from(tagCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map((entry) => entry[0]);
+  const isExpanded = tagBar.classList.contains('expanded');
+  const displayTags = isExpanded ? sorted : sorted.slice(0, 10);
+  tagBarList.innerHTML = displayTags.map((tag) => {
+    const isActive = state.activeTagFilter && (tag.toLowerCase() === state.activeTagFilter.toLowerCase()
+      || normalizeTagForSearch(tag) === normalizeTagForSearch(state.activeTagFilter));
+    return `<button type="button" class="tag${isActive ? ' active' : ''}" data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(Boolean(isActive))}">${tag}</button>`;
+  }).join('');
+  if (tagBarExpand) {
+    tagBarExpand.textContent = isExpanded ? 'Weniger' : 'Alle Tags';
+    tagBarExpand.style.display = sorted.length > 10 ? '' : 'none';
+  }
+}
+
 function clearTagFilter() {
   state.activeTagFilter = null;
+  renderTagBar();
   recipesController.render();
 }
 
@@ -672,6 +737,7 @@ function setTagFilter(tag) {
   }
 
   state.activeTagFilter = tag;
+  renderTagBar();
   recipesController.render();
 }
 
@@ -1120,9 +1186,12 @@ async function finishPlanDrag(clientX = null, clientY = null) {
   plannerController.render();
 }
 
+const _favoritePending = new Set();
 function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
+  if (_favoritePending.has(String(recipeId))) return;
   const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
   if (!recipe) return;
+  _favoritePending.add(String(recipeId));
 
   const isLike = !recipe.favorite;
   const anchorRect = anchor?.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
@@ -1165,6 +1234,9 @@ function toggleFavoriteWithEffect({ recipeId, anchor, surface }) {
         renderRecipeModal();
       }
       notifications.error('Favorit konnte nicht gespeichert werden.');
+    })
+    .finally(() => {
+      _favoritePending.delete(String(recipeId));
     });
 }
 
@@ -1264,7 +1336,7 @@ async function handleRecipeSubmit(event) {
     baseServings: normalizePositiveInteger(servingsInput.value, existing?.baseServings || 2),
     prepTime: Number.parseInt(prepTimeInput.value, 10) || 0,
     cookTime: Number.parseInt(cookTimeInput.value, 10) || 0,
-    tags: normalizeTags(tagsInput.value),
+    tags: formController.buildTagsWithCategory(),
     description: descriptionInput.value.trim(),
     rawIngredients,
     parsedIngredients: parseIngredientsText(rawIngredients),
@@ -1291,7 +1363,7 @@ function handleDayPickerKeyboard(event) {
     return true;
   }
 
-  const items = Array.from(document.querySelectorAll(`#picker-list-${state.activeDayPicker} .day-picker-item[data-action="add-to-day"]`));
+  const items = Array.from(document.querySelectorAll(`#picker-list-${state.activeDayPicker} .planner-day-picker-item[data-action="add-to-day"]`));
   if (!items.length) return false;
 
   if (event.target.matches('[data-day-picker-search]') && event.key === 'ArrowDown') {
@@ -1300,7 +1372,7 @@ function handleDayPickerKeyboard(event) {
     return true;
   }
 
-  if (!event.target.classList.contains('day-picker-item')) {
+  if (!event.target.classList.contains('planner-day-picker-item')) {
     return false;
   }
 
@@ -1350,6 +1422,7 @@ bindAppEvents({
     searchInput,
     sortSelect,
     toggleFavoritesBtn,
+    topBarFavoritesBtn,
     clearTagFilterBtn,
     modalCloseBtn,
     modalFavoriteBtn,
@@ -1365,6 +1438,9 @@ bindAppEvents({
     confirmDeleteBtn,
     cancelDeleteBtn,
     deleteConfirm,
+    confirmClearPlanBtn,
+    cancelClearPlanBtn,
+    clearPlanConfirm,
     recipeModal,
     toolbarToggle: toolbar.toolbarToggle,
     toolbarClose: toolbar.toolbarClose,
@@ -1387,6 +1463,7 @@ bindAppEvents({
     confirmDelete,
     createEmptyWeekPlan,
     deleteConfirm,
+    clearPlanDialogController,
     deleteDialogController,
     downloadJson,
     editRecipeModal,
@@ -1450,6 +1527,16 @@ bindAppEvents({
   }),
 });
 
+// Tag bar: expand/collapse toggle
+if (tagBarExpand) {
+  tagBarExpand.addEventListener('click', () => {
+    tagBar.classList.toggle('expanded');
+    renderTagBar();
+  });
+}
+
+// Tag bar: delegate click on tags — handled by onDocumentClick in app-event-handlers.js
+
 if (reducedMotionQuery) {
   const handleReducedMotionChange = (event) => {
     updateMotionMode(event.matches);
@@ -1480,12 +1567,14 @@ async function initializeApp() {
     browserTestEmail.value = 'admin@kochbuch.local';
   }
 
-  // Cursor "Umrühr"-Animation mit Partikeln beim Klicken
-  document.addEventListener('mousedown', (e) => {
-    document.body.classList.add('cursor-stir');
+  createBackgroundParticles();
 
-    // Partikel-Burst am Klickpunkt
-    const colors = ['#d4a574', '#c9956f', '#e8c99a', '#b8844a', '#dbb07a'];
+  // Cursor "Schreib"-Animation mit Partikeln beim Klicken
+  document.addEventListener('mousedown', (e) => {
+    document.body.classList.add('cursor-write');
+
+    // Partikel-Burst am Klickpunkt (Gold-Tintenspritzer)
+    const colors = ['#C9A84C', '#E8CC6E', '#D4943A', '#B87333', '#C9A84C'];
     for (let i = 0; i < 6; i++) {
       const particle = document.createElement('div');
       particle.className = 'stir-particle';
@@ -1506,14 +1595,62 @@ async function initializeApp() {
   });
 
   document.addEventListener('mouseup', () => {
-    setTimeout(() => document.body.classList.remove('cursor-stir'), 150);
+    setTimeout(() => document.body.classList.remove('cursor-write'), 150);
   });
+
+  // Ink-Ripple-Effekt bei jedem Klick
+  document.addEventListener('click', (e) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ripple = document.createElement('div');
+    ripple.className = 'ink-ripple';
+    ripple.style.left = e.clientX + 'px';
+    ripple.style.top = e.clientY + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 650);
+  });
+
+  // Cursor-Glow (nur Desktop, nur wenn keine reduzierte Bewegung)
+  if (window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const glow = document.createElement('div');
+    glow.id = 'cursor-glow';
+    document.body.appendChild(glow);
+    let rafId = null;
+    document.addEventListener('mousemove', (e) => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        glow.style.left = e.clientX + 'px';
+        glow.style.top = e.clientY + 'px';
+        rafId = null;
+      });
+    });
+  }
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);
   if (legacySnapshot.hasLegacyData && snapshot.accessState !== 'signed_in') {
     loginMessage.textContent = config.backend === 'browser-test'
       ? 'Lokale Kochbuchdaten gefunden. Nach dem Test-Login kann die Einmal-Migration gestartet werden.'
       : 'Lokale Kochbuchdaten gefunden. Nach dem Google-Login kann die Einmal-Migration gestartet werden.';
+  }
+
+  // Sticky header: shrink on scroll
+  const headerEl = document.querySelector('header');
+  if (headerEl) {
+    window.addEventListener('scroll', () => {
+      headerEl.classList.toggle('scrolled', window.scrollY > 60);
+    }, { passive: true });
+  }
+
+  // User menu: open/close on click instead of hover
+  const userMenuTrigger = document.getElementById('userMenuTrigger');
+  const userMenuDropdown = document.getElementById('userMenuDropdown');
+  if (userMenuTrigger && userMenuDropdown) {
+    userMenuTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userMenuDropdown.classList.toggle('visible');
+    });
+    document.addEventListener('click', () => {
+      userMenuDropdown.classList.remove('visible');
+    });
   }
 }
 

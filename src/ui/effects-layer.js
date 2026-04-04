@@ -74,7 +74,7 @@ function ensureStyles() {
       transform: translate(-50%, -50%) scale(0.5);
       font-size: 24px;
       line-height: 1;
-      filter: drop-shadow(0 8px 16px rgba(122, 72, 34, 0.16));
+      filter: drop-shadow(0 8px 16px rgba(201, 168, 76, 0.16));
       animation: effects-heart-pop 820ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
     }
 
@@ -84,12 +84,12 @@ function ensureStyles() {
       top: 0;
       padding: 0.24rem 0.46rem;
       border-radius: 999px;
-      background: rgba(255, 248, 240, 0.95);
-      color: #7a4d2b;
+      background: rgba(212, 148, 58, 0.9);
+      color: #0D1B2A;
       font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.01em;
-      box-shadow: 0 8px 24px rgba(122, 72, 34, 0.08);
+      box-shadow: 0 8px 24px rgba(201, 168, 76, 0.18);
       opacity: 0;
       transform: translate(-50%, -50%) translate(0, 0) scale(0.6);
       animation: effects-word-fan 980ms cubic-bezier(0.18, 0.84, 0.24, 1) forwards;
@@ -106,7 +106,7 @@ function ensureStyles() {
     .effects-layer__loading {
       display: grid;
       place-items: center;
-      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.72), rgba(250, 244, 236, 0.48) 48%, rgba(246, 238, 228, 0.18) 100%);
+      background: radial-gradient(circle at center, rgba(13, 27, 42, 0.85), rgba(27, 45, 74, 0.6) 48%, rgba(13, 27, 42, 0.3) 100%);
     }
 
     .effects-layer__loading-pot {
@@ -117,10 +117,10 @@ function ensureStyles() {
       min-width: 7.5rem;
       padding: 1rem 1.2rem 0.8rem;
       border-radius: 1.4rem;
-      background: linear-gradient(180deg, rgba(255, 249, 243, 0.94), rgba(247, 238, 227, 0.82));
-      border: 1px solid rgba(155, 113, 77, 0.15);
-      box-shadow: 0 18px 40px rgba(103, 63, 33, 0.08);
-      color: #7a4d2b;
+      background: linear-gradient(180deg, rgba(27, 45, 74, 0.94), rgba(13, 27, 42, 0.82));
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      box-shadow: 0 18px 40px rgba(201, 168, 76, 0.08);
+      color: #C9A84C;
     }
 
     .effects-layer__pot-body {
@@ -144,7 +144,7 @@ function ensureStyles() {
       border: 2px solid currentColor;
       border-bottom: 0;
       transform: translateX(-50%);
-      background: rgba(255, 250, 246, 0.92);
+      background: rgba(27, 45, 74, 0.92);
       animation: effects-lid-bob 1400ms ease-in-out infinite;
     }
 
@@ -157,9 +157,9 @@ function ensureStyles() {
       transform: translateX(-50%);
       opacity: 0.55;
       background:
-        radial-gradient(circle at 22% 62%, rgba(177, 132, 93, 0.26) 0 18%, transparent 19%),
-        radial-gradient(circle at 50% 30%, rgba(177, 132, 93, 0.22) 0 18%, transparent 19%),
-        radial-gradient(circle at 78% 62%, rgba(177, 132, 93, 0.26) 0 18%, transparent 19%);
+        radial-gradient(circle at 22% 62%, rgba(201, 168, 76, 0.26) 0 18%, transparent 19%),
+        radial-gradient(circle at 50% 30%, rgba(201, 168, 76, 0.22) 0 18%, transparent 19%),
+        radial-gradient(circle at 78% 62%, rgba(201, 168, 76, 0.26) 0 18%, transparent 19%);
       filter: blur(0.3px);
       animation: effects-steam-rise 1800ms ease-in-out infinite;
     }

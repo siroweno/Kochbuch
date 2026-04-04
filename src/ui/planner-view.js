@@ -12,9 +12,9 @@ import { escapeAttribute, escapeHtml } from './view-helpers.js';
 
 export function getPlannerCandidates({ recipes, query = '' }) {
   const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
   return recipes
     .filter((recipe) => {
-      if (!normalizedQuery) return true;
       return recipe.title.toLowerCase().includes(normalizedQuery)
         || (recipe.tags || []).some((tag) => tag.toLowerCase().includes(normalizedQuery));
     })
@@ -33,9 +33,14 @@ export function renderDayPickerItems({
   recipes,
   activeDayPickerSlot,
 }) {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) {
+    return `<div class="planner-day-picker-empty" aria-live="polite">Suchbegriff eingeben\u2026</div>`;
+  }
+
   const matches = getPlannerCandidates({ recipes, query });
   if (!matches.length) {
-    return `<div class="day-picker-empty" aria-live="polite">${query ? 'Keine Treffer' : 'Keine Rezepte'}</div>`;
+    return `<div class="planner-day-picker-empty" aria-live="polite">Keine Treffer</div>`;
   }
 
   return matches.map((recipe) => {
@@ -47,9 +52,9 @@ export function renderDayPickerItems({
     ].filter(Boolean).join(' · ');
 
     return `
-      <button type="button" class="day-picker-item" data-action="add-to-day" data-day="${day}" data-recipe-id="${recipe.id}" aria-label="${escapeAttribute(recipe.title)} einplanen. ${escapeAttribute(meta)}">
-        <span class="day-picker-item-title">${escapeHtml(recipe.title)}</span>
-        <span class="day-picker-item-meta">${escapeHtml(meta)}</span>
+      <button type="button" class="planner-day-picker-item" data-action="add-to-day" data-day="${day}" data-recipe-id="${recipe.id}" aria-label="${escapeAttribute(recipe.title)} einplanen. ${escapeAttribute(meta)}">
+        <span class="planner-day-picker-item-title">${escapeHtml(recipe.title)}</span>
+        <span class="planner-day-picker-item-meta">${escapeHtml(meta)}</span>
       </button>
     `;
   }).join('');
@@ -90,19 +95,21 @@ function groupEntriesBySlot(entries) {
 function renderSlotRow(day, slot, entry) {
   if (!entry) {
     return `
-      <div class="planner-slot-row planner-slot-empty">
+      <div class="planner-slot-row planner-slot-empty" data-drop-zone data-drop-day="${day}" data-drop-slot="${slot.id}" data-drop-position="0">
         <span class="planner-slot-icon">${SLOT_ICONS[slot.id] || '\u00B7'}</span>
         <span class="planner-slot-name">${escapeHtml(slot.label)}</span>
-        <span class="planner-slot-placeholder">\u2014</span>
+        <span class="planner-slot-placeholder">leer</span>
       </div>`;
   }
   const planEntryId = escapeAttribute(String(entry.planEntryId || entry.id || ''));
+  const servings = entry.servings || 2;
   return `
-    <div class="planner-slot-row" data-plan-entry-id="${planEntryId}">
+    <div class="planner-slot-row day-recipe-chip" data-plan-entry-id="${planEntryId}" data-drop-zone data-drop-day="${day}" data-drop-slot="${slot.id}" data-drop-position="${entry._index ?? 0}">
+      <button class="planner-drag-handle" data-action="start-plan-drag" data-plan-entry-id="${planEntryId}" data-day="${day}" data-index="${entry._index ?? 0}" aria-label="Verschieben" style="touch-action:none;">\u2261</button>
       <span class="planner-slot-icon">${SLOT_ICONS[slot.id] || '\u00B7'}</span>
       <span class="planner-slot-name">${escapeHtml(slot.label)}</span>
       <button class="planner-entry-title" data-action="open-recipe" data-recipe-id="${escapeAttribute(entry.recipeId)}">${escapeHtml(entry.recipeTitle || 'Rezept')}</button>
-      <span class="planner-entry-servings">${entry.servings || 2}P</span>
+      <button class="planner-entry-servings" data-action="edit-plan-servings" data-plan-entry-id="${planEntryId}" data-day="${day}" data-index="${entry._index ?? 0}" data-servings="${servings}" aria-label="Portionen anpassen: ${servings}">${servings}P</button>
       <button class="planner-entry-remove" data-action="remove-plan-entry" data-plan-entry-id="${planEntryId}" data-day="${day}" data-index="${entry._index ?? 0}" aria-label="Entfernen">\u00D7</button>
     </div>`;
 }
@@ -114,10 +121,10 @@ function renderDayDetail(day, weekPlan, recipes, activeDayPicker, activeDayPicke
 
   const slotRows = MEAL_SLOTS.map((slot) => {
     const slotEntries = grouped[slot.id] || [];
-    if (slotEntries.length === 0) {
-      return renderSlotRow(day, slot, null);
-    }
-    return slotEntries.map((entry) => renderSlotRow(day, slot, entry)).join('');
+    const rows = slotEntries.length === 0
+      ? renderSlotRow(day, slot, null)
+      : slotEntries.map((entry) => renderSlotRow(day, slot, entry)).join('');
+    return `<div class="planner-slot-section" data-slot-section="${slot.id}" data-slot-entry-count="${slotEntries.length}">${rows}</div>`;
   }).join('');
 
   let pickerHTML = '';
@@ -127,30 +134,30 @@ function renderDayDetail(day, weekPlan, recipes, activeDayPicker, activeDayPicke
     const pickerListId = `picker-list-${day}`;
 
     pickerHTML = `
-      <div class="day-picker open" id="picker-${day}" aria-live="polite">
-        <div class="day-picker-status sr-only" id="${pickerStatusId}" aria-live="polite" aria-atomic="true">
+      <div class="planner-day-picker-panel" id="picker-${day}" aria-live="polite">
+        <div class="planner-day-picker-status sr-only" id="${pickerStatusId}" aria-live="polite" aria-atomic="true">
           ${pickerResults.length} Ergebnis${pickerResults.length === 1 ? '' : 'se'} verfügbar.
         </div>
-        <div class="day-picker-toolbar">
+        <div class="planner-day-picker-toolbar">
           <label for="picker-slot-${day}">Eintragen als</label>
-          <select class="day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
+          <select class="planner-day-picker-slot" id="picker-slot-${day}" data-day-picker-slot="${day}">
             ${renderMealSlotOptions(activeDayPickerSlot)}
           </select>
         </div>
         <label class="sr-only" for="picker-search-${day}">Rezepte für ${day} suchen</label>
-        <input class="day-picker-search" type="text" value="${escapeAttribute(activeDayPickerQuery || '')}" placeholder="Suchen \u2026" id="picker-search-${day}" data-day-picker-search="${day}" aria-describedby="${pickerStatusId} ${pickerListId}">
-        <div class="day-picker-list" id="${pickerListId}" aria-label="Suchergebnisse für ${day}">
+        <input class="planner-day-picker-search" type="text" value="${escapeAttribute(activeDayPickerQuery || '')}" placeholder="Rezept suchen \u2026" id="picker-search-${day}" data-day-picker-search="${day}" aria-describedby="${pickerStatusId} ${pickerListId}">
+        <div class="planner-day-picker-list" id="${pickerListId}" aria-label="Suchergebnisse für ${day}">
           ${renderDayPickerItems({ day, query: activeDayPickerQuery, recipes, activeDayPickerSlot })}
         </div>
       </div>`;
   }
 
   return `
-    <div class="planner-day-detail" data-day="${day}">
+    <div class="planner-day-detail" data-day="${day}" data-day-column="${day}">
       <div class="planner-day-detail-header">
         <h3>${DAY_FULL_NAMES[day] || day}</h3>
         <div class="day-add-wrapper">
-          <button type="button" class="day-add-btn" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(isPickerOpen)}" aria-controls="picker-${day}">
+          <button type="button" class="${isPickerOpen ? 'day-add-btn day-add-btn-ghost' : 'day-add-btn'}" data-action="toggle-day-picker" data-day="${day}" aria-expanded="${String(isPickerOpen)}" aria-controls="picker-${day}">
             ${isPickerOpen ? 'Schliessen' : '+ Rezept'}
           </button>
           ${pickerHTML}

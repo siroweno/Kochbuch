@@ -5,9 +5,18 @@ import {
   getCookedTimestamp,
   isSameCalendarDay,
   isValidDateString,
+  normalizeTagForSearch,
   scaleIngredient,
 } from '../cookbook-schema.js';
 import { escapeAttribute, escapeHtml } from './view-helpers.js';
+
+function getTagColorClass(tag) {
+  const lower = tag.toLowerCase();
+  if (['orientalisch', 'mezze', 'arabisch', 'levantinisch', 'tuerkisch', 'persisch'].includes(lower)) return ' tag-saffron';
+  if (['vegan', 'vegetarisch', 'gesund'].includes(lower)) return ' tag-emerald';
+  if (['schnell', 'einfach', 'simpel', 'unter 30 min'].includes(lower)) return ' tag-copper';
+  return '';
+}
 
 function getMainCategory(recipe) {
   return (recipe.tags && recipe.tags[0]) || '';
@@ -29,20 +38,24 @@ export function getFilteredSortedRecipes({
   sort,
 }) {
   const normalizedQuery = String(query || '').toLowerCase().trim();
+  const fuzzyQuery = normalizedQuery ? normalizeTagForSearch(normalizedQuery) : '';
 
   const list = recipes.filter((recipe) => {
     if (normalizedQuery) {
-      const inTitle = recipe.title.toLowerCase().includes(normalizedQuery);
+      const inTitle = recipe.title.toLowerCase().includes(normalizedQuery)
+        || normalizeTagForSearch(recipe.title).includes(fuzzyQuery);
       const inDescription = (recipe.description || '').toLowerCase().includes(normalizedQuery);
       const inIngredients = (recipe.rawIngredients || '').toLowerCase().includes(normalizedQuery);
-      const inTags = (recipe.tags || []).some((tag) => tag.toLowerCase().includes(normalizedQuery));
+      const inTags = (recipe.tags || []).some((tag) => tag.toLowerCase().includes(normalizedQuery)
+        || normalizeTagForSearch(tag).includes(fuzzyQuery));
       const inInstructions = (recipe.instructions || '').toLowerCase().includes(normalizedQuery);
       if (!inTitle && !inDescription && !inIngredients && !inTags && !inInstructions) {
         return false;
       }
     }
 
-    if (activeTagFilter && !(recipe.tags || []).some((tag) => tag.toLowerCase() === activeTagFilter.toLowerCase())) {
+    if (activeTagFilter && !(recipe.tags || []).some((tag) => tag.toLowerCase() === activeTagFilter.toLowerCase()
+      || normalizeTagForSearch(tag) === normalizeTagForSearch(activeTagFilter))) {
       return false;
     }
 
@@ -128,13 +141,19 @@ export function renderRecipeGrid({
             </div>
           </div>
         </section>`
-      : `<div class="empty-state">${hasActiveFilters ? 'Keine Rezepte passen zu Suche oder Filtern.' : 'Keine Rezepte gefunden.'}</div>`;
+      : `<div class="empty-state">${favoriteFilterActive
+          ? 'Noch keine Favoriten — tippe auf das Herz bei einem Rezept.'
+          : activeTagFilter
+            ? 'Keine Rezepte mit diesem Tag.'
+            : String(query || '').trim()
+              ? 'Kein Rezept gefunden — versuche andere Stichworte.'
+              : 'Keine Rezepte gefunden.'}</div>`;
     return;
   }
 
   recipeGrid.innerHTML = filteredRecipes.map((recipe, index) => {
     const tagsHtml = (recipe.tags || []).map((tag) => `
-      <button type="button" class="tag${activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
+      <button type="button" class="tag${getTagColorClass(tag)}${activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
         data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase())}">${escapeHtml(tag)}</button>
     `).join('');
 
@@ -146,10 +165,10 @@ export function renderRecipeGrid({
 
     const imageHtml = recipe.imageUrl
       ? `<img class="card-image" src="${escapeAttribute(recipe.imageUrl)}" alt="${escapeAttribute(recipe.title)}" loading="lazy" onerror="this.style.display='none'">`
-      : '<div class="card-image-placeholder">✦</div>';
+      : '<div class="card-image-placeholder"><svg viewBox="0 0 80 80" width="56" height="56" fill="none" stroke="#C9A84C" stroke-width="0.8" opacity="0.4"><polygon points="40,8 47,25 64,16 55,33 72,40 55,47 64,64 47,55 40,72 33,55 16,64 25,47 8,40 25,33 16,16 33,25"/><circle cx="40" cy="40" r="14"/><circle cx="40" cy="40" r="8"/></svg></div>';
 
     return `
-      <article class="recipe-card" style="animation-delay: ${index * 0.04}s">
+      <article class="recipe-card" style="animation-delay: ${index * 0.08}s">
         <button type="button" class="recipe-card-main" data-action="open-recipe" data-recipe-id="${recipe.id}" aria-label="Rezept ${escapeAttribute(recipe.title)} öffnen">
           ${imageHtml}
           <div class="card-body">
@@ -244,11 +263,11 @@ export function renderRecipeModalContent({
   let ingredientHtml = '';
   if (recipe.parsedIngredients?.length) {
     ingredientHtml = recipe.parsedIngredients.map((ingredient) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(scaleIngredient(ingredient, recipe.baseServings, displayServings))}</span></div>
+      <div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(scaleIngredient(ingredient, recipe.baseServings, displayServings))}</span></div>
     `).join('');
   } else if (recipe.rawIngredients) {
     ingredientHtml = recipe.rawIngredients.split('\n').filter(Boolean).map((line) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">•</span><span>${escapeHtml(line.trim())}</span></div>
+      <div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(line.trim())}</span></div>
     `).join('');
   }
   modalIngredients.innerHTML = ingredientHtml;

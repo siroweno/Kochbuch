@@ -26,6 +26,7 @@ export function bindAppEvents({
     searchInput,
     sortSelect,
     toggleFavoritesBtn,
+    topBarFavoritesBtn,
     clearTagFilterBtn,
     modalCloseBtn,
     modalFavoriteBtn,
@@ -41,6 +42,9 @@ export function bindAppEvents({
     confirmDeleteBtn,
     cancelDeleteBtn,
     deleteConfirm,
+    confirmClearPlanBtn,
+    cancelClearPlanBtn,
+    clearPlanConfirm,
     recipeModal,
   } = elements;
 
@@ -52,6 +56,7 @@ export function bindAppEvents({
   googleLoginBtn.addEventListener('click', handlers.onGoogleLogin);
   browserTestLoginForm.addEventListener('submit', handlers.onBrowserTestLoginSubmit);
   signOutBtn.addEventListener('click', handlers.onSignOut);
+  document.getElementById('userMenuLogout')?.addEventListener('click', handlers.onSignOut);
   toggleFormBtn.addEventListener('click', handlers.onToggleRecipeForm);
   uploadImageBtn.addEventListener('click', handlers.onUploadImageClick);
   imageFileInput.addEventListener('change', handlers.onImageFileChange);
@@ -70,6 +75,7 @@ export function bindAppEvents({
   searchInput.addEventListener('input', handlers.onSearchInput);
   sortSelect.addEventListener('change', handlers.onSortChange);
   toggleFavoritesBtn.addEventListener('click', handlers.onToggleFavoritesFilter);
+  topBarFavoritesBtn?.addEventListener('click', handlers.onToggleFavoritesFilter);
   clearTagFilterBtn.addEventListener('click', handlers.onClearTagFilter);
   modalCloseBtn.addEventListener('click', handlers.onCloseModal);
   modalFavoriteBtn.addEventListener('click', handlers.onToggleModalFavorite);
@@ -85,6 +91,11 @@ export function bindAppEvents({
   confirmDeleteBtn.addEventListener('click', handlers.onConfirmDelete);
   cancelDeleteBtn.addEventListener('click', handlers.onCancelDelete);
   deleteConfirm.addEventListener('click', handlers.onDeleteOverlayClick);
+  confirmClearPlanBtn?.addEventListener('click', handlers.onConfirmClearPlan);
+  cancelClearPlanBtn?.addEventListener('click', handlers.onCancelClearPlan);
+  clearPlanConfirm?.addEventListener('click', (event) => {
+    if (event.target === clearPlanConfirm) handlers.onCancelClearPlan();
+  });
   recipeModal.addEventListener('click', handlers.onModalOverlayClick);
 
   requiredFields.forEach((_message, input) => {

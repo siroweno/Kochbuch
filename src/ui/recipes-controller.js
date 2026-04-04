@@ -14,6 +14,11 @@ export function createRecipesController({
   function updateFavoriteFilterButton() {
     elements.toggleFavoritesBtn.classList.toggle('active', state.favoriteFilterActive);
     elements.toggleFavoritesBtn.setAttribute('aria-pressed', String(state.favoriteFilterActive));
+    if (elements.topBarFavoritesBtn) {
+      elements.topBarFavoritesBtn.classList.toggle('active', state.favoriteFilterActive);
+      elements.topBarFavoritesBtn.setAttribute('aria-pressed', String(state.favoriteFilterActive));
+      elements.topBarFavoritesBtn.innerHTML = state.favoriteFilterActive ? '&#9829;' : '&#9825;';
+    }
   }
 
   function updateTagFilterPill() {

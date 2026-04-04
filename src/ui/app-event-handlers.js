@@ -152,12 +152,21 @@ export function createAppEventHandlers(deps) {
       }
     },
 
-    async onClearPlan() {
+    onClearPlan() {
       if (!deps.DAYS.some((day) => (state.weekPlan[day] || []).length > 0)) return;
+      deps.clearPlanDialogController.open();
+    },
+
+    async onConfirmClearPlan() {
       state.weekPlan = createEmptyWeekPlan();
       state.activePlannerDay = null;
       resetPlannerDraftState();
+      deps.clearPlanDialogController.close();
       await deps.persistWeekPlan();
+    },
+
+    onCancelClearPlan() {
+      deps.clearPlanDialogController.close();
     },
 
     onShoppingSearch(event) {
@@ -447,6 +456,58 @@ export function createAppEventHandlers(deps) {
           return;
         }
 
+        if (action === 'edit-plan-servings') {
+          const btn = actionTarget;
+          const currentServings = Number.parseInt(btn.dataset.servings, 10) || 2;
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = '1';
+          input.step = '1';
+          input.inputMode = 'numeric';
+          input.value = String(currentServings);
+          input.className = 'planner-servings-input';
+          input.setAttribute('aria-label', 'Portionen');
+
+          const commit = async () => {
+            const newServings = normalizePositiveInteger(input.value, currentServings);
+            input.replaceWith(btn);
+            if (newServings !== currentServings) {
+              btn.textContent = `${newServings}P`;
+              btn.dataset.servings = String(newServings);
+              btn.setAttribute('aria-label', `Portionen anpassen: ${newServings}`);
+              btn.classList.add('servings-updated');
+              setTimeout(() => btn.classList.remove('servings-updated'), 600);
+              await updatePlanEntryServings(
+                btn.dataset.planEntryId,
+                btn.dataset.day,
+                Number.parseInt(btn.dataset.index, 10),
+                newServings,
+              );
+            }
+          };
+
+          const cancel = () => {
+            input.replaceWith(btn);
+          };
+
+          input.addEventListener('blur', commit, { once: true });
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              input.blur();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              input.removeEventListener('blur', commit);
+              cancel();
+            }
+          });
+
+          btn.replaceWith(input);
+          input.focus();
+          input.select();
+          return;
+        }
+
         if (action === 'move-plan-entry') {
           toggleMoveEntryComposer(actionTarget.dataset.planEntryId);
           return;
@@ -486,10 +547,16 @@ export function createAppEventHandlers(deps) {
 
     onDocumentKeydown(event) {
       if (deleteDialogController.handleKeydown(event)) return;
+      if (deps.clearPlanDialogController.handleKeydown?.(event)) return;
       if (modalController.handleKeydown(event)) return;
       if (handleDayPickerKeyboard(event)) return;
 
       if (event.key !== 'Escape') return;
+
+      if (deps.clearPlanDialogController.isOpen?.()) {
+        deps.clearPlanDialogController.close();
+        return;
+      }
 
       if (state.activeMoveEntryId) {
         state.activeMoveEntryId = null;
