@@ -38,6 +38,9 @@ import { createDragDropController } from './ui/drag-drop-controller.js';
 import { createRecipeModalActions } from './ui/recipe-modal-actions.js';
 import { downloadJson, buildImportMessage, createImportExportController } from './ui/import-export.js';
 import { createFavoriteController } from './ui/favorite-controller.js';
+import { initializeCursorEffects } from './ui/cursor-effects.js';
+import { initializeHeaderScroll } from './ui/header-scroll.js';
+import { initializeUserMenu } from './ui/user-menu.js';
 
 await loadRuntimeConfig();
 
@@ -232,20 +235,24 @@ function announceUi(message) {
   effectsLayer.announce(state.uiAnnouncement);
 }
 
-// --- Phase 4: auth-shell controller (needs modalController/deleteDialogController/clearPlanDialogController - created next) ---
-// Forward-declared; wired after dialog controllers are created.
-let authShell;
+// syncBodyScrollLock is a standalone function — no circular dependency.
+// Dialog controllers reference it in callbacks; authShell also exposes it.
+const dialogs = {};
+function syncBodyScrollLock() {
+  const shouldLock = dialogs.modal?.isOpen() || dialogs.delete?.isOpen() || dialogs.clearPlan?.isOpen();
+  document.body.style.overflow = shouldLock ? 'hidden' : '';
+}
 
 const modalController = createDialogController({
   overlay: recipeModal,
   content: recipeModalContent,
   appShell,
   initialFocus: () => modalCloseBtn,
-  onOpen: () => authShell.syncBodyScrollLock(),
+  onOpen: () => syncBodyScrollLock(),
   onClose: () => {
     state.currentModalRecipe = null;
     state.currentModalServings = null;
-    authShell.syncBodyScrollLock();
+    syncBodyScrollLock();
   },
 });
 
@@ -254,10 +261,10 @@ const deleteDialogController = createDialogController({
   content: deleteConfirmBox,
   appShell,
   initialFocus: () => cancelDeleteBtn,
-  onOpen: () => authShell.syncBodyScrollLock(),
+  onOpen: () => syncBodyScrollLock(),
   onClose: () => {
     state.pendingDeleteId = null;
-    authShell.syncBodyScrollLock();
+    syncBodyScrollLock();
   },
 });
 
@@ -266,12 +273,16 @@ const clearPlanDialogController = createDialogController({
   content: clearPlanConfirmBox,
   appShell,
   initialFocus: () => cancelClearPlanBtn,
-  onOpen: () => authShell.syncBodyScrollLock(),
-  onClose: () => authShell.syncBodyScrollLock(),
+  onOpen: () => syncBodyScrollLock(),
+  onClose: () => syncBodyScrollLock(),
 });
 
-// Now create authShell with dialog controllers available
-authShell = createAuthShellController({
+// Wire dialogs object now that controllers exist
+dialogs.modal = modalController;
+dialogs.delete = deleteDialogController;
+dialogs.clearPlan = clearPlanDialogController;
+
+const authShell = createAuthShellController({
   state,
   config,
   dom: {
@@ -289,15 +300,14 @@ authShell = createAuthShellController({
     googleLoginActions,
     browserTestLoginForm,
   },
-  modalController,
-  deleteDialogController,
-  clearPlanDialogController,
   loadingController,
 });
 
-// syncModalPlanningUi is needed by modalRecipeController — forward-declared, wired after recipeModalActions
-let recipeModalActions;
-const syncModalPlanningUiFn = (...args) => recipeModalActions.syncModalPlanningUi(...args);
+// Lazy-resolved references for circular controller dependencies.
+// These callbacks are only invoked at runtime (not during init), so the
+// actual controllers are guaranteed to exist when the callbacks fire.
+const lazy = {};
+
 
 const modalRecipeController = createModalRecipeController({
   state,
@@ -322,7 +332,7 @@ const modalRecipeController = createModalRecipeController({
   },
   getCanAdmin: () => Boolean(state.latestAppData.capabilities?.canAdmin),
   renderServingOptions: renderModalServingOptions,
-  syncModalPlanningUi: syncModalPlanningUiFn,
+  syncModalPlanningUi: (...args) => lazy.recipeModalActions.syncModalPlanningUi(...args),
   restorePendingFocusTarget,
 });
 
@@ -344,9 +354,6 @@ const recipesController = createRecipesController({
   restorePendingFocusTarget,
 });
 
-// plannerActions.getActiveWeekPlan is needed by plannerController — forward-declared
-let plannerActions;
-const getActiveWeekPlanFn = () => plannerActions.getActiveWeekPlan();
 
 const plannerController = createPlannerController({
   state,
@@ -355,7 +362,7 @@ const plannerController = createPlannerController({
     shoppingList,
     shoppingSearchInput,
   },
-  getActiveWeekPlan: getActiveWeekPlanFn,
+  getActiveWeekPlan: () => lazy.plannerActions.getActiveWeekPlan(),
   renderServingOptions: renderPlannerServingOptions,
   renderMealSlotOptions,
   restorePendingFocusTarget,
@@ -387,7 +394,7 @@ const dataController = createDataController({
   dom: { migrateLocalBtn },
 });
 
-plannerActions = createPlannerActions({
+const plannerActions = createPlannerActions({
   state,
   dom: { weekPlanner, togglePlannerBtn },
   repository,
@@ -398,6 +405,7 @@ plannerActions = createPlannerActions({
   updatePlannerShoppingList,
   announceUi,
 });
+lazy.plannerActions = plannerActions;
 
 const dragDropController = createDragDropController({
   state,
@@ -408,7 +416,7 @@ const dragDropController = createDragDropController({
   announceUi,
 });
 
-recipeModalActions = createRecipeModalActions({
+const recipeModalActions = createRecipeModalActions({
   state,
   dom: {
     modalPlannerToggle,
@@ -432,6 +440,7 @@ recipeModalActions = createRecipeModalActions({
   repository,
   announceUi,
 });
+lazy.recipeModalActions = recipeModalActions;
 
 const favoriteController = createFavoriteController({
   state,
@@ -698,62 +707,7 @@ async function initializeApp() {
   }
 
   createBackgroundParticles();
-
-  // Cursor "Schreib"-Animation mit Partikeln beim Klicken
-  document.addEventListener('mousedown', (e) => {
-    document.body.classList.add('cursor-write');
-
-    // Partikel-Burst am Klickpunkt (Gold-Tintenspritzer)
-    const colors = ['#C9A84C', '#E8CC6E', '#D4943A', '#B87333', '#C9A84C'];
-    for (let i = 0; i < 6; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'stir-particle';
-      const angle = (Math.PI * 2 * i) / 6 + (Math.random() - 0.5) * 0.8;
-      const distance = 14 + Math.random() * 18;
-      const dx = Math.cos(angle) * distance;
-      const dy = Math.sin(angle) * distance;
-      particle.style.left = `${e.clientX - 3}px`;
-      particle.style.top = `${e.clientY - 3}px`;
-      particle.style.setProperty('--dx', `${dx}px`);
-      particle.style.setProperty('--dy', `${dy}px`);
-      particle.style.background = colors[i % colors.length];
-      particle.style.width = `${3 + Math.random() * 4}px`;
-      particle.style.height = particle.style.width;
-      document.body.appendChild(particle);
-      particle.addEventListener('animationend', () => particle.remove());
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    setTimeout(() => document.body.classList.remove('cursor-write'), 150);
-  });
-
-  // Ink-Ripple-Effekt bei jedem Klick
-  document.addEventListener('click', (e) => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const ripple = document.createElement('div');
-    ripple.className = 'ink-ripple';
-    ripple.style.left = e.clientX + 'px';
-    ripple.style.top = e.clientY + 'px';
-    document.body.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 650);
-  });
-
-  // Cursor-Glow (nur Desktop, nur wenn keine reduzierte Bewegung)
-  if (window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const glow = document.createElement('div');
-    glow.id = 'cursor-glow';
-    document.body.appendChild(glow);
-    let rafId = null;
-    document.addEventListener('mousemove', (e) => {
-      if (rafId) return;
-      rafId = requestAnimationFrame(() => {
-        glow.style.left = e.clientX + 'px';
-        glow.style.top = e.clientY + 'px';
-        rafId = null;
-      });
-    });
-  }
+  initializeCursorEffects();
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);
   if (legacySnapshot.hasLegacyData && snapshot.accessState !== 'signed_in') {
@@ -762,92 +716,8 @@ async function initializeApp() {
       : 'Lokale Kochbuchdaten gefunden. Nach dem Google-Login kann die Einmal-Migration gestartet werden.';
   }
 
-  // ── Fixed header with JS-driven transform animation ──
-  //    Header is position:fixed. A spacer div reserves layout space.
-  //    JS animates ONLY transform & opacity via rAF = zero reflow, zero flicker.
-  //    No CSS animation-timeline, no sticky, no negative-top — just simple math.
-  const headerEl = document.getElementById('siteHeader');
-  const headerInner = headerEl ? headerEl.querySelector('.header-inner') : null;
-  const subtitleEl = headerEl ? headerEl.querySelector('.subtitle') : null;
-  const spacerEl = document.getElementById('headerSpacer');
-  const userMenuEl = document.getElementById('userMenu');
-  const toolbarToggleEl = document.getElementById('toolbarToggle');
-
-  if (headerEl && headerInner && spacerEl) {
-    const COMPACT_H = 38;
-    const RANGE = 100; // scroll distance over which animation completes
-
-    // Set spacer height to match header's natural height
-    function measureHeader() {
-      // Temporarily remove fixed so we can measure natural height
-      headerEl.style.position = 'static';
-      const h = headerEl.offsetHeight;
-      headerEl.style.position = '';
-      spacerEl.style.height = h + 'px';
-      return h;
-    }
-    const fullH = measureHeader();
-
-    // Set header to clip at compact height when scrolled
-    headerEl.style.height = fullH + 'px';
-
-    let ticking = false;
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        const sy = window.scrollY;
-        const p = Math.min(sy / RANGE, 1); // 0 = top, 1 = fully compact
-
-        // Clip header visually (no layout change — clip-path is GPU composited)
-        const visibleH = fullH - (fullH - COMPACT_H) * p;
-        headerEl.style.clipPath = 'inset(0 0 ' + (fullH - visibleH).toFixed(0) + 'px 0)';
-
-        // Position the gradient fade right below the clipped header
-        spacerEl.style.setProperty('--hdr-clip-h', visibleH.toFixed(0) + 'px');
-
-        // Inner: scale down, keep title visible at top
-        const scale = 1 - 0.58 * p; // 1 → 0.42
-        headerInner.style.transform = 'scale(' + scale.toFixed(3) + ')';
-
-        // Subtitle: fade out
-        if (subtitleEl) {
-          subtitleEl.style.opacity = Math.max(0, 1 - p * 3).toFixed(2);
-        }
-
-        // Background gradient: fade in (both on header ::before and spacer ::after)
-        headerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
-        spacerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
-
-        // Arabeske: fade out
-        headerEl.style.setProperty('--hdr-ara-op', (0.45 * (1 - p)).toFixed(3));
-
-        // Icons fade
-        const iconOp = Math.max(0, 1 - p * 2.5).toFixed(2);
-        const iconPtr = Number(iconOp) < 0.1 ? 'none' : '';
-        if (userMenuEl) { userMenuEl.style.opacity = iconOp; userMenuEl.style.pointerEvents = iconPtr; }
-        if (toolbarToggleEl) { toolbarToggleEl.style.opacity = iconOp; toolbarToggleEl.style.pointerEvents = iconPtr; }
-
-        ticking = false;
-      });
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-  }
-
-  // User menu: open/close on click instead of hover
-  const userMenuTrigger = document.getElementById('userMenuTrigger');
-  const userMenuDropdown = document.getElementById('userMenuDropdown');
-  if (userMenuTrigger && userMenuDropdown) {
-    userMenuTrigger.addEventListener('click', (e) => {
-      e.stopPropagation();
-      userMenuDropdown.classList.toggle('visible');
-    });
-    document.addEventListener('click', () => {
-      userMenuDropdown.classList.remove('visible');
-    });
-  }
+  initializeHeaderScroll();
+  initializeUserMenu();
 }
 
 if (document.readyState === 'loading') {

@@ -1,12 +1,7 @@
 import { setVisible } from './view-helpers.js';
 
 export function createAuthShellController(deps) {
-  const { state, config, dom, modalController, deleteDialogController, clearPlanDialogController, loadingController } = deps;
-
-  function syncBodyScrollLock() {
-    const shouldLock = modalController.isOpen() || deleteDialogController.isOpen() || clearPlanDialogController.isOpen();
-    document.body.style.overflow = shouldLock ? 'hidden' : '';
-  }
+  const { state, config, dom, loadingController } = deps;
 
   function applyRoleUi(canAdmin) {
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
@@ -64,5 +59,5 @@ export function createAuthShellController(deps) {
     applyRoleUi(snapshot.canAdmin);
   }
 
-  return { renderAuthShell, applyRoleUi, syncBodyScrollLock };
+  return { renderAuthShell, applyRoleUi };
 }

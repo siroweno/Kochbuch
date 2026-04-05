@@ -1,0 +1,57 @@
+export function initializeCursorEffects() {
+  // Cursor "Schreib"-Animation mit Partikeln beim Klicken
+  document.addEventListener('mousedown', (e) => {
+    document.body.classList.add('cursor-write');
+
+    // Partikel-Burst am Klickpunkt (Gold-Tintenspritzer)
+    const colors = ['#C9A84C', '#E8CC6E', '#D4943A', '#B87333', '#C9A84C'];
+    for (let i = 0; i < 6; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'stir-particle';
+      const angle = (Math.PI * 2 * i) / 6 + (Math.random() - 0.5) * 0.8;
+      const distance = 14 + Math.random() * 18;
+      const dx = Math.cos(angle) * distance;
+      const dy = Math.sin(angle) * distance;
+      particle.style.left = `${e.clientX - 3}px`;
+      particle.style.top = `${e.clientY - 3}px`;
+      particle.style.setProperty('--dx', `${dx}px`);
+      particle.style.setProperty('--dy', `${dy}px`);
+      particle.style.background = colors[i % colors.length];
+      particle.style.width = `${3 + Math.random() * 4}px`;
+      particle.style.height = particle.style.width;
+      document.body.appendChild(particle);
+      particle.addEventListener('animationend', () => particle.remove());
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    setTimeout(() => document.body.classList.remove('cursor-write'), 150);
+  });
+
+  // Ink-Ripple-Effekt bei jedem Klick
+  document.addEventListener('click', (e) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const ripple = document.createElement('div');
+    ripple.className = 'ink-ripple';
+    ripple.style.left = e.clientX + 'px';
+    ripple.style.top = e.clientY + 'px';
+    document.body.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 650);
+  });
+
+  // Cursor-Glow (nur Desktop, nur wenn keine reduzierte Bewegung)
+  if (window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const glow = document.createElement('div');
+    glow.id = 'cursor-glow';
+    document.body.appendChild(glow);
+    let rafId = null;
+    document.addEventListener('mousemove', (e) => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        glow.style.left = e.clientX + 'px';
+        glow.style.top = e.clientY + 'px';
+        rafId = null;
+      });
+    });
+  }
+}
