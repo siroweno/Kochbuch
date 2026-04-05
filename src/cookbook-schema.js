@@ -6,9 +6,9 @@ export const RECIPE_CATEGORIES = [
   { id: 'hauptgericht', label: 'Hauptgericht', icon: '\u{1F37D}' },
   { id: 'vorspeise', label: 'Vorspeise', icon: '\u{1F957}' },
   { id: 'nachspeise', label: 'Nachspeise', icon: '\u{1F370}' },
-  { id: 'fruehstueck', label: 'Fruehstueck', icon: '\u2600' },
+  { id: 'fruehstueck', label: 'Frühstück', icon: '\u2600' },
   { id: 'snack', label: 'Snack', icon: '\u{1F968}' },
-  { id: 'getraenk', label: 'Getraenk', icon: '\u{1F375}' },
+  { id: 'getraenk', label: 'Getränk', icon: '\u{1F375}' },
   { id: 'beilage', label: 'Beilage', icon: '\u{1F96C}' },
   { id: 'sauce', label: 'Sauce & Dip', icon: '\u{1FAD9}' },
 ];
@@ -22,7 +22,7 @@ export function normalizeTagForSearch(tag) {
 }
 export const LEGACY_EXPORT_SCHEMA_VERSION = 2;
 export const MEAL_SLOTS = [
-  { id: 'fruehstueck', label: 'Fruehstueck', short: 'Frueh' },
+  { id: 'fruehstueck', label: 'Frühstück', short: 'Früh' },
   { id: 'mittag', label: 'Mittag', short: 'Mittag' },
   { id: 'abend', label: 'Abend', short: 'Abend' },
   { id: 'snack', label: 'Snack', short: 'Snack' },

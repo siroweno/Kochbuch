@@ -54,9 +54,13 @@ export function getFilteredSortedRecipes({
       }
     }
 
-    if (activeTagFilter && !(recipe.tags || []).some((tag) => tag.toLowerCase() === activeTagFilter.toLowerCase()
-      || normalizeTagForSearch(tag) === normalizeTagForSearch(activeTagFilter))) {
-      return false;
+    const tagFilters = Array.isArray(activeTagFilter) ? activeTagFilter : (activeTagFilter ? [activeTagFilter] : []);
+    if (tagFilters.length > 0) {
+      const recipeTags = (recipe.tags || []).map((t) => t.toLowerCase());
+      const recipeTagsNormalized = (recipe.tags || []).map((t) => normalizeTagForSearch(t));
+      const allMatch = tagFilters.every((f) => recipeTags.includes(f.toLowerCase())
+        || recipeTagsNormalized.includes(normalizeTagForSearch(f)));
+      if (!allMatch) return false;
     }
 
     if (favoriteFilterActive && !recipe.favorite) {
@@ -115,7 +119,7 @@ export function renderRecipeGrid({
     : `${filteredRecipes.length} von ${recipes.length} Rezepten`;
 
   if (!filteredRecipes.length) {
-    const hasActiveFilters = Boolean(String(query || '').trim() || activeTagFilter || favoriteFilterActive);
+    const hasActiveFilters = Boolean(String(query || '').trim() || (Array.isArray(activeTagFilter) ? activeTagFilter.length : activeTagFilter) || favoriteFilterActive);
     recipeGrid.innerHTML = recipes.length === 0 && !hasActiveFilters
       ? `<section class="empty-start">
           <div class="empty-start-copy">
@@ -143,7 +147,7 @@ export function renderRecipeGrid({
         </section>`
       : `<div class="empty-state">${favoriteFilterActive
           ? 'Noch keine Favoriten — tippe auf das Herz bei einem Rezept.'
-          : activeTagFilter
+          : (Array.isArray(activeTagFilter) ? activeTagFilter.length : activeTagFilter)
             ? 'Keine Rezepte mit diesem Tag.'
             : String(query || '').trim()
               ? 'Kein Rezept gefunden — versuche andere Stichworte.'
@@ -152,10 +156,14 @@ export function renderRecipeGrid({
   }
 
   recipeGrid.innerHTML = filteredRecipes.map((recipe, index) => {
-    const tagsHtml = (recipe.tags || []).map((tag) => `
-      <button type="button" class="tag${getTagColorClass(tag)}${activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase() ? ' active' : ''}"
-        data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(activeTagFilter && tag.toLowerCase() === activeTagFilter.toLowerCase())}">${escapeHtml(tag)}</button>
-    `).join('');
+    const cardFilters = Array.isArray(activeTagFilter) ? activeTagFilter : (activeTagFilter ? [activeTagFilter] : []);
+    const tagsHtml = (recipe.tags || []).map((tag) => {
+      const isTagActive = cardFilters.some((f) => f.toLowerCase() === tag.toLowerCase());
+      return `
+      <button type="button" class="tag${getTagColorClass(tag)}${isTagActive ? ' active' : ''}"
+        data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(isTagActive)}">${escapeHtml(tag)}</button>
+    `;
+    }).join('');
 
     const metaItems = [];
     const timeLabel = formatTime(recipe);

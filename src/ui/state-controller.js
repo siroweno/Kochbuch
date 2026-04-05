@@ -14,7 +14,7 @@ export function createUiState(authService) {
     modalPlanningSlot: 'abend',
     modalPlanningFeedback: '',
     editingRecipeId: null,
-    activeTagFilter: null,
+    activeTagFilter: [],
     favoriteFilterActive: false,
     pendingDeleteId: null,
     activePlannerDay: null,

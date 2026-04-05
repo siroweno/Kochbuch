@@ -1,10 +1,11 @@
 export function createBackgroundParticles({ root = document.body } = {}) {
   // Pruefe Voraussetzungen
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return { destroy() {} };
-  if (!window.matchMedia('(pointer: fine)').matches) return { destroy() {} };
+
+  const isTouch = !window.matchMedia('(pointer: fine)').matches;
 
   const canvas = document.createElement('canvas');
-  canvas.style.cssText = 'position:fixed;inset:0;z-index:1;pointer-events:none;';
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:-1;pointer-events:none;';
   root.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
@@ -20,8 +21,10 @@ export function createBackgroundParticles({ root = document.body } = {}) {
 
   function initParticles() {
     particles = [];
-    // ~40-60 Partikel, abhaengig von Bildschirmgroesse
-    const count = Math.max(80, Math.min(100, Math.floor((width * height) / 15000)));
+    // Weniger Partikel auf Touch-Geraeten
+    const count = isTouch
+      ? Math.max(30, Math.min(50, Math.floor((width * height) / 30000)))
+      : Math.max(80, Math.min(100, Math.floor((width * height) / 15000)));
     for (let i = 0; i < count; i++) {
       const x = Math.random() * width;
       const y = Math.random() * height;
@@ -86,12 +89,12 @@ export function createBackgroundParticles({ root = document.body } = {}) {
       if (p.baseY < -10) p.baseY = height + 10;
       if (p.baseY > height + 10) p.baseY = -10;
 
-      // Maus-Abstossung
+      // Maus-Abstossung (nur auf Nicht-Touch-Geraeten)
       const dx = p.x - mouseX;
       const dy = p.y - mouseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < mouseRadius && dist > 0) {
+      if (!isTouch && dist < mouseRadius && dist > 0) {
         const force = (mouseRadius - dist) / mouseRadius;
         const pushX = (dx / dist) * force * pushForce;
         const pushY = (dy / dist) * force * pushForce;

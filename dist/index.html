@@ -25,16 +25,19 @@
       }
     }
   </script>
-  <script type="module" crossorigin src="./assets/index-BJ4rlXNx.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-K11ZWucd.css">
+  <script type="module" crossorigin src="./assets/index-BFNH-OF0.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-D5BIsTpV.css">
 </head>
 <body>
 <div class="container">
 
-  <header>
-    <h1>Kitab</h1>
-    <p class="subtitle">Deine Rezepte. Dein Kitab.</p>
+  <header id="siteHeader">
+    <div class="header-inner">
+      <h1><span class="h1-flourish" aria-hidden="true"></span>Kitab<span class="h1-flourish h1-flourish-r" aria-hidden="true"></span></h1>
+      <p class="subtitle">Deine Rezepte. Dein Kitab.</p>
+    </div>
   </header>
+  <div class="header-spacer" id="headerSpacer"></div>
 
   <div class="auth-shell">
     <div class="auth-bar" id="authBar">
@@ -127,7 +130,7 @@
   </div>
 
   <!-- Toolbar Toggle für Sortierung/Filter/Admin -->
-  <button id="toolbarToggle" class="toolbar-toggle" aria-label="Werkzeuge öffnen" aria-expanded="false" aria-controls="toolbarPanel">
+  <button id="toolbarToggle" class="toolbar-toggle" data-admin-only aria-label="Werkzeuge öffnen" aria-expanded="false" aria-controls="toolbarPanel">
     <span aria-hidden="true">⚙</span>
   </button>
   <div id="toolbarOverlay" class="toolbar-overlay" role="presentation"></div>
@@ -191,6 +194,9 @@
   <div class="form-container" id="formContainer" data-admin-only>
     <h2 id="formTitle">Neues Rezept</h2>
     <form id="recipeForm">
+      <div class="form-top-actions">
+        <button type="submit" class="btn-primary form-save-top" id="submitBtnTop">Rezept speichern</button>
+      </div>
       <div class="form-intro">
         <div class="form-tip">
           <strong>So findest du es spaeter wieder</strong>
@@ -357,7 +363,7 @@
           <div class="modal-planner-field">
             <label for="modalPlannerSlot">Slot</label>
             <select id="modalPlannerSlot">
-              <option value="fruehstueck">Fruehstueck</option>
+              <option value="fruehstueck">Frühstück</option>
               <option value="mittag">Mittag</option>
               <option value="abend" selected>Abend</option>
               <option value="snack">Snack</option>

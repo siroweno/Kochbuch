@@ -22,9 +22,10 @@ export function createRecipesController({
   }
 
   function updateTagFilterPill() {
-    elements.tagFilterPill.classList.toggle('visible', Boolean(state.activeTagFilter));
-    if (state.activeTagFilter) {
-      elements.tagFilterLabel.textContent = state.activeTagFilter;
+    const filters = Array.isArray(state.activeTagFilter) ? state.activeTagFilter : (state.activeTagFilter ? [state.activeTagFilter] : []);
+    elements.tagFilterPill.classList.toggle('visible', filters.length > 0);
+    if (filters.length > 0) {
+      elements.tagFilterLabel.textContent = filters.join(', ');
     }
   }
 

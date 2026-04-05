@@ -713,9 +713,10 @@ function renderTagBar() {
     .map((entry) => entry[0]);
   const isExpanded = tagBar.classList.contains('expanded');
   const displayTags = isExpanded ? sorted : sorted.slice(0, 10);
+  const filters = Array.isArray(state.activeTagFilter) ? state.activeTagFilter : (state.activeTagFilter ? [state.activeTagFilter] : []);
   tagBarList.innerHTML = displayTags.map((tag) => {
-    const isActive = state.activeTagFilter && (tag.toLowerCase() === state.activeTagFilter.toLowerCase()
-      || normalizeTagForSearch(tag) === normalizeTagForSearch(state.activeTagFilter));
+    const isActive = filters.some((f) => f.toLowerCase() === tag.toLowerCase()
+      || normalizeTagForSearch(f) === normalizeTagForSearch(tag));
     return `<button type="button" class="tag${isActive ? ' active' : ''}" data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(Boolean(isActive))}">${tag}</button>`;
   }).join('');
   if (tagBarExpand) {
@@ -725,18 +726,21 @@ function renderTagBar() {
 }
 
 function clearTagFilter() {
-  state.activeTagFilter = null;
+  state.activeTagFilter = [];
   renderTagBar();
   recipesController.render();
 }
 
 function setTagFilter(tag) {
-  if (state.activeTagFilter === tag) {
-    clearTagFilter();
-    return;
+  const current = Array.isArray(state.activeTagFilter) ? state.activeTagFilter : (state.activeTagFilter ? [state.activeTagFilter] : []);
+  const index = current.findIndex((f) => f.toLowerCase() === tag.toLowerCase());
+  if (index >= 0) {
+    const next = [...current];
+    next.splice(index, 1);
+    state.activeTagFilter = next;
+  } else {
+    state.activeTagFilter = [...current, tag];
   }
-
-  state.activeTagFilter = tag;
   renderTagBar();
   recipesController.render();
 }
@@ -1632,12 +1636,78 @@ async function initializeApp() {
       : 'Lokale Kochbuchdaten gefunden. Nach dem Google-Login kann die Einmal-Migration gestartet werden.';
   }
 
-  // Sticky header: shrink on scroll
-  const headerEl = document.querySelector('header');
-  if (headerEl) {
-    window.addEventListener('scroll', () => {
-      headerEl.classList.toggle('scrolled', window.scrollY > 60);
-    }, { passive: true });
+  // ── Fixed header with JS-driven transform animation ──
+  //    Header is position:fixed. A spacer div reserves layout space.
+  //    JS animates ONLY transform & opacity via rAF = zero reflow, zero flicker.
+  //    No CSS animation-timeline, no sticky, no negative-top — just simple math.
+  const headerEl = document.getElementById('siteHeader');
+  const headerInner = headerEl ? headerEl.querySelector('.header-inner') : null;
+  const subtitleEl = headerEl ? headerEl.querySelector('.subtitle') : null;
+  const spacerEl = document.getElementById('headerSpacer');
+  const userMenuEl = document.getElementById('userMenu');
+  const toolbarToggleEl = document.getElementById('toolbarToggle');
+
+  if (headerEl && headerInner && spacerEl) {
+    const COMPACT_H = 38;
+    const RANGE = 100; // scroll distance over which animation completes
+
+    // Set spacer height to match header's natural height
+    function measureHeader() {
+      // Temporarily remove fixed so we can measure natural height
+      headerEl.style.position = 'static';
+      const h = headerEl.offsetHeight;
+      headerEl.style.position = '';
+      spacerEl.style.height = h + 'px';
+      return h;
+    }
+    const fullH = measureHeader();
+
+    // Set header to clip at compact height when scrolled
+    headerEl.style.height = fullH + 'px';
+
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const sy = window.scrollY;
+        const p = Math.min(sy / RANGE, 1); // 0 = top, 1 = fully compact
+
+        // Clip header visually (no layout change — clip-path is GPU composited)
+        const visibleH = fullH - (fullH - COMPACT_H) * p;
+        headerEl.style.clipPath = 'inset(0 0 ' + (fullH - visibleH).toFixed(0) + 'px 0)';
+
+        // Position the gradient fade right below the clipped header
+        spacerEl.style.setProperty('--hdr-clip-h', visibleH.toFixed(0) + 'px');
+
+        // Inner: scale down, keep title visible at top
+        const scale = 1 - 0.58 * p; // 1 → 0.42
+        headerInner.style.transform = 'scale(' + scale.toFixed(3) + ')';
+
+        // Subtitle: fade out
+        if (subtitleEl) {
+          subtitleEl.style.opacity = Math.max(0, 1 - p * 3).toFixed(2);
+        }
+
+        // Background gradient: fade in (both on header ::before and spacer ::after)
+        headerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
+        spacerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
+
+        // Arabeske: fade out
+        headerEl.style.setProperty('--hdr-ara-op', (0.45 * (1 - p)).toFixed(3));
+
+        // Icons fade
+        const iconOp = Math.max(0, 1 - p * 2.5).toFixed(2);
+        const iconPtr = Number(iconOp) < 0.1 ? 'none' : '';
+        if (userMenuEl) { userMenuEl.style.opacity = iconOp; userMenuEl.style.pointerEvents = iconPtr; }
+        if (toolbarToggleEl) { toolbarToggleEl.style.opacity = iconOp; toolbarToggleEl.style.pointerEvents = iconPtr; }
+
+        ticking = false;
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
 
   // User menu: open/close on click instead of hover

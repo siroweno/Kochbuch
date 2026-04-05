@@ -107,7 +107,7 @@ export function createAppEventHandlers(deps) {
       state.activeDayPicker = null;
       state.activeDayPickerQuery = '';
       state.favoriteFilterActive = false;
-      state.activeTagFilter = null;
+      state.activeTagFilter = [];
       state.pendingFocusTarget = null;
       state.modalPlanningFeedback = '';
       resetPlannerDraftState();
@@ -120,6 +120,10 @@ export function createAppEventHandlers(deps) {
         closeRecipeForm();
       } else {
         openRecipeForm();
+        const { toolbarToggle, toolbarPanel, toolbarOverlay } = deps.toolbar;
+        if (toolbarPanel) toolbarPanel.classList.remove('open');
+        if (toolbarOverlay) toolbarOverlay.classList.remove('visible');
+        if (toolbarToggle) toolbarToggle.setAttribute('aria-expanded', 'false');
       }
     },
 
