@@ -1,7 +1,52 @@
 import { setVisible } from './view-helpers.js';
 
+const MIRAGE_OVERLAY_DURATION = 3500;
+
 export function createAuthShellController(deps) {
   const { state, config, dom, loadingController } = deps;
+
+  function getMirageOverlay() {
+    return document.getElementById('mirageOverlay');
+  }
+
+  function showMirageOverlay() {
+    const overlay = getMirageOverlay();
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.classList.add('visible');
+    overlay.classList.remove('fading');
+  }
+
+  function hideMirageOverlay() {
+    const overlay = getMirageOverlay();
+    if (!overlay) return;
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        overlay.style.display = 'none';
+        overlay.classList.remove('visible', 'fading');
+        resolve();
+      };
+      overlay.addEventListener('transitionend', finish, { once: true });
+      setTimeout(finish, 1000);
+      overlay.classList.add('fading');
+    });
+  }
+
+  async function runMirageTransition(loadDataFn) {
+    showMirageOverlay();
+
+    const [result] = await Promise.all([
+      loadDataFn(),
+      new Promise((resolve) => setTimeout(resolve, MIRAGE_OVERLAY_DURATION)),
+    ]);
+
+    window.scrollTo(0, 0);
+    await hideMirageOverlay();
+    return result;
+  }
 
   function applyRoleUi(canAdmin) {
     document.querySelectorAll('[data-admin-only]').forEach((element) => {
@@ -51,23 +96,14 @@ export function createAuthShellController(deps) {
     loadingController.syncLoadingPanel(snapshot);
     setVisible(dom.accessPanel, snapshot.accessState === 'no_access');
     setVisible(dom.configPanel, snapshot.accessState === 'config_missing');
-    // App-Shell: animiertes Aufdecken beim Einloggen
-    if (snapshot.accessState === 'signed_in' && dom.appShell.classList.contains('app-shell-hidden')) {
-      dom.appShell.classList.remove('app-shell-hidden');
-      dom.appShell.classList.add('app-shell-opening');
-      let shellCleaned = false;
-      const shellCleanup = () => {
-        if (shellCleaned) return;
-        shellCleaned = true;
-        dom.appShell.classList.remove('app-shell-opening');
-      };
-      dom.appShell.addEventListener('animationend', shellCleanup, { once: true });
-      setTimeout(shellCleanup, 600);
+    // App-Shell: sofort sichtbar machen (Overlay verdeckt es während des Ladens)
+    if (snapshot.accessState === 'signed_in') {
+      dom.appShell.classList.remove('app-shell-hidden', 'app-shell-opening');
     } else {
       dom.appShell.classList.toggle('app-shell-hidden', snapshot.accessState !== 'signed_in');
     }
     applyRoleUi(snapshot.canAdmin);
   }
 
-  return { renderAuthShell, applyRoleUi };
+  return { renderAuthShell, applyRoleUi, runMirageTransition, showMirageOverlay, hideMirageOverlay };
 }

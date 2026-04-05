@@ -633,6 +633,7 @@ bindAppEvents({
     applyLoadResult: (...args) => dataController.applyLoadResult(...args),
     refreshAppData: (...args) => dataController.refreshAppData(...args),
     renderAuthShell: (...args) => authShell.renderAuthShell(...args),
+    runMirageTransition: (...args) => authShell.runMirageTransition(...args),
     renderPlanner,
     renderRecipeModal,
     renderRecipes,

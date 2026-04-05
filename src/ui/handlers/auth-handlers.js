@@ -11,6 +11,7 @@ export function createAuthHandlers(deps) {
     resetPlannerDraftState,
     setPlannerOpen,
     renderRecipes,
+    runMirageTransition,
   } = deps;
 
   return {
@@ -32,9 +33,10 @@ export function createAuthHandlers(deps) {
         const snapshot = authService.getSnapshot();
         renderAuthShell(snapshot);
         if (snapshot.accessState === 'signed_in') {
-          await waitForAppReady();
-          await refreshAppData({ silent: true });
-          window.scrollTo(0, 0);
+          await runMirageTransition(async () => {
+            await waitForAppReady();
+            return refreshAppData({ silent: true });
+          });
         }
       } catch (error) {
         deps.loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
@@ -64,8 +66,9 @@ export function createAuthHandlers(deps) {
     async onAuthStateChange(snapshot) {
       renderAuthShell(snapshot);
       if (snapshot.accessState === 'signed_in') {
-        await refreshAppData({ silent: true });
-        window.scrollTo(0, 0);
+        await runMirageTransition(async () => {
+          return refreshAppData({ silent: true });
+        });
       }
     },
 
