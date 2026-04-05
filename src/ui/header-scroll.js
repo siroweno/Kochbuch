@@ -6,7 +6,7 @@ export function initializeHeaderScroll() {
   const userMenuEl = document.getElementById('userMenu');
   const toolbarToggleEl = document.getElementById('toolbarToggle');
 
-  if (!headerEl || !headerInner || !spacerEl) return;
+  if (!headerEl || !headerInner || !spacerEl) return { destroy() {} };
 
   const COMPACT_H = 38;
   const RANGE = 100;
@@ -31,26 +31,29 @@ export function initializeHeaderScroll() {
       const p = Math.min(sy / RANGE, 1);
 
       const visibleH = fullH - (fullH - COMPACT_H) * p;
-      headerEl.style.clipPath = 'inset(0 0 ' + (fullH - visibleH).toFixed(0) + 'px 0)';
+      const clipBottom = Math.round(fullH - visibleH);
+      headerEl.style.clipPath = `inset(0 0 ${clipBottom}px 0)`;
 
-      spacerEl.style.setProperty('--hdr-clip-h', visibleH.toFixed(0) + 'px');
+      spacerEl.style.setProperty('--hdr-clip-h', `${Math.round(visibleH)}px`);
 
       const scale = 1 - 0.58 * p;
-      headerInner.style.transform = 'scale(' + scale.toFixed(3) + ')';
+      headerInner.style.transform = `scale(${Math.round(scale * 1000) / 1000})`;
 
       if (subtitleEl) {
-        subtitleEl.style.opacity = Math.max(0, 1 - p * 3).toFixed(2);
+        subtitleEl.style.opacity = String(Math.round(Math.max(0, 1 - p * 3) * 100) / 100);
       }
 
-      headerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
-      spacerEl.style.setProperty('--hdr-bg-op', p.toFixed(2));
+      const opStr = String(Math.round(p * 100) / 100);
+      headerEl.style.setProperty('--hdr-bg-op', opStr);
+      spacerEl.style.setProperty('--hdr-bg-op', opStr);
 
-      headerEl.style.setProperty('--hdr-ara-op', (0.45 * (1 - p)).toFixed(3));
+      headerEl.style.setProperty('--hdr-ara-op', String(Math.round(0.45 * (1 - p) * 1000) / 1000));
 
-      const iconOp = Math.max(0, 1 - p * 2.5).toFixed(2);
-      const iconPtr = Number(iconOp) < 0.1 ? 'none' : '';
-      if (userMenuEl) { userMenuEl.style.opacity = iconOp; userMenuEl.style.pointerEvents = iconPtr; }
-      if (toolbarToggleEl) { toolbarToggleEl.style.opacity = iconOp; toolbarToggleEl.style.pointerEvents = iconPtr; }
+      const iconOp = Math.round(Math.max(0, 1 - p * 2.5) * 100) / 100;
+      const iconOpStr = String(iconOp);
+      const iconPtr = iconOp < 0.1 ? 'none' : '';
+      if (userMenuEl) { userMenuEl.style.opacity = iconOpStr; userMenuEl.style.pointerEvents = iconPtr; }
+      if (toolbarToggleEl) { toolbarToggleEl.style.opacity = iconOpStr; toolbarToggleEl.style.pointerEvents = iconPtr; }
 
       ticking = false;
     });
@@ -58,4 +61,10 @@ export function initializeHeaderScroll() {
 
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
+
+  return {
+    destroy() {
+      window.removeEventListener('scroll', onScroll);
+    },
+  };
 }

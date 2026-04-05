@@ -39,30 +39,36 @@ export function createRecipesController({
     });
   }
 
-  function renderGrid() {
-    updateFavoriteFilterButton();
-    updateTagFilterPill();
+  function renderGrid({ scope = 'full' } = {}) {
+    if (scope === 'full' || scope === 'filters') {
+      updateFavoriteFilterButton();
+      updateTagFilterPill();
+    }
 
-    renderRecipeGrid({
-      recipeGrid: elements.recipeGrid,
-      recipeCount: elements.recipeCount,
-      recipes: state.recipes,
-      filteredRecipes: buildFilteredRecipes(),
-      activeTagFilter: state.activeTagFilter,
-      query: elements.searchInput.value,
-      favoriteFilterActive: state.favoriteFilterActive,
-      canAdmin: getCanAdmin(),
-    });
+    if (scope === 'full' || scope === 'grid' || scope === 'filters') {
+      renderRecipeGrid({
+        recipeGrid: elements.recipeGrid,
+        recipeCount: elements.recipeCount,
+        recipes: state.recipes,
+        filteredRecipes: buildFilteredRecipes(),
+        activeTagFilter: state.activeTagFilter,
+        query: elements.searchInput.value,
+        favoriteFilterActive: state.favoriteFilterActive,
+        canAdmin: getCanAdmin(),
+      });
+    }
 
-    if (modalController.isOpen()) {
-      modalRecipeController.render();
+    if (scope === 'full' || scope === 'modal') {
+      if (modalController.isOpen()) {
+        modalRecipeController.render();
+      }
     }
 
     restorePendingFocusTarget();
   }
 
-  function render() {
-    renderGrid();
+  function render(options) {
+    renderGrid(options);
   }
 
   return {

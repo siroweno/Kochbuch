@@ -1,6 +1,6 @@
 export function initializeCursorEffects() {
   // Cursor "Schreib"-Animation mit Partikeln beim Klicken
-  document.addEventListener('mousedown', (e) => {
+  function onMouseDown(e) {
     document.body.classList.add('cursor-write');
 
     // Partikel-Burst am Klickpunkt (Gold-Tintenspritzer)
@@ -22,14 +22,14 @@ export function initializeCursorEffects() {
       document.body.appendChild(particle);
       particle.addEventListener('animationend', () => particle.remove());
     }
-  });
+  }
 
-  document.addEventListener('mouseup', () => {
+  function onMouseUp() {
     setTimeout(() => document.body.classList.remove('cursor-write'), 150);
-  });
+  }
 
   // Ink-Ripple-Effekt bei jedem Klick
-  document.addEventListener('click', (e) => {
+  function onClick(e) {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const ripple = document.createElement('div');
     ripple.className = 'ink-ripple';
@@ -37,21 +37,41 @@ export function initializeCursorEffects() {
     ripple.style.top = e.clientY + 'px';
     document.body.appendChild(ripple);
     setTimeout(() => ripple.remove(), 650);
-  });
+  }
+
+  document.addEventListener('mousedown', onMouseDown);
+  document.addEventListener('mouseup', onMouseUp);
+  document.addEventListener('click', onClick);
 
   // Cursor-Glow (nur Desktop, nur wenn keine reduzierte Bewegung)
+  let glow = null;
+  let rafId = null;
+  let onMouseMove = null;
+
   if (window.matchMedia('(pointer: fine)').matches && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const glow = document.createElement('div');
+    glow = document.createElement('div');
     glow.id = 'cursor-glow';
     document.body.appendChild(glow);
-    let rafId = null;
-    document.addEventListener('mousemove', (e) => {
+
+    onMouseMove = (e) => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         glow.style.left = e.clientX + 'px';
         glow.style.top = e.clientY + 'px';
         rafId = null;
       });
-    });
+    };
+    document.addEventListener('mousemove', onMouseMove);
   }
+
+  return {
+    destroy() {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('click', onClick);
+      if (onMouseMove) document.removeEventListener('mousemove', onMouseMove);
+      if (rafId) cancelAnimationFrame(rafId);
+      if (glow) glow.remove();
+    },
+  };
 }

@@ -3,6 +3,8 @@ import { createEmptyWeekPlan } from '../cookbook-schema.js';
 export function createDataController(deps) {
   const { state, repository, authService, authShell, recipesController, plannerController, tagBarController, focusManager, updatePlannerShoppingList, dom } = deps;
 
+  let refreshSequence = 0;
+
   function applyLoadResult(result, { scope = 'full' } = {}) {
     state.latestAppData = result;
     state.recipes = result.recipes || [];
@@ -35,6 +37,8 @@ export function createDataController(deps) {
       return state.inflightRefreshPromise;
     }
 
+    const seq = ++refreshSequence;
+
     state.inflightRefreshPromise = (async () => {
       if (!silent) {
         authShell.renderAuthShell({
@@ -44,7 +48,10 @@ export function createDataController(deps) {
       }
       const result = await repository.loadAppData();
       authShell.renderAuthShell(authService.getSnapshot());
-      applyLoadResult(result);
+      // Only apply if no newer refresh has been started while we were loading
+      if (seq === refreshSequence) {
+        applyLoadResult(result);
+      }
       return result;
     })();
 

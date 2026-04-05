@@ -706,8 +706,10 @@ async function initializeApp() {
     browserTestEmail.value = 'admin@kochbuch.local';
   }
 
-  createBackgroundParticles();
-  initializeCursorEffects();
+  /* eslint-disable no-unused-vars -- retained for future teardown */
+  const _bgParticles = createBackgroundParticles();
+  const _cursorEffects = initializeCursorEffects();
+  /* eslint-enable no-unused-vars */
 
   const legacySnapshot = readLegacyLocalSnapshot(window.localStorage);
   if (legacySnapshot.hasLegacyData && snapshot.accessState !== 'signed_in') {
@@ -716,8 +718,10 @@ async function initializeApp() {
       : 'Lokale Kochbuchdaten gefunden. Nach dem Google-Login kann die Einmal-Migration gestartet werden.';
   }
 
-  initializeHeaderScroll();
-  initializeUserMenu();
+  /* eslint-disable no-unused-vars -- retained for future teardown */
+  const _headerScroll = initializeHeaderScroll();
+  const _userMenu = initializeUserMenu();
+  /* eslint-enable no-unused-vars */
 }
 
 if (document.readyState === 'loading') {

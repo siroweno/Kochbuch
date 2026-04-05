@@ -4,9 +4,14 @@ import { cloneWeekPlan, movePlanEntryWithinPlan } from './plan-operations.js';
 export function createDragDropController(deps) {
   const { state, dom, plannerController, focusManager, plannerActions } = deps;
 
+  // Cache of currently highlighted elements to avoid full-document querySelectorAll on every pointer move
+  let highlightedEls = [];
+
   function clearDragPreviewClasses() {
-    document.querySelectorAll('.chip-drop-zone.is-target').forEach((element) => element.classList.remove('is-target'));
-    document.querySelectorAll('.day-recipe-chip.is-dragging').forEach((element) => element.classList.remove('is-dragging'));
+    for (const el of highlightedEls) {
+      el.classList.remove('is-target', 'is-dragging');
+    }
+    highlightedEls = [];
   }
 
   function setDropZonesVisible(visible) {
@@ -21,11 +26,15 @@ export function createDragDropController(deps) {
     if (planEntryId) {
       document.querySelectorAll(`.day-recipe-chip[data-plan-entry-id="${focusManager.escapeSelectorValue(planEntryId)}"]`).forEach((element) => {
         element.classList.add('is-dragging');
+        highlightedEls.push(element);
       });
     }
     if (!over) return;
     const selector = `.chip-drop-zone[data-drop-day="${focusManager.escapeSelectorValue(over.day)}"][data-drop-slot="${focusManager.escapeSelectorValue(over.slot)}"][data-drop-position="${focusManager.escapeSelectorValue(over.position)}"]`;
-    document.querySelectorAll(selector).forEach((element) => element.classList.add('is-target'));
+    document.querySelectorAll(selector).forEach((element) => {
+      element.classList.add('is-target');
+      highlightedEls.push(element);
+    });
   }
 
   function removeGhost() {

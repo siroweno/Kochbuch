@@ -58,27 +58,36 @@ export function createPlannerActions(deps) {
     }
   }
 
+  let filterDayPickerRafId = null;
+
   function filterDayPicker(day, query) {
-    const list = document.getElementById(`picker-list-${day}`);
-    const status = document.getElementById(`picker-status-${day}`);
     const normalizedQuery = String(query || '');
+    state.activeDayPickerQuery = normalizedQuery;
+
+    // Compute data synchronously (no DOM reads needed)
     const matches = getPlannerCandidates({
       recipes: state.recipes,
       query: normalizedQuery,
     });
-    state.activeDayPickerQuery = normalizedQuery;
-    if (!list) return;
-    list.innerHTML = renderDayPickerItems({
+    const html = renderDayPickerItems({
       day,
       query: normalizedQuery,
       recipes: state.recipes,
       activeDayPickerSlot: state.activeDayPickerSlot,
     });
-    if (status) {
-      status.textContent = matches.length
-        ? `${matches.length} Rezept${matches.length !== 1 ? 'e' : ''} für ${day} verfügbar.`
-        : 'Keine passenden Rezepte gefunden.';
-    }
+    const statusText = matches.length
+      ? `${matches.length} Rezept${matches.length !== 1 ? 'e' : ''} für ${day} verfügbar.`
+      : 'Keine passenden Rezepte gefunden.';
+
+    // Batch all DOM writes into a single frame
+    if (filterDayPickerRafId) cancelAnimationFrame(filterDayPickerRafId);
+    filterDayPickerRafId = requestAnimationFrame(() => {
+      filterDayPickerRafId = null;
+      const list = document.getElementById(`picker-list-${day}`);
+      const status = document.getElementById(`picker-status-${day}`);
+      if (list) list.innerHTML = html;
+      if (status) status.textContent = statusText;
+    });
   }
 
   async function persistWeekPlan() {

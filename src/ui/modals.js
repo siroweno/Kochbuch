@@ -90,7 +90,10 @@ export function createDialogController({
     overlay.classList.remove('visible');
 
     // Inert erst nach CSS-Transition entfernen (damit die Animation sichtbar bleibt)
+    let cleanedUp = false;
     const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
       if (!isOpen() && appShell) {
         setTreeInert(appShell, false);
       }

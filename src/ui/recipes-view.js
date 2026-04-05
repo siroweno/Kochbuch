@@ -167,7 +167,7 @@ export function renderRecipeGrid({
 
     const metaItems = [];
     const timeLabel = formatTime(recipe);
-    if (timeLabel) metaItems.push(`<span class="meta-item"><span class="meta-icon">◷</span>${timeLabel}</span>`);
+    if (timeLabel) metaItems.push(`<span class="meta-item"><span class="meta-icon">◷</span>${escapeHtml(timeLabel)}</span>`);
     metaItems.push(`<span class="meta-item">${recipe.baseServings} Pers.</span>`);
     if (recipe.lastCookedAt) metaItems.push(`<span class="meta-item">${escapeHtml(formatLastCooked(recipe, 'short'))}</span>`);
 

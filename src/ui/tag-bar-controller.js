@@ -1,4 +1,5 @@
 import { normalizeTagForSearch } from '../cookbook-schema.js';
+import { escapeHtml } from './view-helpers.js';
 
 export function createTagBarController(deps) {
   const { state, dom, recipesController } = deps;
@@ -20,7 +21,7 @@ export function createTagBarController(deps) {
     dom.tagBarList.innerHTML = displayTags.map((tag) => {
       const isActive = filters.some((f) => f.toLowerCase() === tag.toLowerCase()
         || normalizeTagForSearch(f) === normalizeTagForSearch(tag));
-      return `<button type="button" class="tag${isActive ? ' active' : ''}" data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(Boolean(isActive))}">${tag}</button>`;
+      return `<button type="button" class="tag${isActive ? ' active' : ''}" data-action="filter-tag" data-tag="${encodeURIComponent(tag)}" aria-pressed="${String(Boolean(isActive))}">${escapeHtml(tag)}</button>`;
     }).join('');
     if (dom.tagBarExpand) {
       dom.tagBarExpand.textContent = isExpanded ? 'Weniger' : 'Alle Tags';

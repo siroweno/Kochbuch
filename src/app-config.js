@@ -8,7 +8,10 @@ function readRuntimeConfig() {
 
 export function getAppConfig() {
   const runtime = readRuntimeConfig();
-  const allowBrowserTest = runtime.allowBrowserTest === true;
+  /* eslint-disable no-undef -- __BROWSER_TEST_ENABLED__ is injected by Vite at build time */
+  const buildAllowsBrowserTest = typeof __BROWSER_TEST_ENABLED__ !== 'undefined' && __BROWSER_TEST_ENABLED__;
+  /* eslint-enable no-undef */
+  const allowBrowserTest = buildAllowsBrowserTest && runtime.allowBrowserTest === true;
   const backend = allowBrowserTest && runtime.backend === 'browser-test'
     ? 'browser-test'
     : 'supabase';

@@ -1,13 +1,24 @@
 export function initializeUserMenu() {
   const userMenuTrigger = document.getElementById('userMenuTrigger');
   const userMenuDropdown = document.getElementById('userMenuDropdown');
-  if (!userMenuTrigger || !userMenuDropdown) return;
+  if (!userMenuTrigger || !userMenuDropdown) return { destroy() {} };
 
-  userMenuTrigger.addEventListener('click', (e) => {
+  function onTriggerClick(e) {
     e.stopPropagation();
     userMenuDropdown.classList.toggle('visible');
-  });
-  document.addEventListener('click', () => {
+  }
+
+  function onDocumentClick() {
     userMenuDropdown.classList.remove('visible');
-  });
+  }
+
+  userMenuTrigger.addEventListener('click', onTriggerClick);
+  document.addEventListener('click', onDocumentClick);
+
+  return {
+    destroy() {
+      userMenuTrigger.removeEventListener('click', onTriggerClick);
+      document.removeEventListener('click', onDocumentClick);
+    },
+  };
 }

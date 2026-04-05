@@ -36,10 +36,15 @@ export function createAuthShellController(deps) {
     if (snapshot.accessState !== 'signed_out' && dom.loginPanel.classList.contains('visible')) {
       // Statt sofort: animierte Buchseiten-Wende
       dom.loginPanel.classList.add('closing');
-      dom.loginPanel.addEventListener('animationend', () => {
+      let loginCleaned = false;
+      const loginCleanup = () => {
+        if (loginCleaned) return;
+        loginCleaned = true;
         dom.loginPanel.classList.remove('visible', 'closing');
         dom.loginPanel.style.display = 'none';
-      }, { once: true });
+      };
+      dom.loginPanel.addEventListener('animationend', loginCleanup, { once: true });
+      setTimeout(loginCleanup, 600);
     } else {
       setVisible(dom.loginPanel, snapshot.accessState === 'signed_out');
     }
@@ -50,9 +55,14 @@ export function createAuthShellController(deps) {
     if (snapshot.accessState === 'signed_in' && dom.appShell.classList.contains('app-shell-hidden')) {
       dom.appShell.classList.remove('app-shell-hidden');
       dom.appShell.classList.add('app-shell-opening');
-      dom.appShell.addEventListener('animationend', () => {
+      let shellCleaned = false;
+      const shellCleanup = () => {
+        if (shellCleaned) return;
+        shellCleaned = true;
         dom.appShell.classList.remove('app-shell-opening');
-      }, { once: true });
+      };
+      dom.appShell.addEventListener('animationend', shellCleanup, { once: true });
+      setTimeout(shellCleanup, 600);
     } else {
       dom.appShell.classList.toggle('app-shell-hidden', snapshot.accessState !== 'signed_in');
     }

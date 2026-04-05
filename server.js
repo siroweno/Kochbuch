@@ -169,18 +169,33 @@ function serializeRecipe(recipe) {
   };
 }
 
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+};
+
 function writeJson(response, statusCode, payload) {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    ...SECURITY_HEADERS,
   });
   response.end(JSON.stringify(payload));
 }
 
+const MAX_BODY_SIZE = 5 * 1024 * 1024; // 5 MB
+
 function readJson(request) {
   return new Promise((resolve, reject) => {
     let body = '';
+    let size = 0;
     request.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_SIZE) {
+        request.destroy();
+        reject(new Error('Request body too large'));
+        return;
+      }
       body += chunk;
     });
     request.on('end', () => {
@@ -461,6 +476,7 @@ function serveStaticFile(requestPath, response) {
     response.writeHead(200, {
       'Content-Type': MIME_TYPES['.js'],
       'Cache-Control': 'no-store',
+      ...SECURITY_HEADERS,
     });
     response.end(source);
     return;
@@ -483,6 +499,7 @@ function serveStaticFile(requestPath, response) {
     response.writeHead(200, {
       'Content-Type': MIME_TYPES[extension] || 'application/octet-stream',
       'Cache-Control': 'no-store',
+      ...SECURITY_HEADERS,
     });
     response.end(buffer);
   });
