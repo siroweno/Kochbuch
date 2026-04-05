@@ -20,6 +20,7 @@
       flex-shrink: 0;
       font-size: 12px;
       padding: 4px 10px;
+      min-height: unset;
     }
     .tag-bar-expand {
       font-size: 11px;

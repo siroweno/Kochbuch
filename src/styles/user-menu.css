@@ -51,23 +51,28 @@
     }
 
     .user-menu-dropdown {
-      display: none;
       position: absolute;
       top: calc(100% + 8px);
       left: 0;
       min-width: 220px;
-      z-index: 201;
+      z-index: 100;
       background: var(--mirage-lapis);
       border: 1px solid var(--mirage-border-strong);
       border-radius: 14px;
       padding: 12px 14px;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
-      z-index: 100;
-      animation: fade-in 0.15s ease;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-6px) scale(0.97);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.23, 1, 0.32, 1), visibility 0.2s ease;
     }
 
     .user-menu-dropdown.visible {
-      display: block;
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
     }
 
     .user-menu-info {

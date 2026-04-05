@@ -187,7 +187,7 @@
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      background: linear-gradient(180deg, var(--mirage-midnight), var(--mirage-lapis-light));
+      background: var(--mirage-lapis);
       border-top: 1px solid var(--mirage-border);
       border-bottom: 1px solid var(--mirage-border);
       min-width: 0;
@@ -237,11 +237,25 @@
     }
 
     .modal-planner-panel {
-      display: none;
-      padding: 18px 36px 0;
+      padding: 0 36px;
+      opacity: 0;
+      visibility: hidden;
+      max-height: 0;
+      overflow: hidden;
+      transform: translateY(-6px);
+      transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.23, 1, 0.32, 1),
+                  max-height 0.3s cubic-bezier(0.23, 1, 0.32, 1), visibility 0.25s ease,
+                  padding 0.25s ease;
     }
 
-    .modal-planner-panel.visible { display: block; }
+    .modal-planner-panel.visible {
+      opacity: 1;
+      visibility: visible;
+      max-height: 400px;
+      overflow: visible;
+      transform: translateY(0);
+      padding-top: 18px;
+    }
 
     .modal-planner-box {
       display: grid;
@@ -404,7 +418,7 @@
       .container { padding: 18px 16px 28px; }
       .empty-start { padding: 24px 20px; }
       .empty-start-copy h2 { font-size: 28px; }
-      .form-container { padding: 24px 20px; }
+      .form-container.visible { padding: 24px 20px; }
       .image-input-row { flex-direction: column; }
       .image-input-row button { width: 100%; }
       .card-footer { flex-direction: row; align-items: center; }

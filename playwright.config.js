@@ -17,7 +17,7 @@ module.exports = defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run build && npm run serve:test',
+    command: 'npm run build:test && npm run serve:test',
     url: 'http://127.0.0.1:4173/index.html',
     reuseExistingServer: false,
     timeout: 30_000,

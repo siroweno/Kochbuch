@@ -30,8 +30,23 @@ export function createPlannerActions(deps) {
 
   function setPlannerOpen(open) {
     state.plannerOpen = open;
-    dom.weekPlanner.style.display = open ? 'block' : 'none';
-    dom.weekPlanner.toggleAttribute('hidden', !open);
+    if (open) {
+      dom.weekPlanner.removeAttribute('hidden');
+      dom.weekPlanner.style.display = '';
+      // Force reflow so the transition triggers from opacity:0
+      dom.weekPlanner.offsetHeight; // eslint-disable-line no-unused-expressions
+      dom.weekPlanner.classList.add('planner-visible');
+    } else {
+      dom.weekPlanner.classList.remove('planner-visible');
+      // After transition, hide from accessibility tree
+      const onDone = () => {
+        if (!state.plannerOpen) {
+          dom.weekPlanner.setAttribute('hidden', '');
+        }
+      };
+      dom.weekPlanner.addEventListener('transitionend', onDone, { once: true });
+      setTimeout(onDone, 400);
+    }
     dom.togglePlannerBtn.setAttribute('aria-expanded', String(open));
   }
 

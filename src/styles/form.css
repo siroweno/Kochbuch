@@ -1,14 +1,17 @@
     /* ── Form ── */
     .form-container {
       background: var(--mirage-lapis-light);
-      padding: 30px 32px;
       border-radius: 20px;
-      margin-bottom: 28px;
       box-shadow: 0 12px 28px rgba(0,0,0,0.3);
       border: 1px solid var(--mirage-border-strong);
       display: none;
     }
-    .form-container.visible { display: block; }
+    .form-container.visible {
+      display: block;
+      padding: 30px 32px;
+      margin-bottom: 28px;
+      animation: mirage-panel-enter 0.3s cubic-bezier(0.23, 1, 0.32, 1) both;
+    }
 
     .form-container::before {
       content: '';

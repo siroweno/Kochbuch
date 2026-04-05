@@ -91,14 +91,18 @@
     }
 
     .toolbar-overlay {
-      display: none;
       position: fixed;
       inset: 0;
       background: rgba(10, 8, 5, 0.6);
       z-index: 199;
-      animation: fade-in 0.2s ease;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
     }
 
     .toolbar-overlay.visible {
-      display: block;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
     }

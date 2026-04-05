@@ -32,7 +32,6 @@ export function createRecipeModalActions(deps) {
     dom.modalPlannerToggle?.setAttribute('aria-expanded', String(state.modalPlanningOpen));
     if (dom.modalPlannerPanel) {
       dom.modalPlannerPanel.classList.toggle('visible', state.modalPlanningOpen);
-      dom.modalPlannerPanel.toggleAttribute('hidden', !state.modalPlanningOpen);
     }
     if (dom.modalPlannerDay) dom.modalPlannerDay.value = state.modalPlanningDay || plannerActions.getTodayDayKey();
     if (dom.modalPlannerSlot) dom.modalPlannerSlot.value = state.modalPlanningSlot || 'abend';

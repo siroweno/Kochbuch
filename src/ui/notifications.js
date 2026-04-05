@@ -1,12 +1,11 @@
+import { animateOut } from './view-helpers.js';
+
 export function createNotificationCenter({ container, liveRegion = null, defaultDuration = 4200 }) {
   let nextId = 0;
 
   function dismiss(element) {
     if (!element?.isConnected) return;
-    element.classList.remove('visible');
-    window.setTimeout(() => {
-      element.remove();
-    }, 180);
+    animateOut(element, 'visible', () => element.remove(), 250);
   }
 
   function show(message, { tone = 'info', duration = defaultDuration } = {}) {

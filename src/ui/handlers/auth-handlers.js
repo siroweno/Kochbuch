@@ -34,6 +34,7 @@ export function createAuthHandlers(deps) {
         if (snapshot.accessState === 'signed_in') {
           await waitForAppReady();
           await refreshAppData({ silent: true });
+          window.scrollTo(0, 0);
         }
       } catch (error) {
         deps.loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
@@ -64,6 +65,7 @@ export function createAuthHandlers(deps) {
       renderAuthShell(snapshot);
       if (snapshot.accessState === 'signed_in') {
         await refreshAppData({ silent: true });
+        window.scrollTo(0, 0);
       }
     },
 

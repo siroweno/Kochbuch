@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:test": "VITE_BROWSER_TEST=true vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "serve": "node server.js",
     "serve:test": "node server.js",

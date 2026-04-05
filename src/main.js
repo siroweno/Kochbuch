@@ -702,6 +702,7 @@ async function initializeApp() {
       renderSkeletonRecipes(recipeGrid, 8);
     }
     await dataController.refreshAppData({ silent: true });
+    window.scrollTo(0, 0);
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
     browserTestEmail.value = 'admin@kochbuch.local';
   }

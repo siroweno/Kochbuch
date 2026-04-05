@@ -54,6 +54,12 @@
       100% { transform: translateY(-26px) scaleY(1.15); opacity: 0; }
     }
 
+    /* ─── Mirage Panel Enter (Day Picker, inline panels) ─── */
+    @keyframes mirage-panel-enter {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html:focus-within { scroll-behavior: auto; }
       *, *::before, *::after {
