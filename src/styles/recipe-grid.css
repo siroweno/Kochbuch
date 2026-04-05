@@ -1,0 +1,292 @@
+    /* ── Recipe Grid ── */
+    .grid-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .recipe-count {
+      color: var(--mirage-parchment-dim);
+      font-size: 13px;
+      margin-bottom: 12px;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .recipe-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    @media (min-width: 1280px) {
+      .recipe-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+    }
+
+    .recipe-card {
+      background: var(--mirage-lapis);
+      border: 1px solid var(--mirage-border);
+      border-radius: var(--radius-base);
+      overflow: hidden;
+      box-shadow: var(--shadow-card), var(--shadow-gold);
+      position: relative;
+      transition: transform var(--transition-base), box-shadow var(--transition-base);
+      animation: card-enter var(--transition-slow) ease both;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .recipe-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 6px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3L4 1L8 3L12 1L16 3L20 1L24 3L28 1L32 3L36 1L40 3' fill='none' stroke='%23C9A84C' stroke-width='1' opacity='0.5'/%3E%3Cpath d='M0 3L4 5L8 3L12 5L16 3L20 5L24 3L28 5L32 3L36 5L40 3' fill='none' stroke='%23C9A84C' stroke-width='1' opacity='0.5'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 40px 6px;
+      z-index: 1;
+    }
+
+    .recipe-card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: var(--shadow-hover), 0 0 40px rgba(201, 168, 76, 0.12);
+      border-color: var(--mirage-border-strong);
+    }
+
+    .recipe-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 30px rgba(201, 168, 76, 0.03);
+      pointer-events: none;
+    }
+
+    .recipe-card-main {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      padding: 0;
+      background: none;
+      border: none;
+      color: inherit;
+      text-align: left;
+      box-shadow: none;
+    }
+    .recipe-card-main:hover { transform: none; box-shadow: none; background: none; }
+    .recipe-card-main:focus-visible {
+      outline: 3px solid rgba(201,168,76,0.35);
+      outline-offset: -3px;
+    }
+
+    .card-image {
+      width: 100%;
+      height: 190px;
+      object-fit: cover;
+      display: block;
+      background: var(--mirage-midnight);
+    }
+
+    .card-image-placeholder {
+      width: 100%;
+      height: 170px;
+      background: linear-gradient(135deg, var(--mirage-midnight) 0%, var(--mirage-lapis) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--mirage-parchment-dim);
+      font-size: 36px;
+    }
+
+    .card-body { padding: 16px 18px 12px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .card-title {
+      font-family: 'Aref Ruqaa', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--mirage-gold-bright);
+      line-height: 1.3;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 18px;
+      min-height: 52px;
+      min-width: 0;
+      border-top-color: var(--mirage-border);
+    }
+
+    .card-footer .card-tags { flex: 1; min-width: 0; }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      align-items: center;
+      margin-left: auto;
+    }
+
+    .card-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    .tag {
+      background: rgba(201, 168, 76, 0.1);
+      color: var(--mirage-gold);
+      border: 1px solid var(--mirage-border);
+      border-radius: 12px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: inherit;
+      transition: all var(--transition-fast);
+    }
+
+    .tag:hover, .tag.active {
+      background: var(--mirage-gold);
+      color: var(--mirage-midnight);
+      border-color: var(--mirage-gold);
+    }
+
+    .tag-saffron { background: rgba(212, 148, 58, 0.15); color: #D4943A; border-color: rgba(212, 148, 58, 0.3); }
+    .tag-saffron:hover, .tag-saffron.active { background: #D4943A; color: var(--mirage-midnight); border-color: #D4943A; }
+    .tag-emerald { background: rgba(45, 143, 111, 0.15); color: #2D8F6F; border-color: rgba(45, 143, 111, 0.3); }
+    .tag-emerald:hover, .tag-emerald.active { background: #2D8F6F; color: var(--mirage-midnight); border-color: #2D8F6F; }
+    .tag-copper { background: rgba(184, 115, 51, 0.15); color: #B87333; border-color: rgba(184, 115, 51, 0.3); }
+    .tag-copper:hover, .tag-copper.active { background: #B87333; color: var(--mirage-midnight); border-color: #B87333; }
+
+    .card-meta {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .card-meta, .meta-item {
+      color: var(--mirage-parchment-dim) !important;
+    }
+
+    .card-description {
+      color: var(--mirage-parchment-dim);
+    }
+
+    .meta-item {
+      font-size: 12px;
+      color: var(--mirage-parchment-dim);
+      font-family: 'Cormorant Garamond', serif;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .meta-icon { font-size: 12px; }
+
+    .card-description {
+      font-size: 13px;
+      color: var(--mirage-parchment-dim);
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: auto;
+      min-width: 0;
+    }
+
+    .card-last-cooked {
+      font-size: 12px;
+      color: var(--mirage-parchment-dim);
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--mirage-parchment-dim);
+      font-size: 16px;
+      padding: 50px 20px;
+      grid-column: 1 / -1;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+    }
+
+    .empty-state::before {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23C9A84C' stroke-width='0.6' opacity='0.25'%3E%3Cpolygon points='40,8 47,25 64,16 55,33 72,40 55,47 64,64 47,55 40,72 33,55 16,64 25,47 8,40 25,33 16,16 33,25'/%3E%3Ccircle cx='40' cy='40' r='14'/%3E%3Ccircle cx='40' cy='40' r='8'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .empty-start {
+      grid-column: 1 / -1;
+      background: var(--mirage-lapis-light);
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+      display: grid;
+      gap: 24px;
+    }
+
+    .empty-start-copy h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 34px;
+      line-height: 1.15;
+      margin-bottom: 10px;
+      color: var(--mirage-gold);
+    }
+
+    .empty-start-copy p {
+      font-size: 15px;
+      color: var(--mirage-parchment-dim);
+      max-width: 680px;
+    }
+
+    .empty-start-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .empty-start-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .empty-step {
+      background: var(--mirage-midnight);
+      border: 1px solid var(--mirage-border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .empty-step strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--mirage-gold-bright);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+    }
+
+    .empty-step p {
+      font-size: 13px;
+      color: var(--mirage-parchment-dim);
+    }
+
+    /* ─── Pending State ───────────────────────────── */
+    .recipe-card[data-pending="true"] {
+      opacity: 0.75;
+    }
+    .recipe-card[data-pending="true"] .favorite-btn {
+      pointer-events: none;
+    }

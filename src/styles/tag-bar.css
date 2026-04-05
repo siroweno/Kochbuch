@@ -1,0 +1,42 @@
+    /* ─── Tag Bar (Filter-Leiste unter Suchfeld) ───────── */
+    .tag-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      overflow: hidden;
+    }
+    .tag-bar-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex: 1;
+    }
+    .tag-bar-list::-webkit-scrollbar { display: none; }
+    .tag-bar-list .tag {
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: 12px;
+      padding: 4px 10px;
+    }
+    .tag-bar-expand {
+      font-size: 11px;
+      padding: 4px 10px;
+      white-space: nowrap;
+      background: transparent;
+      color: var(--mirage-parchment-dim);
+      border: 1px solid var(--mirage-border);
+      border-radius: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .tag-bar-expand:hover {
+      color: var(--mirage-gold);
+      border-color: var(--mirage-border-strong);
+    }
+    .tag-bar.expanded .tag-bar-list {
+      flex-wrap: wrap;
+    }

@@ -1,0 +1,31 @@
+    /* ─── Top Bar (Suche + Wochenplaner) ───────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      margin-bottom: 4px;
+    }
+
+    .top-bar-search {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 16px;
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-base);
+      font-size: 15px;
+      background: var(--mirage-lapis-light);
+      color: var(--mirage-parchment);
+      font-family: 'Cormorant Garamond', serif;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .top-bar-search:focus {
+      outline: none;
+      border-color: var(--mirage-gold);
+      box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+    }
+
+    .top-bar-search::placeholder {
+      color: var(--mirage-parchment-dim);
+    }

@@ -1,0 +1,538 @@
+    /* ── Week Planner ── */
+    .week-planner-container { margin-bottom: 28px; }
+
+    .week-planner {
+      background: linear-gradient(180deg, var(--mirage-lapis) 0%, var(--mirage-midnight) 100%);
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-card), 0 0 30px rgba(201, 168, 76, 0.04);
+    }
+
+    .planner-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .planner-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── Wochenplaner: Kompakte Tagesleiste ───── */
+    .planner-day-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+
+    .planner-day-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 10px 4px;
+      background: var(--mirage-lapis-light);
+      border: 1px solid var(--mirage-border);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      font-family: inherit;
+    }
+
+    .planner-day-tab:hover:not(.active) {
+      border-color: var(--mirage-gold);
+      background: rgba(201, 168, 76, 0.05);
+    }
+
+    .planner-day-tab.active {
+      background: linear-gradient(135deg, #8B7442, #6B5A35);
+      color: var(--mirage-parchment);
+      border-color: rgba(201, 168, 76, 0.4);
+    }
+
+    .planner-day-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .planner-day-count {
+      font-size: 20px;
+      font-family: 'Rakkas', serif;
+      font-weight: 600;
+      color: var(--mirage-gold);
+      line-height: 1;
+      min-height: 20px;
+    }
+
+    .planner-day-count:empty::before {
+      content: "0";
+      opacity: 0.3;
+    }
+
+    .planner-day-tab.active .planner-day-count {
+      color: var(--mirage-parchment);
+    }
+
+    .planner-day-tab.active .planner-day-count:empty::before {
+      opacity: 0.4;
+    }
+
+    .planner-day-tab.active .planner-day-name {
+      color: var(--mirage-parchment);
+    }
+
+    /* Detail-Panel */
+    .planner-day-detail {
+      background: linear-gradient(180deg, var(--mirage-lapis-light) 0%, var(--mirage-lapis) 100%);
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-base);
+      padding: 16px 20px;
+      animation: fade-in 0.2s ease;
+    }
+
+    .planner-day-detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--mirage-border);
+    }
+
+    .planner-day-detail-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--mirage-gold);
+      margin: 0;
+    }
+
+    .planner-add-btn,
+    .day-add-btn {
+      font-size: 13px;
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #8B7442, #6B5A35);
+      color: var(--mirage-parchment);
+      border: 1px solid rgba(201, 168, 76, 0.3);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+    .day-add-btn:hover {
+      background: var(--mirage-gold-glow);
+      border-color: var(--mirage-gold);
+      color: var(--mirage-gold-bright);
+      transform: none;
+      box-shadow: 0 0 8px rgba(201, 168, 76, 0.15);
+    }
+    .day-add-btn-ghost {
+      background: transparent;
+      border-color: var(--mirage-border);
+      color: var(--mirage-parchment-dim);
+      font-weight: 400;
+      font-size: 11px;
+      padding: 4px 10px;
+    }
+    .day-add-btn-ghost:hover {
+      background: var(--mirage-lapis-light);
+      color: var(--mirage-parchment);
+      border-color: var(--mirage-border-strong);
+      box-shadow: none;
+    }
+
+    /* Slot-Zeilen */
+    .planner-slot-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+      font-size: 14px;
+      min-height: 38px;
+    }
+
+    .planner-slot-row:last-child {
+      border-bottom: none;
+    }
+
+    .planner-slot-icon {
+      width: 22px;
+      text-align: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    .planner-slot-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--mirage-parchment-dim);
+      width: 85px;
+      flex-shrink: 0;
+    }
+
+    .planner-entry-title {
+      flex: 1;
+      min-width: 0;
+      font-family: 'Aref Ruqaa', serif;
+      font-size: 15px;
+      color: var(--mirage-parchment);
+      background: none;
+      border: none;
+      padding: 0;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      box-shadow: none;
+    }
+
+    .planner-entry-title:hover {
+      color: var(--mirage-gold);
+      background: none;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .planner-entry-servings {
+      color: var(--mirage-parchment-dim);
+      font-size: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      flex-shrink: 0;
+    }
+
+    .planner-entry-remove {
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      color: var(--mirage-parchment-dim);
+      background: none;
+      border: none;
+      font-size: 16px;
+      padding: 2px 6px;
+      flex-shrink: 0;
+      box-shadow: none;
+    }
+
+    .planner-entry-remove:hover {
+      color: var(--mirage-ruby);
+      background: none;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .planner-slot-row:hover .planner-entry-remove {
+      opacity: 1;
+    }
+
+    .planner-slot-empty {
+      opacity: 0.35;
+    }
+
+    .planner-slot-placeholder {
+      flex: 1;
+      font-style: italic;
+      color: var(--mirage-parchment-dim);
+      font-size: 13px;
+    }
+
+    .planner-slot-section {
+      /* Grouping wrapper for slot rows */
+    }
+
+    /* ─── Drag & Drop ─── */
+    .planner-drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      flex-shrink: 0;
+      font-size: 16px;
+      color: var(--mirage-parchment-dim);
+      background: none;
+      border: none;
+      padding: 0;
+      opacity: 0;
+      transition: opacity var(--transition-fast), color var(--transition-fast);
+      cursor: grab;
+      touch-action: none;
+      box-shadow: none;
+    }
+    .planner-drag-handle:hover {
+      color: var(--mirage-gold);
+      background: none;
+      transform: none;
+      box-shadow: none;
+    }
+    .planner-slot-row:hover .planner-drag-handle {
+      opacity: 1;
+    }
+
+    @media (pointer: coarse) {
+      .planner-drag-handle {
+        opacity: 1;
+        font-size: 18px;
+        padding: 8px 10px;
+        color: var(--mirage-gold);
+      }
+
+      .planner-slot-row {
+        min-height: 48px;
+      }
+    }
+
+    .planner-drag-active .planner-slot-row {
+      cursor: grabbing;
+    }
+
+    .planner-slot-row.day-recipe-chip.is-dragging {
+      opacity: 0.3;
+      transform: scale(0.96);
+    }
+
+    .planner-slot-row.planner-slot-empty[data-drop-zone] {
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .planner-drag-active .planner-slot-row[data-drop-zone] {
+      border-bottom-color: rgba(201, 168, 76, 0.15);
+    }
+
+    .planner-slot-row[data-drop-zone].is-target {
+      background: var(--mirage-gold-glow);
+      border-color: var(--mirage-gold);
+      box-shadow: 0 0 12px rgba(201, 168, 76, 0.2);
+      opacity: 1;
+    }
+
+    .drag-ghost {
+      opacity: 0.85;
+      border: 2px solid var(--mirage-gold);
+      border-radius: var(--radius-sm);
+      background: var(--mirage-lapis-light);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 12px rgba(201, 168, 76, 0.25);
+      transform: rotate(1deg);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    @keyframes drop-zone-pulse {
+      0%, 100% {
+        border-color: var(--mirage-gold);
+        box-shadow: 0 0 8px rgba(201, 168, 76, 0.15);
+      }
+      50% {
+        border-color: var(--mirage-gold-bright);
+        box-shadow: 0 0 16px rgba(201, 168, 76, 0.3);
+      }
+    }
+
+    .chip-drop-zone.is-target,
+    .planner-slot-row[data-drop-zone].is-target {
+      animation: drop-zone-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* ─── Inline Servings Edit ─── */
+    .planner-entry-servings {
+      cursor: pointer;
+      border: none;
+      background: none;
+      box-shadow: none;
+      transition: color var(--transition-fast);
+    }
+    .planner-entry-servings:hover {
+      color: var(--mirage-gold);
+      background: none;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .planner-servings-input {
+      width: 45px;
+      max-width: 45px;
+      padding: 2px 6px;
+      font-size: 13px;
+      text-align: center;
+      border-radius: 8px;
+      border: 1px solid var(--mirage-border-strong);
+      background: var(--mirage-midnight);
+      color: var(--mirage-parchment);
+      font-family: 'Cormorant Garamond', serif;
+      min-height: unset;
+      height: 28px;
+      box-shadow: none;
+    }
+    .planner-servings-input:focus {
+      outline: none;
+      border-color: var(--mirage-gold-bright);
+      box-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
+    }
+
+    @keyframes servings-highlight {
+      0% { background: rgba(201, 168, 76, 0.3); }
+      100% { background: transparent; }
+    }
+    .planner-entry-servings.servings-updated {
+      animation: servings-highlight 0.6s ease-out;
+    }
+
+    /* Day-Picker im neuen Design */
+    .planner-day-picker-panel {
+      background: var(--mirage-lapis);
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-base);
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .planner-day-picker-toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--mirage-border);
+      background: var(--mirage-midnight);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .planner-day-picker-toolbar label {
+      font-size: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--mirage-parchment-dim);
+    }
+
+    .planner-day-picker-slot {
+      background: var(--mirage-lapis-light);
+      color: var(--mirage-parchment);
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .planner-day-picker-search {
+      flex: 1;
+      min-width: 120px;
+      padding: 8px 12px;
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: 14px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      background: var(--mirage-lapis);
+      color: var(--mirage-parchment);
+    }
+
+    .planner-day-picker-search::placeholder {
+      color: var(--mirage-parchment-dim);
+    }
+
+    .planner-day-picker-list {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .planner-day-picker-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--mirage-gold);
+      background: var(--mirage-lapis);
+      border: none;
+      border-bottom: 1px solid var(--mirage-border);
+      text-align: left;
+      box-shadow: none;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .planner-day-picker-item-title {
+      font-weight: 600;
+    }
+
+    .planner-day-picker-item-meta {
+      font-size: 11px;
+      color: var(--mirage-parchment-dim);
+    }
+
+    .planner-day-picker-item:last-child {
+      border-bottom: none;
+    }
+
+    .planner-day-picker-item:hover {
+      background: var(--mirage-lapis-light);
+      box-shadow: none;
+      transform: none;
+    }
+
+    .planner-day-picker-empty {
+      padding: 14px;
+      text-align: center;
+      color: var(--mirage-parchment-dim);
+      font-style: italic;
+      font-size: 13px;
+    }
+
+    /* Responsive */
+    @media (max-width: 560px) {
+      .planner-day-tabs {
+        flex-wrap: wrap;
+      }
+      .planner-day-tab {
+        flex: 0 0 calc(25% - 3px);
+      }
+      .planner-slot-name {
+        width: 60px;
+        font-size: 9px;
+      }
+    }
+
+    .planner-shopping {
+      background: var(--mirage-lapis-light);
+      border: 1px solid var(--mirage-border);
+      border-radius: var(--radius-base);
+      padding: 16px;
+    }
+
+    .planner-shopping h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      color: var(--mirage-gold);
+      margin-bottom: 12px;
+    }
+
+    .shopping-list {
+      background: var(--mirage-midnight);
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px;
+      color: var(--mirage-parchment);
+      line-height: 1.9;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      border: 1px solid var(--mirage-border);
+    }
+    .shopping-list:empty::before { content: "Plane Rezepte ein und die Einkaufsliste fuellt sich von selbst"; color: var(--mirage-parchment-dim); font-style: italic; }
+
+    .planner-section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      color: var(--mirage-gold);
+      margin-bottom: 18px;
+    }

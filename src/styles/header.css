@@ -1,0 +1,162 @@
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 12px 24px 36px;
+      position: relative;
+    }
+
+    /* Sonnenuntergang-Bogen */
+    .container::before {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120%;
+      height: 50%;
+      background: radial-gradient(ellipse at center bottom,
+        rgba(212, 148, 58, 0.03) 0%,
+        rgba(184, 115, 51, 0.02) 30%,
+        transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ── Header: position fixed + spacer ──
+       Header is always visible at viewport top. A spacer div reserves its
+       layout space. JS drives ALL animation via rAF — only transform & opacity
+       are changed = pure GPU compositing, zero reflow, zero flicker. */
+
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      text-align: center;
+      background: transparent;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    header * { pointer-events: auto; }
+
+    .header-inner {
+      position: relative;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 10px 24px 4px;
+      transform-origin: center top;
+      will-change: transform;
+    }
+
+    /* Subtle star sparkles in header */
+    .header-inner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image:
+        radial-gradient(1.2px 1.2px at 12% 35%, rgba(201,168,76,0.5) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 40%, rgba(201,168,76,0.4) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 22% 70%, rgba(201,168,76,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 75% 20%, rgba(201,168,76,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 50% 85%, rgba(201,168,76,0.25) 0%, transparent 100%),
+        radial-gradient(1.2px 1.2px at 92% 65%, rgba(201,168,76,0.35) 0%, transparent 100%),
+        radial-gradient(1px 1px at 5% 80%, rgba(201,168,76,0.25) 0%, transparent 100%),
+        radial-gradient(1px 1px at 65% 12%, rgba(201,168,76,0.3) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Arabeske flourish spans flanking the title */
+    .h1-flourish {
+      display: inline-block;
+      width: 60px;
+      height: 12px;
+      vertical-align: middle;
+      margin: 0 10px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='12' viewBox='0 0 60 12'%3E%3Cdefs%3E%3ClinearGradient id='f' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23C9A84C' stop-opacity='0'/%3E%3Cstop offset='0.4' stop-color='%23C9A84C' stop-opacity='0.5'/%3E%3Cstop offset='1' stop-color='%23C9A84C' stop-opacity='0.6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cline x1='0' y1='6' x2='60' y2='6' stroke='url(%23f)' stroke-width='0.4'/%3E%3Cpath d='M50 6Q54 3 58 6Q54 9 50 6' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.45'/%3E%3Cpath d='M38 6Q43 3.5 48 6Q43 8.5 38 6' fill='none' stroke='%23C9A84C' stroke-width='0.4' opacity='0.3'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      opacity: 0.6;
+      transform: scaleX(-1);
+    }
+    .h1-flourish-r {
+      transform: scaleX(1);
+    }
+
+    /* Spacer reserves header height in document flow */
+    .header-spacer {
+      /* height set by JS to match header's natural height */
+      position: relative;
+    }
+
+    /* Soft gradient fade below header — sits on the spacer, not clipped */
+    .header-spacer::after {
+      content: '';
+      position: fixed;
+      top: var(--hdr-clip-h, 120px);
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom,
+        var(--mirage-midnight) 0%,
+        rgba(13, 27, 42, 0.6) 35%,
+        rgba(13, 27, 42, 0.2) 65%,
+        transparent 100%);
+      opacity: var(--hdr-bg-op, 0);
+      pointer-events: none;
+      z-index: 99;
+    }
+
+    /* Gradient overlay — solid background */
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: -60px;
+      background: linear-gradient(to bottom,
+        var(--mirage-midnight) 0%,
+        var(--mirage-midnight) 40%,
+        rgba(13, 27, 42, 0.7) 60%,
+        rgba(13, 27, 42, 0.3) 80%,
+        transparent 100%);
+      opacity: var(--hdr-bg-op, 0);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Arabesque divider line below header */
+    header::after {
+      content: '';
+      display: block;
+      height: 14px;
+      margin: 8px 24px 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='16' viewBox='0 0 240 16'%3E%3Cdefs%3E%3ClinearGradient id='af' x1='0' y1='0' x2='1' y2='0'%3E%3Cstop offset='0' stop-color='%23C9A84C' stop-opacity='0'/%3E%3Cstop offset='0.15' stop-color='%23C9A84C' stop-opacity='0.5'/%3E%3Cstop offset='0.5' stop-color='%23C9A84C' stop-opacity='0.7'/%3E%3Cstop offset='0.85' stop-color='%23C9A84C' stop-opacity='0.5'/%3E%3Cstop offset='1' stop-color='%23C9A84C' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cline x1='0' y1='8' x2='240' y2='8' stroke='url(%23af)' stroke-width='0.5'/%3E%3Ccircle cx='120' cy='8' r='3' fill='none' stroke='%23C9A84C' stroke-width='0.6' opacity='0.6'/%3E%3Ccircle cx='120' cy='8' r='1' fill='%23C9A84C' opacity='0.4'/%3E%3Cellipse cx='120' cy='4.5' rx='1.5' ry='2.5' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.45'/%3E%3Cellipse cx='120' cy='11.5' rx='1.5' ry='2.5' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.45'/%3E%3Cellipse cx='116' cy='6' rx='2.5' ry='1.2' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.4' transform='rotate(-30 116 6)'/%3E%3Cellipse cx='124' cy='6' rx='2.5' ry='1.2' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.4' transform='rotate(30 124 6)'/%3E%3Cellipse cx='116' cy='10' rx='2.5' ry='1.2' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.4' transform='rotate(30 116 10)'/%3E%3Cellipse cx='124' cy='10' rx='2.5' ry='1.2' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.4' transform='rotate(-30 124 10)'/%3E%3Cpath d='M108 8 Q100 3 92 8 Q100 13 108 8' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.45'/%3E%3Cpath d='M92 8 Q84 4 76 8 Q84 12 92 8' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.35'/%3E%3Cpath d='M76 8 Q70 5 64 8 Q70 11 76 8' fill='none' stroke='%23C9A84C' stroke-width='0.4' opacity='0.25'/%3E%3Cpath d='M132 8 Q140 3 148 8 Q140 13 132 8' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.45'/%3E%3Cpath d='M148 8 Q156 4 164 8 Q156 12 148 8' fill='none' stroke='%23C9A84C' stroke-width='0.5' opacity='0.35'/%3E%3Cpath d='M164 8 Q170 5 176 8 Q170 11 164 8' fill='none' stroke='%23C9A84C' stroke-width='0.4' opacity='0.25'/%3E%3Cpath d='M56 8l3-2.5 3 2.5-3 2.5z' fill='none' stroke='%23C9A84C' stroke-width='0.4' opacity='0.2'/%3E%3Cpath d='M178 8l3-2.5 3 2.5-3 2.5z' fill='none' stroke='%23C9A84C' stroke-width='0.4' opacity='0.2'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-size: 240px 16px;
+      background-position: center;
+      opacity: var(--hdr-ara-op, 0.45);
+    }
+
+    h1 {
+      font-family: 'Rakkas', serif;
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+      color: var(--mirage-gold);
+    }
+
+    .subtitle {
+      color: var(--mirage-parchment-dim);
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 16px;
+      overflow: hidden;
+      letter-spacing: 1px;
+      max-width: 620px;
+      margin: 0 auto;
+    }

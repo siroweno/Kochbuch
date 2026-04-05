@@ -1,0 +1,234 @@
+    .auth-panel,
+    .status-panel {
+      display: none;
+      padding: 28px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--mirage-border-strong);
+      background: var(--mirage-lapis-light);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), var(--shadow-gold);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-panel::before,
+    .status-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at top right, rgba(201, 168, 76, 0.06), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(45, 143, 111, 0.04), transparent 35%);
+    }
+
+    .auth-panel.visible,
+    .status-panel.visible { display: block; }
+
+    .auth-panel-inner,
+    .status-panel-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .auth-panel-inner::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 16px;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%23C9A84C' stroke-width='0.8' opacity='0.3'%3E%3Cpolygon points='40,8 47,25 64,16 55,33 72,40 55,47 64,64 47,55 40,72 33,55 16,64 25,47 8,40 25,33 16,16 33,25'/%3E%3Ccircle cx='40' cy='40' r='14'/%3E%3Ccircle cx='40' cy='40' r='8'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .auth-panel h2,
+    .status-panel h2 {
+      font-family: 'Rakkas', serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: var(--mirage-gold);
+    }
+
+    .auth-panel p,
+    .status-panel p {
+      color: var(--mirage-parchment-dim);
+      margin-bottom: 16px;
+    }
+
+    .auth-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .auth-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .test-login-panel {
+      display: none;
+    }
+
+    .test-login-panel.visible {
+      display: flex;
+    }
+
+    .auth-form input {
+      flex: 1;
+      min-width: 240px;
+      padding: 12px 18px;
+      border: 1px solid var(--mirage-border-strong);
+      border-radius: var(--radius-base);
+      font-size: 15px;
+      font-family: 'Cormorant Garamond', serif;
+      background: var(--mirage-midnight);
+      color: var(--mirage-parchment);
+      transition: border-color var(--transition-base), box-shadow var(--transition-base);
+    }
+
+    .auth-form input:focus {
+      outline: none;
+      border-color: var(--mirage-gold);
+      box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.15);
+    }
+
+    .auth-form input::placeholder {
+      color: var(--mirage-parchment-dim);
+    }
+
+    .auth-hint {
+      margin-top: 12px;
+      margin-bottom: 0;
+      color: var(--mirage-parchment-dim);
+      font-size: 14px;
+    }
+
+    .status-panel strong {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .status-panel small {
+      color: var(--mirage-copper);
+    }
+
+    .loading-scene {
+      display: grid;
+      justify-items: center;
+      gap: 14px;
+      padding: 14px 0 4px;
+    }
+
+    .loading-pot {
+      position: relative;
+      width: 112px;
+      height: 92px;
+      margin-top: 6px;
+      background: linear-gradient(180deg, var(--mirage-lapis-light) 0%, var(--mirage-lapis) 100%);
+      border-radius: 20px 20px 24px 24px;
+      box-shadow: inset 0 -8px 0 rgba(255,255,255,0.08), 0 12px 26px rgba(201, 168, 76, 0.08);
+    }
+
+    .loading-pot::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: -12px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--mirage-gold), var(--mirage-copper));
+      border: 1px solid var(--mirage-gold-glow);
+      transform-origin: center bottom;
+      animation: lid-bob 2.8s ease-in-out infinite;
+    }
+
+    .loading-pot::after {
+      content: '';
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: -8px;
+      height: 14px;
+      border-radius: 999px;
+      background: rgba(201, 168, 76, 0.18);
+      filter: blur(8px);
+    }
+
+    .loading-handle,
+    .loading-handle::before {
+      content: '';
+      position: absolute;
+      top: 30px;
+      width: 20px;
+      height: 8px;
+      border: 2px solid var(--mirage-copper);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      opacity: 0.85;
+    }
+
+    .loading-handle { left: -16px; }
+    .loading-handle::before { right: -16px; top: -2px; }
+
+    .loading-steam {
+      position: absolute;
+      inset: -58px auto auto 50%;
+      width: 76px;
+      height: 80px;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .loading-steam span {
+      position: absolute;
+      bottom: 0;
+      width: 14px;
+      height: 42px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.66), rgba(255,255,255,0));
+      filter: blur(1px);
+      animation: steam-rise 3s ease-in-out infinite;
+      opacity: 0.7;
+    }
+
+    .loading-steam span:nth-child(1) { left: 10px; animation-delay: 0s; }
+    .loading-steam span:nth-child(2) { left: 30px; animation-delay: 0.45s; }
+    .loading-steam span:nth-child(3) { left: 50px; animation-delay: 0.9s; }
+
+    .loading-caption {
+      text-align: center;
+      display: grid;
+      gap: 4px;
+    }
+
+    .loading-caption strong {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      font-size: 20px;
+      color: var(--mirage-parchment);
+    }
+
+    .loading-caption span {
+      color: var(--mirage-parchment-dim);
+      font-size: 14px;
+    }
+
+    .app-shell-hidden { display: none; }
+
+    .auth-panel.closing {
+      animation: login-page-turn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      transform-origin: left center;
+    }
+
+    .app-shell-opening {
+      animation: app-reveal 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }

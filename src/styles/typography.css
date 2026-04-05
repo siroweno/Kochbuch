@@ -1,0 +1,23 @@
+    /* ── Parchment Design Enhancements ── */
+    h2, .planner-section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+    }
+
+    .card-title, #modalTitle, .modal-header h1 {
+      font-family: 'Aref Ruqaa', serif;
+    }
+
+    header h1 {
+      font-family: 'Rakkas', serif;
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--mirage-gold);
+      margin-bottom: 8px;
+    }
+
+    .auth-panel-inner {
+      background: var(--mirage-lapis);
+    }

@@ -1,0 +1,89 @@
+    /* ─── Custom Cursor: Goldene Kalligrafie-Feder (Qalam) ─── */
+    body, body * {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg transform='rotate(-15 12 12)'%3E%3Cpath d='M18 2c-1 2-3 5-5.5 9L11 14l-1 2.5-.8 2.2-.2.8c0 .3.1.4.3.5.2 0 .4-.1.5-.3l1.2-2 1.5-2L17 9c2-3 3-5.5 3-6.5 0-.5-.2-.7-.5-.7-.4 0-1 .1-1.5.2z' fill='%23C9A84C' stroke='%23A8882E' stroke-width='0.4'/%3E%3Cpath d='M17.5 2.5c-1 2-2.8 4.8-5 8.5l-1 1.8 1.2-1.3c2.2-3.5 4-6.5 5-8.2.2-.3.2-.5 0-.6-.1 0-.1 0-.2.1z' fill='%23E8CC6E' opacity='0.6'/%3E%3Cpath d='M9.2 19.5c-.1.3 0 .5.2.5l.3-.2.5-1.2-1 .9z' fill='%23A8882E'/%3E%3Cpath d='M11.5 13.5L10 16l-.8 2c0 .1 0 .2.1.2l.6-1.2L11.5 13.5z' fill='%23E8CC6E' opacity='0.3'/%3E%3C/g%3E%3C/svg%3E") 2 22, auto;
+    }
+
+    /* Interaktive Elemente: leuchtende Feder mit Glow */
+    a, button, [role="button"], select, label,
+    input[type="submit"], input[type="file"],
+    .recipe-card, .tag, .filter-toggle, .favorite-btn,
+    .modal-favorite, .modal-close, .modal-edit, .modal-cooked,
+    .toolbar-toggle, .toolbar-close,
+    .btn-primary, .btn-secondary, .btn-ghost, .btn-planner,
+    .icon-btn {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cdefs%3E%3Cfilter id='g' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeGaussianBlur stdDeviation='0.6' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Cg transform='rotate(-15 12 12)' filter='url(%23g)'%3E%3Cpath d='M18 2c-1 2-3 5-5.5 9L11 14l-1 2.5-.8 2.2-.2.8c0 .3.1.4.3.5.2 0 .4-.1.5-.3l1.2-2 1.5-2L17 9c2-3 3-5.5 3-6.5 0-.5-.2-.7-.5-.7-.4 0-1 .1-1.5.2z' fill='%23E8CC6E' stroke='%23C9A84C' stroke-width='0.4'/%3E%3Cpath d='M17.5 2.5c-1 2-2.8 4.8-5 8.5l-1 1.8 1.2-1.3c2.2-3.5 4-6.5 5-8.2.2-.3.2-.5 0-.6-.1 0-.1 0-.2.1z' fill='%23F2DFA0' opacity='0.7'/%3E%3Cpath d='M9.2 19.5c-.1.3 0 .5.2.5l.3-.2.5-1.2-1 .9z' fill='%23C9A84C'/%3E%3Cpath d='M11.5 13.5L10 16l-.8 2c0 .1 0 .2.1.2l.6-1.2L11.5 13.5z' fill='%23F2DFA0' opacity='0.4'/%3E%3C/g%3E%3C/svg%3E") 2 22, auto !important;
+    }
+
+    /* Klick: Feder schreibt (stärkere Neigung) */
+    body.cursor-write, body.cursor-write * {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg transform='rotate(-35 12 12)'%3E%3Cpath d='M18 2c-1 2-3 5-5.5 9L11 14l-1 2.5-.8 2.2-.2.8c0 .3.1.4.3.5.2 0 .4-.1.5-.3l1.2-2 1.5-2L17 9c2-3 3-5.5 3-6.5 0-.5-.2-.7-.5-.7-.4 0-1 .1-1.5.2z' fill='%23C9A84C' stroke='%23A8882E' stroke-width='0.4'/%3E%3Cpath d='M17.5 2.5c-1 2-2.8 4.8-5 8.5l-1 1.8 1.2-1.3c2.2-3.5 4-6.5 5-8.2.2-.3.2-.5 0-.6-.1 0-.1 0-.2.1z' fill='%23E8CC6E' opacity='0.6'/%3E%3Cpath d='M9.2 19.5c-.1.3 0 .5.2.5l.3-.2.5-1.2-1 .9z' fill='%23A8882E'/%3E%3C/g%3E%3C/svg%3E") 2 22, auto !important;
+    }
+
+    /* Partikel-Container */
+    .stir-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mirage-gold);
+      opacity: 0.8;
+      animation: stir-particle-fly 0.5s ease-out forwards;
+    }
+
+    @keyframes stir-particle-fly {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0);
+        opacity: 0;
+      }
+    }
+
+
+    /* ─── Ink Ripple (Klick-Effekt) ─── */
+    @keyframes ink-ripple {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0.4; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+    .ink-ripple {
+      position: fixed;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(201, 168, 76, 0.3);
+      pointer-events: none;
+      z-index: 10000;
+      animation: ink-ripple 600ms ease-out forwards;
+    }
+
+    /* ─── Cursor Glow ─── */
+    #cursor-glow {
+      position: fixed;
+      width: 200px;
+      height: 200px;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(circle, rgba(201, 168, 76, 0.05) 0%, transparent 70%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      will-change: left, top, opacity, transform;
+      animation: candle-flicker 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes candle-flicker {
+      0% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+      40% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.95); }
+      60% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.02); }
+      80% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.98); }
+      100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.03); }
+    }
+
+    /* Text-Inputs: Feder vertikal (Schreibhaltung) */
+    input[type="text"], input[type="email"], input[type="search"], textarea {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg%3E%3Cpath d='M14 1c-.8 1.8-2 4.5-3.5 8L9.5 12l-.8 2.2-.6 2-.2.8c0 .3.1.4.3.5.2 0 .3-.1.4-.3l1-1.8 1.2-2L13 7c1.5-3 2.3-5 2.3-6 0-.4-.2-.6-.4-.6-.3 0-.6.1-.9.2z' fill='%23C9A84C' stroke='%23A8882E' stroke-width='0.4'/%3E%3Cpath d='M13.5 1.5c-.7 1.8-2 4.3-3.5 7.5l-.7 1.5 1-1.2c1.6-3 3-5.8 3.7-7.3.1-.2.1-.4 0-.5h-.1z' fill='%23E8CC6E' opacity='0.5'/%3E%3Cpath d='M7.9 17.5c-.1.2 0 .4.2.4l.2-.1.4-1-.8.7z' fill='%23A8882E'/%3E%3C/g%3E%3C/svg%3E") 2 22, text;
+    }

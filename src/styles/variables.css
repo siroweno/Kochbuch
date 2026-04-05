@@ -1,0 +1,23 @@
+    :root {
+      --mirage-midnight: #0D1B2A;
+      --mirage-lapis: #1B2D4A;
+      --mirage-lapis-light: #243B5C;
+      --mirage-gold: #C9A84C;
+      --mirage-gold-bright: #E8CC6E;
+      --mirage-gold-glow: rgba(201, 168, 76, 0.15);
+      --mirage-ruby: #A63D40;
+      --mirage-parchment: #E8DCC8;
+      --mirage-parchment-dim: #9AA5B8;
+      --mirage-copper: #B87333;
+      --mirage-border: rgba(201, 168, 76, 0.14);
+      --mirage-border-strong: rgba(201, 168, 76, 0.28);
+      --transition-fast: 0.15s ease;
+      --transition-base: 0.25s ease;
+      --transition-slow: 0.4s ease;
+      --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
+      --shadow-hover: 0 8px 28px rgba(0,0,0,0.4);
+      --shadow-gold: 0 0 20px rgba(201, 168, 76, 0.08);
+      --radius-sm: 6px;
+      --radius-base: 10px;
+      --radius-lg: 16px;
+    }
