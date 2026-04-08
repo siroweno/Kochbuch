@@ -1,6 +1,6 @@
 import { setVisible } from './view-helpers.js';
 
-const MIRAGE_OVERLAY_DURATION = 3500;
+const MIRAGE_OVERLAY_DURATION = 15000; // DEBUG: temporarily long for visual verification
 
 export function createAuthShellController(deps) {
   const { state, config, dom, loadingController } = deps;
@@ -9,9 +9,12 @@ export function createAuthShellController(deps) {
     return document.getElementById('mirageOverlay');
   }
 
+  let mirageTransitionActive = false;
+
   function showMirageOverlay() {
     const overlay = getMirageOverlay();
     if (!overlay) return;
+    mirageTransitionActive = true;
     overlay.style.display = 'flex';
     overlay.classList.add('visible');
     overlay.classList.remove('fading');
@@ -45,6 +48,7 @@ export function createAuthShellController(deps) {
 
     window.scrollTo(0, 0);
     await hideMirageOverlay();
+    mirageTransitionActive = false;
     return result;
   }
 
@@ -105,5 +109,9 @@ export function createAuthShellController(deps) {
     applyRoleUi(snapshot.canAdmin);
   }
 
-  return { renderAuthShell, applyRoleUi, runMirageTransition, showMirageOverlay, hideMirageOverlay };
+  function isMirageTransitionActive() {
+    return mirageTransitionActive;
+  }
+
+  return { renderAuthShell, applyRoleUi, runMirageTransition, showMirageOverlay, hideMirageOverlay, isMirageTransitionActive };
 }

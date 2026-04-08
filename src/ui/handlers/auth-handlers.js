@@ -31,12 +31,16 @@ export function createAuthHandlers(deps) {
       try {
         await authService.signInForBrowserTest(browserTestEmail.value);
         const snapshot = authService.getSnapshot();
-        renderAuthShell(snapshot);
         if (snapshot.accessState === 'signed_in') {
+          // Show overlay FIRST, then reveal app shell behind it
+          deps.showMirageOverlay();
+          renderAuthShell(snapshot);
           await runMirageTransition(async () => {
             await waitForAppReady();
             return refreshAppData({ silent: true });
           });
+        } else {
+          renderAuthShell(snapshot);
         }
       } catch (error) {
         deps.loginMessage.textContent = error.message || 'Test-Login fehlgeschlagen.';
@@ -64,11 +68,16 @@ export function createAuthHandlers(deps) {
     },
 
     async onAuthStateChange(snapshot) {
-      renderAuthShell(snapshot);
+      // Skip if a login handler is already managing the mirage transition
+      if (deps.isMirageTransitionActive()) return;
       if (snapshot.accessState === 'signed_in') {
+        deps.showMirageOverlay();
+        renderAuthShell(snapshot);
         await runMirageTransition(async () => {
           return refreshAppData({ silent: true });
         });
+      } else {
+        renderAuthShell(snapshot);
       }
     },
 

@@ -634,6 +634,8 @@ bindAppEvents({
     refreshAppData: (...args) => dataController.refreshAppData(...args),
     renderAuthShell: (...args) => authShell.renderAuthShell(...args),
     runMirageTransition: (...args) => authShell.runMirageTransition(...args),
+    showMirageOverlay: () => authShell.showMirageOverlay(),
+    isMirageTransitionActive: () => authShell.isMirageTransitionActive(),
     renderPlanner,
     renderRecipeModal,
     renderRecipes,
