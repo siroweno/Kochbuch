@@ -106,7 +106,7 @@ export function createCookbookRepository({ authService, createDriver }) {
     cache.sharedRecipes = bundle.sharedRecipes;
     cache.personalStateMap = buildPersonalStateMap(bundle.personalStateRecords);
     cache.weekPlan = bundle.weekPlan;
-    cache.recipes = buildRecipeViewModels(bundle.sharedRecipes, cache.personalStateMap, bundle.imageUrlByRecipeId);
+    cache.recipes = buildRecipeViewModels(bundle.sharedRecipes, cache.personalStateMap, bundle.imageUrlByRecipeId, bundle.creatorNameByUserId || new Map());
   }
 
   async function collectPortableImageDataUrlByRecipeId() {

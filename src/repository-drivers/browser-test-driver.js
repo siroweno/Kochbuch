@@ -60,11 +60,15 @@ export function createBrowserTestRepositoryDriver({ authService, browserTestBase
         payload.weekPlan || createEmptyWeekPlan(),
         new Map(sharedRecipes.map((recipe) => [recipe.id, recipe])),
       );
+      const creatorNameByUserId = new Map(
+        Object.entries(payload.creatorNames || {}),
+      );
       return {
         sharedRecipes,
         personalStateRecords,
         weekPlan,
         imageUrlByRecipeId,
+        creatorNameByUserId,
       };
     },
 

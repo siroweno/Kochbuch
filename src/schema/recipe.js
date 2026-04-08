@@ -92,6 +92,7 @@ export function normalizeRecipeRecord(rawRecipe = {}, options = {}) {
     externalImageUrl: isExternalImageUrl(rawImageValue) ? rawImageValue : null,
     portableImageDataUrl: isDataUrl(rawRecipe.portableImageDataUrl) ? String(rawRecipe.portableImageDataUrl).trim() : null,
     legacyImageDataUrl: isDataUrl(rawImageValue) ? rawImageValue : null,
+    createdBy: rawRecipe.createdBy || rawRecipe.created_by || null,
   };
 }
 
@@ -114,7 +115,7 @@ export function buildPersonalStateMap(records = []) {
   }, new Map());
 }
 
-export function buildRecipeViewModels(sharedRecipes = [], personalStateMap = new Map(), imageUrlByRecipeId = new Map()) {
+export function buildRecipeViewModels(sharedRecipes = [], personalStateMap = new Map(), imageUrlByRecipeId = new Map(), creatorNameByUserId = new Map()) {
   return sharedRecipes.map((recipe) => {
     const personalState = personalStateMap.get(recipe.id) || { favorite: false, lastCookedAt: null };
     return {
@@ -124,6 +125,7 @@ export function buildRecipeViewModels(sharedRecipes = [], personalStateMap = new
       lastCookedAt: personalState.lastCookedAt || null,
       imageUrl: imageUrlByRecipeId.get(recipe.id) || recipe.externalImageUrl || '',
       imageEditorValue: recipe.externalImageUrl || '',
+      createdByName: (recipe.createdBy && creatorNameByUserId.get(recipe.createdBy)) || null,
     };
   });
 }

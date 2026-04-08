@@ -94,7 +94,7 @@ export function createSupabaseRepositoryDriver({ authService }) {
         await authService.syncProfileForCurrentUser();
       }
 
-      const [recipesResponse, stateResponse, planResponse] = await Promise.all([
+      const [recipesResponse, stateResponse, planResponse, profilesResponse, adminNamesResponse] = await Promise.all([
         supabase
           .from('recipes')
           .select('*')
@@ -108,17 +108,35 @@ export function createSupabaseRepositoryDriver({ authService }) {
           .select('plan')
           .eq('user_id', snapshot.sessionUser.id)
           .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('id,email'),
+        supabase
+          .from('admin_emails')
+          .select('email,display_name'),
       ]);
 
       if (recipesResponse.error) throw recipesResponse.error;
       if (stateResponse.error) throw stateResponse.error;
       if (planResponse.error) throw planResponse.error;
 
+      // Build userId → displayName lookup
+      const creatorNameByUserId = new Map();
+      const displayNameByEmail = new Map();
+      for (const row of (adminNamesResponse.data || [])) {
+        if (row.display_name) displayNameByEmail.set(row.email, row.display_name);
+      }
+      for (const row of (profilesResponse.data || [])) {
+        const name = displayNameByEmail.get(row.email);
+        if (name) creatorNameByUserId.set(row.id, name);
+      }
+
       const rawRecipes = recipesResponse.data || [];
       const sharedRecipes = rawRecipes.map((row) => normalizeRecipeRecord({
         id: row.id,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        createdBy: row.created_by,
         title: row.title,
         baseServings: row.base_servings,
         prepTime: row.prep_time,
@@ -151,6 +169,7 @@ export function createSupabaseRepositoryDriver({ authService }) {
         personalStateRecords,
         weekPlan,
         imageUrlByRecipeId,
+        creatorNameByUserId,
       };
     },
 

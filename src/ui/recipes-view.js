@@ -234,7 +234,10 @@ export function renderRecipeModalContent({
   }
 
   modalTitle.textContent = recipe.title;
-  modalDate.textContent = recipe.createdAtLabel || formatDateLabel(recipe.createdAt);
+  const dateLabel = recipe.createdAtLabel || formatDateLabel(recipe.createdAt);
+  modalDate.textContent = recipe.createdByName
+    ? `${dateLabel} · von ${recipe.createdByName}`
+    : dateLabel;
 
   const metaParts = [];
   (recipe.tags || []).forEach((tag) => {

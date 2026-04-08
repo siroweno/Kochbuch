@@ -257,6 +257,7 @@ function normalizeRecipePayload(recipe) {
     tips: String(recipe.tips || ''),
     imagePath: recipe.imagePath || null,
     externalImageUrl: recipe.externalImageUrl || null,
+    createdBy: recipe.createdBy || null,
   };
 }
 
@@ -346,10 +347,17 @@ async function handleBrowserTestApi(request, response, pathname) {
       favorite: Boolean(state.favorite),
       lastCookedAt: state.lastCookedAt || null,
     }));
+    // Build creator name lookup from known users
+    const creatorNames = {};
+    Object.values(browserTestState.usersByEmail).forEach((user) => {
+      const name = normalizeEmail(user.email).split('@')[0].split('.')[0];
+      creatorNames[user.id] = name.charAt(0).toUpperCase() + name.slice(1);
+    });
     writeJson(response, 200, {
       recipes: browserTestState.recipes.map((recipe) => serializeRecipe(recipe)),
       userRecipeState,
       weekPlan: getUserWeekPlan(auth.session.userId),
+      creatorNames,
     });
     return true;
   }
@@ -358,7 +366,7 @@ async function handleBrowserTestApi(request, response, pathname) {
     const auth = requireAdmin(request, response);
     if (!auth) return true;
     const payload = await readJson(request);
-    const recipe = normalizeRecipePayload(payload.recipe || {});
+    const recipe = normalizeRecipePayload({ ...(payload.recipe || {}), createdBy: auth.session.userId });
     if (!hasRequiredRecipeFields(recipe)) {
       writeJson(response, 400, { error: 'Bitte gib Titel, Zutaten und Zubereitung an.' });
       return true;
