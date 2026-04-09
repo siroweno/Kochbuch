@@ -63,10 +63,12 @@ export function createBrowserTestRepositoryDriver({ authService, browserTestBase
       const creatorNameByUserId = new Map(
         Object.entries(payload.creatorNames || {}),
       );
+      const checkedItems = Array.isArray(payload.checkedItems) ? payload.checkedItems : [];
       return {
         sharedRecipes,
         personalStateRecords,
         weekPlan,
+        checkedItems,
         imageUrlByRecipeId,
         creatorNameByUserId,
       };
@@ -112,6 +114,13 @@ export function createBrowserTestRepositoryDriver({ authService, browserTestBase
       await request('/week-plan', {
         method: 'PUT',
         body: JSON.stringify({ plan }),
+      });
+    },
+
+    async saveCheckedItems(checkedItems) {
+      await request('/week-plan', {
+        method: 'PUT',
+        body: JSON.stringify({ checkedItems }),
       });
     },
 

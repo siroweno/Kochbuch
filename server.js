@@ -155,9 +155,14 @@ function getUserRecipeState(userId) {
   return browserTestState.userRecipeStateByUserId[userId];
 }
 
-function getUserWeekPlan(userId) {
+function getUserWeekPlanData(userId) {
   if (!browserTestState.userWeekPlanByUserId[userId]) {
-    browserTestState.userWeekPlanByUserId[userId] = createEmptyWeekPlan();
+    browserTestState.userWeekPlanByUserId[userId] = { plan: createEmptyWeekPlan(), checkedItems: [] };
+  }
+  const data = browserTestState.userWeekPlanByUserId[userId];
+  // Migrate old format (plain weekPlan object) to new format
+  if (!data.plan) {
+    browserTestState.userWeekPlanByUserId[userId] = { plan: data, checkedItems: [] };
   }
   return browserTestState.userWeekPlanByUserId[userId];
 }
@@ -356,7 +361,8 @@ async function handleBrowserTestApi(request, response, pathname) {
     writeJson(response, 200, {
       recipes: browserTestState.recipes.map((recipe) => serializeRecipe(recipe)),
       userRecipeState,
-      weekPlan: getUserWeekPlan(auth.session.userId),
+      weekPlan: getUserWeekPlanData(auth.session.userId).plan,
+      checkedItems: getUserWeekPlanData(auth.session.userId).checkedItems,
       creatorNames,
     });
     return true;
@@ -403,9 +409,12 @@ async function handleBrowserTestApi(request, response, pathname) {
     Object.values(browserTestState.userRecipeStateByUserId).forEach((stateByRecipeId) => {
       delete stateByRecipeId[recipeId];
     });
-    Object.values(browserTestState.userWeekPlanByUserId).forEach((weekPlan) => {
-      Object.keys(weekPlan).forEach((day) => {
-        weekPlan[day] = (weekPlan[day] || []).filter((entry) => entry.recipeId !== recipeId);
+    Object.values(browserTestState.userWeekPlanByUserId).forEach((data) => {
+      const plan = data.plan || data;
+      Object.keys(plan).forEach((day) => {
+        if (Array.isArray(plan[day])) {
+          plan[day] = plan[day].filter((entry) => entry.recipeId !== recipeId);
+        }
       });
     });
     writeJson(response, 200, { ok: true });
@@ -439,7 +448,9 @@ async function handleBrowserTestApi(request, response, pathname) {
     const auth = requireMember(request, response);
     if (!auth) return true;
     const payload = await readJson(request);
-    browserTestState.userWeekPlanByUserId[auth.session.userId] = payload.plan || createEmptyWeekPlan();
+    const current = getUserWeekPlanData(auth.session.userId);
+    if (payload.plan) current.plan = payload.plan;
+    if (payload.checkedItems !== undefined) current.checkedItems = payload.checkedItems;
     writeJson(response, 200, { ok: true });
     return true;
   }

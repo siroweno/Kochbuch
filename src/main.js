@@ -41,6 +41,7 @@ import { createFavoriteController } from './ui/favorite-controller.js';
 import { initializeCursorEffects } from './ui/cursor-effects.js';
 import { initializeHeaderScroll } from './ui/header-scroll.js';
 import { initializeUserMenu } from './ui/user-menu.js';
+import { createShoppingListController } from './ui/shopping-list.js';
 
 await loadRuntimeConfig();
 
@@ -696,6 +697,109 @@ if (ingredientsToggle) {
   });
 }
 
+// ── Shopping List Overlay ──
+const shoppingFab = document.getElementById('shoppingFab');
+const shoppingFabBadge = document.getElementById('shoppingFabBadge');
+const shoppingOverlay = document.getElementById('shoppingOverlay');
+const shoppingOverlayBody = document.getElementById('shoppingOverlayBody');
+const shoppingProgress = document.getElementById('shoppingProgress');
+const shoppingClose = document.getElementById('shoppingClose');
+const shoppingClearBtn = document.getElementById('shoppingClearBtn');
+const shoppingShareBtn = document.getElementById('shoppingShareBtn');
+
+let shoppingController = null;
+
+function refreshShoppingList() {
+  shoppingController = createShoppingListController({
+    weekPlan: state.weekPlan,
+    recipes: state.recipes,
+    recipeLookup: state.recipeLookup,
+    initialChecked: state.latestAppData?.checkedItems || null,
+    onCheckedChange: (items) => repository.saveCheckedItems(items).catch(() => {}),
+  });
+  shoppingController.setOverlayElements({
+    overlay: shoppingOverlay,
+    body: shoppingOverlayBody,
+    progress: shoppingProgress,
+  });
+  shoppingController.build();
+
+  // Update FAB visibility + badge
+  const hasItems = shoppingController.hasItems();
+  if (shoppingFab) {
+    shoppingFab.classList.toggle('has-items', hasItems);
+  }
+  if (shoppingFabBadge) {
+    const total = shoppingController.getTotalCount();
+    shoppingFabBadge.textContent = String(total);
+    shoppingFabBadge.style.display = total > 0 ? '' : 'none';
+  }
+}
+
+function openShoppingOverlay() {
+  refreshShoppingList();
+  shoppingController.render(shoppingOverlayBody);
+  shoppingOverlay.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeShoppingOverlay() {
+  shoppingOverlay.classList.remove('visible');
+  document.body.style.overflow = '';
+}
+
+if (shoppingFab) {
+  shoppingFab.addEventListener('click', openShoppingOverlay);
+}
+if (shoppingClose) {
+  shoppingClose.addEventListener('click', closeShoppingOverlay);
+}
+if (shoppingOverlay) {
+  shoppingOverlay.addEventListener('click', (e) => {
+    if (e.target === shoppingOverlay) closeShoppingOverlay();
+  });
+}
+if (shoppingClearBtn) {
+  shoppingClearBtn.addEventListener('click', () => {
+    if (shoppingController) {
+      shoppingController.clearChecked();
+    }
+  });
+}
+if (shoppingShareBtn) {
+  shoppingShareBtn.addEventListener('click', () => {
+    if (!shoppingController) return;
+    const text = shoppingController.getPlainText();
+    if (!text.trim()) return;
+    if (navigator.share) {
+      navigator.share({ title: 'Einkaufsliste', text }).catch(() => {});
+    } else {
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `einkaufsliste_${new Date().toISOString().split('T')[0]}.txt`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
+  });
+}
+if (shoppingOverlayBody) {
+  shoppingOverlayBody.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-shopping-key]');
+    if (item && shoppingController) {
+      shoppingController.toggleItem(item.dataset.shoppingKey);
+    }
+  });
+}
+
+// Hook into planner updates to refresh FAB badge
+const _origUpdateShoppingList = plannerController.updateShoppingList.bind(plannerController);
+plannerController.updateShoppingList = function () {
+  _origUpdateShoppingList();
+  refreshShoppingList();
+};
+
 if (reducedMotionQuery) {
   const handleReducedMotionChange = (event) => {
     updateMotionMode(event.matches);
@@ -722,6 +826,7 @@ async function initializeApp() {
       renderSkeletonRecipes(recipeGrid, 8);
     }
     await dataController.refreshAppData({ silent: true });
+    refreshShoppingList();
     window.scrollTo(0, 0);
   } else if (snapshot.accessState === 'signed_out' && config.backend === 'browser-test') {
     browserTestEmail.value = 'admin@kochbuch.local';

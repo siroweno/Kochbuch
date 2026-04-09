@@ -154,12 +154,14 @@ export function createSupabaseRepositoryDriver({ authService }) {
         planResponse.data?.plan || createEmptyWeekPlan(),
         new Map(sharedRecipes.map((recipe) => [recipe.id, recipe])),
       );
+      const checkedItems = Array.isArray(planResponse.data?.checked_items) ? planResponse.data.checked_items : [];
       const imageUrlByRecipeId = await resolveSupabaseImageUrls(sharedRecipes, supabase);
 
       return {
         sharedRecipes,
         personalStateRecords,
         weekPlan,
+        checkedItems,
         imageUrlByRecipeId,
         creatorNameByUserId,
       };
@@ -210,6 +212,16 @@ export function createSupabaseRepositoryDriver({ authService }) {
       const { error } = await supabase.from('user_week_plan').upsert({
         user_id: snapshot.sessionUser.id,
         plan,
+      });
+      if (error) throw error;
+    },
+
+    async saveCheckedItems(checkedItems) {
+      const snapshot = authService.getSnapshot();
+      ensureSession(snapshot);
+      const { error } = await supabase.from('user_week_plan').upsert({
+        user_id: snapshot.sessionUser.id,
+        checked_items: checkedItems,
       });
       if (error) throw error;
     },

@@ -95,6 +95,7 @@ export function createCookbookRepository({ authService, createDriver }) {
       profile: snapshot.profile,
       recipes: cache.recipes,
       weekPlan: cloneWeekPlan(cache.weekPlan),
+      checkedItems: cache.checkedItems || [],
       capabilities: {
         canAdmin: snapshot.canAdmin,
       },
@@ -106,6 +107,7 @@ export function createCookbookRepository({ authService, createDriver }) {
     cache.sharedRecipes = bundle.sharedRecipes;
     cache.personalStateMap = buildPersonalStateMap(bundle.personalStateRecords);
     cache.weekPlan = bundle.weekPlan;
+    cache.checkedItems = bundle.checkedItems || [];
     cache.recipes = buildRecipeViewModels(bundle.sharedRecipes, cache.personalStateMap, bundle.imageUrlByRecipeId, bundle.creatorNameByUserId || new Map());
   }
 
@@ -353,6 +355,14 @@ export function createCookbookRepository({ authService, createDriver }) {
       const normalizedPlan = normalizeWeekPlan(plan, recipeLookup);
       await driver.saveWeekPlan(normalizedPlan);
       return this.reload();
+    },
+
+    async saveCheckedItems(checkedItems) {
+      const snapshot = getSnapshot();
+      ensureSession(snapshot);
+      const driver = createDriver();
+      await driver.saveCheckedItems(checkedItems);
+      cache.checkedItems = checkedItems;
     },
 
     async exportCookbook() {

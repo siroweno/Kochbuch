@@ -410,6 +410,28 @@
 <div class="sr-only" id="uiAnnouncements" aria-live="polite" aria-atomic="true"></div>
 <div class="notification-stack" id="notificationStack" aria-live="polite" aria-atomic="false"></div>
 
+<!-- Shopping FAB -->
+<button type="button" class="shopping-fab" id="shoppingFab" aria-label="Einkaufsliste öffnen">
+  🛒
+  <span class="shopping-fab-badge" id="shoppingFabBadge" style="display:none"></span>
+</button>
+
+<!-- Shopping Overlay -->
+<div class="shopping-overlay" id="shoppingOverlay" role="dialog" aria-modal="true" aria-label="Einkaufsliste">
+  <div class="shopping-overlay-panel">
+    <div class="shopping-overlay-header">
+      <h2>Einkaufsliste</h2>
+      <span class="shopping-progress" id="shoppingProgress"></span>
+      <button type="button" class="shopping-close" id="shoppingClose" aria-label="Schließen">✕</button>
+    </div>
+    <div class="shopping-overlay-body" id="shoppingOverlayBody"></div>
+    <div class="shopping-overlay-footer">
+      <button type="button" class="btn-ghost" id="shoppingClearBtn">Zurücksetzen</button>
+      <button type="button" class="btn-primary" id="shoppingShareBtn">Als Text teilen</button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirmation -->
 <div class="confirm-overlay" id="deleteConfirm" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmName">
   <div class="confirm-box">
