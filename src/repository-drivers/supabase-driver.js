@@ -94,7 +94,7 @@ export function createSupabaseRepositoryDriver({ authService }) {
         await authService.syncProfileForCurrentUser();
       }
 
-      const [recipesResponse, stateResponse, planResponse, profilesResponse, adminNamesResponse] = await Promise.all([
+      const [recipesResponse, stateResponse, planResponse, creatorNamesResponse] = await Promise.all([
         supabase
           .from('recipes')
           .select('*')
@@ -108,33 +108,19 @@ export function createSupabaseRepositoryDriver({ authService }) {
           .select('plan')
           .eq('user_id', snapshot.sessionUser.id)
           .maybeSingle(),
-        supabase
-          .from('profiles')
-          .select('id,email'),
-        supabase
-          .from('admin_emails')
-          .select('email,display_name'),
+        supabase.rpc('get_creator_names'),
       ]);
 
       if (recipesResponse.error) throw recipesResponse.error;
       if (stateResponse.error) throw stateResponse.error;
       if (planResponse.error) throw planResponse.error;
 
-      // Build userId → displayName lookup (best-effort, RLS may limit visibility)
+      // Build userId → displayName lookup via RPC (bypasses RLS)
       const creatorNameByUserId = new Map();
-      const displayNameByEmail = new Map();
-      for (const row of (adminNamesResponse.data || [])) {
-        if (row.display_name) displayNameByEmail.set((row.email || '').toLowerCase(), row.display_name);
-      }
-      for (const row of (profilesResponse.data || [])) {
-        const name = displayNameByEmail.get((row.email || '').toLowerCase());
-        if (name) creatorNameByUserId.set(row.id, name);
-      }
-      // Fallback: map current user directly if lookup is empty
-      if (!creatorNameByUserId.has(snapshot.sessionUser?.id) && snapshot.sessionUser) {
-        const email = (snapshot.profile?.email || snapshot.sessionUser.email || '').toLowerCase();
-        const ownName = displayNameByEmail.get(email);
-        if (ownName) creatorNameByUserId.set(snapshot.sessionUser.id, ownName);
+      for (const row of (creatorNamesResponse.data || [])) {
+        if (row.user_id && row.display_name) {
+          creatorNameByUserId.set(row.user_id, row.display_name);
+        }
       }
 
       const rawRecipes = recipesResponse.data || [];
