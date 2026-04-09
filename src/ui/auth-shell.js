@@ -1,6 +1,6 @@
 import { setVisible } from './view-helpers.js';
 
-const MIRAGE_OVERLAY_DURATION = 15000; // DEBUG: temporarily long for visual verification
+const MIRAGE_OVERLAY_DURATION = 3500;
 
 export function createAuthShellController(deps) {
   const { state, config, dom, loadingController } = deps;
