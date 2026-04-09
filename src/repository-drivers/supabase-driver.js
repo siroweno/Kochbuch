@@ -120,15 +120,21 @@ export function createSupabaseRepositoryDriver({ authService }) {
       if (stateResponse.error) throw stateResponse.error;
       if (planResponse.error) throw planResponse.error;
 
-      // Build userId → displayName lookup
+      // Build userId → displayName lookup (best-effort, RLS may limit visibility)
       const creatorNameByUserId = new Map();
       const displayNameByEmail = new Map();
       for (const row of (adminNamesResponse.data || [])) {
-        if (row.display_name) displayNameByEmail.set(row.email, row.display_name);
+        if (row.display_name) displayNameByEmail.set((row.email || '').toLowerCase(), row.display_name);
       }
       for (const row of (profilesResponse.data || [])) {
-        const name = displayNameByEmail.get(row.email);
+        const name = displayNameByEmail.get((row.email || '').toLowerCase());
         if (name) creatorNameByUserId.set(row.id, name);
+      }
+      // Fallback: map current user directly if lookup is empty
+      if (!creatorNameByUserId.has(snapshot.sessionUser?.id) && snapshot.sessionUser) {
+        const email = (snapshot.profile?.email || snapshot.sessionUser.email || '').toLowerCase();
+        const ownName = displayNameByEmail.get(email);
+        if (ownName) creatorNameByUserId.set(snapshot.sessionUser.id, ownName);
       }
 
       const rawRecipes = recipesResponse.data || [];
