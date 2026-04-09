@@ -221,9 +221,6 @@ export function renderRecipeModalContent({
     modalInstructions,
     modalPlating,
     modalTips,
-    descriptionSection,
-    platingWrapper,
-    tipsSection,
   } = elements;
 
   if (recipe.imageUrl) {
@@ -264,38 +261,54 @@ export function renderRecipeModalContent({
   modalServingsSelect.value = String(displayServings);
   modalEditBtn.style.display = canAdmin ? '' : 'none';
 
-  if (recipe.description) {
-    descriptionSection.style.display = 'block';
-    modalDescription.textContent = recipe.description;
-  } else {
-    descriptionSection.style.display = 'none';
-  }
+  // Description in header
+  modalDescription.textContent = recipe.description || '';
 
-  let ingredientHtml = '';
+  // Ingredients (collapsed by default)
+  let ingredientItems = [];
   if (recipe.parsedIngredients?.length) {
-    ingredientHtml = recipe.parsedIngredients.map((ingredient) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(scaleIngredient(ingredient, recipe.baseServings, displayServings))}</span></div>
-    `).join('');
+    ingredientItems = recipe.parsedIngredients.map((ingredient) =>
+      `<div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(scaleIngredient(ingredient, recipe.baseServings, displayServings))}</span></div>`
+    );
   } else if (recipe.rawIngredients) {
-    ingredientHtml = recipe.rawIngredients.split('\n').filter(Boolean).map((line) => `
-      <div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(line.trim())}</span></div>
-    `).join('');
+    ingredientItems = recipe.rawIngredients.split('\n').filter(Boolean).map((line) =>
+      `<div class="ingredient-item"><span class="ingredient-bullet">✧</span><span>${escapeHtml(line.trim())}</span></div>`
+    );
   }
-  modalIngredients.innerHTML = ingredientHtml;
-  modalInstructions.textContent = recipe.instructions || '';
+  modalIngredients.innerHTML = ingredientItems.join('');
+  modalIngredients.classList.add('ingredients-collapsed');
+  modalIngredients.classList.remove('ingredients-expanded');
 
-  if (recipe.plating) {
-    platingWrapper.style.display = 'block';
-    modalPlating.textContent = recipe.plating;
+  const ingredientsCount = elements.ingredientsCount;
+  const ingredientsToggle = elements.ingredientsToggle;
+  if (ingredientsCount) ingredientsCount.textContent = `(${ingredientItems.length})`;
+  if (ingredientsToggle) ingredientsToggle.setAttribute('aria-expanded', 'false');
+
+  // Instructions as numbered steps
+  const steps = (recipe.instructions || '').split(/\n\n+/).filter(Boolean);
+  if (steps.length > 1) {
+    modalInstructions.innerHTML = steps.map((step, i) =>
+      `<div class="step"><span class="step-number">${i + 1}</span><span class="step-text">${escapeHtml(step.trim())}</span></div>`
+    ).join('');
   } else {
-    platingWrapper.style.display = 'none';
+    modalInstructions.innerHTML = `<div class="step"><span class="step-text">${escapeHtml((recipe.instructions || '').trim())}</span></div>`;
   }
 
-  if (recipe.tips) {
-    tipsSection.style.display = 'block';
-    modalTips.textContent = recipe.tips;
-  } else {
-    tipsSection.style.display = 'none';
+  // Notes box (plating + tips combined)
+  const notesSection = elements.notesSection;
+  const platingNote = elements.platingNote;
+  const tipsNote = elements.tipsNote;
+  const hasPlating = Boolean(recipe.plating);
+  const hasTips = Boolean(recipe.tips);
+
+  if (notesSection) notesSection.style.display = (hasPlating || hasTips) ? '' : 'none';
+  if (platingNote) {
+    platingNote.style.display = hasPlating ? '' : 'none';
+    if (hasPlating) elements.modalPlating.textContent = recipe.plating;
+  }
+  if (tipsNote) {
+    tipsNote.style.display = hasTips ? '' : 'none';
+    if (hasTips) elements.modalTips.textContent = recipe.tips;
   }
 }
 

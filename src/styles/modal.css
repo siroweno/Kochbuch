@@ -181,6 +181,16 @@
       margin-top: 8px;
     }
 
+    .modal-description {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      font-style: italic;
+      color: var(--mirage-parchment-dim);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+    .modal-description:empty { display: none; }
+
     .modal-controls {
       padding: 10px 36px;
       display: flex;
@@ -354,32 +364,135 @@
       white-space: pre-wrap;
     }
 
-    .ingredients-list { font-family: 'Cormorant Garamond', serif; font-size: 15px; line-height: 1.8; color: var(--mirage-parchment); }
+    /* ─── Zutaten: Toggle + Zweispaltig ─── */
 
-    .ingredient-item { display: flex; gap: 8px; margin-bottom: 6px; }
-    .ingredient-bullet { color: var(--mirage-gold); font-weight: bold; min-width: 12px; flex-shrink: 0; }
-
-    .modal-plating-divider {
-      margin: 20px 0 14px;
+    .modal-section-toggle {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--mirage-border);
+      padding: 0 0 8px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      box-shadow: none;
+      min-height: unset;
     }
-    .modal-plating-divider span {
-      font-size: 12px;
-      color: var(--mirage-parchment-dim);
+    .modal-section-toggle:hover { background: none; transform: none; box-shadow: none; }
+    .modal-section-toggle:active { transform: none; }
+    .modal-section-toggle h2 {
+      margin: 0;
+      padding: 0;
+      border: none;
       font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--mirage-gold-bright);
     }
-    .modal-plating-divider::before,
-    .modal-plating-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--mirage-border);
+    .modal-section-toggle h2::after { display: none; }
+    .modal-section-count {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      color: var(--mirage-parchment-dim);
+    }
+    .modal-section-chevron {
+      margin-left: auto;
+      font-size: 20px;
+      color: var(--mirage-parchment-dim);
+      transition: transform 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+      transform: rotate(0deg);
+    }
+    .modal-section-toggle[aria-expanded="true"] .modal-section-chevron {
+      transform: rotate(90deg);
+    }
+
+    .ingredients-list {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--mirage-parchment);
+      columns: 2;
+      column-gap: 24px;
+    }
+    .ingredients-collapsed {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.25s ease;
+      margin-bottom: 0;
+    }
+    .ingredients-expanded {
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .ingredient-item { display: flex; gap: 8px; margin-bottom: 4px; break-inside: avoid; }
+    .ingredient-bullet { color: var(--mirage-gold); font-weight: bold; min-width: 12px; flex-shrink: 0; }
+
+    /* ─── Zubereitung: Nummerierte Schritte ─── */
+
+    .instructions-steps {
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--mirage-parchment);
+    }
+    .step {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .step:last-child { margin-bottom: 0; }
+    .step-number {
+      font-family: 'Rakkas', serif;
+      font-size: 20px;
+      color: var(--mirage-gold);
+      opacity: 0.35;
+      min-width: 24px;
+      flex-shrink: 0;
+      line-height: 1.8;
+      text-align: right;
+    }
+    .step-text {
+      font-size: 15px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    /* ─── Notizen-Box (Anrichten + Tipps) ─── */
+
+    .modal-notes {
+      background: rgba(201, 168, 76, 0.04);
+      border: 1px solid var(--mirage-border);
+      border-radius: var(--radius-base);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .modal-note {
+      display: flex;
+      gap: 12px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--mirage-parchment-dim);
+    }
+    .modal-note p {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .modal-note-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .modal-note-label {
+      color: var(--mirage-parchment);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 3px;
+      display: block;
     }
 
     .modal-cooked-status {
@@ -415,6 +528,13 @@
       .modal-planner-panel { padding-top: 14px; }
       .modal-header h1 { font-size: 28px; }
       .modal-section h2 { font-size: 20px; }
+      .modal-section-toggle h2 { font-size: 20px; }
+      .modal-section { margin-bottom: 20px; }
+      .ingredients-list { columns: 1; }
+      .step-number { font-size: 16px; min-width: 20px; }
+      .step { gap: 10px; margin-bottom: 14px; }
+      .modal-notes { padding: 14px; }
+      .modal-note { font-size: 13px; }
       .container { padding: 18px 16px 28px; }
       .empty-start { padding: 24px 20px; }
       .empty-start-copy h2 { font-size: 28px; }

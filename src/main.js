@@ -147,9 +147,11 @@ const {
   plannerSaveBtn: modalPlannerSaveBtn,
   plannerCancelBtn: modalPlannerCancelBtn,
   plannerFeedback: modalPlannerFeedback,
-  descriptionSection,
-  platingWrapper,
-  tipsSection,
+  ingredientsToggle,
+  ingredientsCount,
+  notesSection,
+  platingNote,
+  tipsNote,
 } = modal;
 const {
   overlay: deleteConfirm,
@@ -326,9 +328,11 @@ const modalRecipeController = createModalRecipeController({
     modalInstructions,
     modalPlating,
     modalTips,
-    descriptionSection,
-    platingWrapper,
-    tipsSection,
+    ingredientsToggle,
+    ingredientsCount,
+    notesSection,
+    platingNote,
+    tipsNote,
   },
   getCanAdmin: () => Boolean(state.latestAppData.capabilities?.canAdmin),
   renderServingOptions: renderModalServingOptions,
@@ -678,6 +682,19 @@ if (tagBarExpand) {
 }
 
 // Tag bar: delegate click on tags — handled by onDocumentClick in app-event-handlers.js
+
+// Ingredients toggle in recipe modal
+if (ingredientsToggle) {
+  ingredientsToggle.addEventListener('click', () => {
+    const expanded = ingredientsToggle.getAttribute('aria-expanded') === 'true';
+    ingredientsToggle.setAttribute('aria-expanded', String(!expanded));
+    const list = document.getElementById('modalIngredients');
+    if (list) {
+      list.classList.toggle('ingredients-collapsed', expanded);
+      list.classList.toggle('ingredients-expanded', !expanded);
+    }
+  });
+}
 
 if (reducedMotionQuery) {
   const handleReducedMotionChange = (event) => {
