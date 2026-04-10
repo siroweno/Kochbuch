@@ -105,7 +105,7 @@ export function createSupabaseRepositoryDriver({ authService }) {
           .eq('user_id', snapshot.sessionUser.id),
         supabase
           .from('user_week_plan')
-          .select('plan')
+          .select('plan,checked_items')
           .eq('user_id', snapshot.sessionUser.id)
           .maybeSingle(),
         supabase.rpc('get_creator_names'),
@@ -219,10 +219,10 @@ export function createSupabaseRepositoryDriver({ authService }) {
     async saveCheckedItems(checkedItems) {
       const snapshot = authService.getSnapshot();
       ensureSession(snapshot);
-      const { error } = await supabase.from('user_week_plan').upsert({
-        user_id: snapshot.sessionUser.id,
-        checked_items: checkedItems,
-      });
+      const { error } = await supabase
+        .from('user_week_plan')
+        .update({ checked_items: checkedItems })
+        .eq('user_id', snapshot.sessionUser.id);
       if (error) throw error;
     },
 
