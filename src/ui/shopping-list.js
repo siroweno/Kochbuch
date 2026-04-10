@@ -21,6 +21,16 @@ function saveCheckedToLocalStorage(checkedSet) {
   }
 }
 
+// Strip parenthetical notes for aggregation key: "Zwiebel (ca. 60 g)" → "zwiebel"
+// But preserve "(optional)" as a flag
+function normalizeIngredientName(name) {
+  return (name || '').replace(/\s*\([^)]*\)\s*/g, ' ').trim();
+}
+
+function isOptionalIngredient(name) {
+  return /\(.*optional.*\)/i.test(name || '');
+}
+
 function buildAggregatedItems(weekPlan, recipes, recipeLookup) {
   const itemMap = {};
   const allEntries = DAYS.flatMap((day) => weekPlan[day] || []);
@@ -33,20 +43,25 @@ function buildAggregatedItems(weekPlan, recipes, recipeLookup) {
     const servings = entry.servings || recipe.baseServings;
 
     for (const ingredient of recipe.parsedIngredients) {
+      const baseName = normalizeIngredientName(ingredient.name).toLowerCase();
+      const optional = isOptionalIngredient(ingredient.name);
+
       if (ingredient.quantity === null || ingredient.quantity === undefined) {
-        const key = `none:${ingredient.name.toLowerCase()}`;
+        const key = `none:${baseName}`;
         if (!itemMap[key]) {
-          itemMap[key] = { key, name: ingredient.name, quantity: null, unit: null, category: categorizeIngredient(ingredient.name) };
+          itemMap[key] = { key, name: normalizeIngredientName(ingredient.name), quantity: null, unit: null, category: categorizeIngredient(ingredient.name), optional };
         }
         continue;
       }
 
       const scaled = ingredient.quantity * (servings / recipe.baseServings);
-      const key = `${ingredient.unit || 'stück'}:${ingredient.name.toLowerCase()}`;
+      const key = `${ingredient.unit || 'stück'}:${baseName}`;
       if (!itemMap[key]) {
-        itemMap[key] = { key, name: ingredient.name, quantity: 0, unit: ingredient.unit, category: categorizeIngredient(ingredient.name) };
+        itemMap[key] = { key, name: normalizeIngredientName(ingredient.name), quantity: 0, unit: ingredient.unit, category: categorizeIngredient(ingredient.name), optional };
       }
       itemMap[key].quantity += scaled;
+      // If any recipe marks it as non-optional, it's not optional
+      if (!optional) itemMap[key].optional = false;
     }
   }
 
@@ -126,10 +141,11 @@ export function createShoppingListController({ weekPlan, recipes, recipeLookup, 
       const cat = getCategoryById(group.id);
       const itemsHtml = group.items.map((item) => {
         const checked = checkedSet.has(item.key);
+        const optionalClass = item.optional ? ' shopping-item-optional' : '';
         return `
-          <button type="button" class="shopping-item${checked ? ' checked' : ''}" data-shopping-key="${escapeHtml(item.key)}" aria-pressed="${String(checked)}">
+          <button type="button" class="shopping-item${checked ? ' checked' : ''}${optionalClass}" data-shopping-key="${escapeHtml(item.key)}" aria-pressed="${String(checked)}">
             <span class="shopping-check" aria-hidden="true">${checked ? '✓' : ''}</span>
-            <span class="shopping-item-text">${escapeHtml(formatItemText(item))}</span>
+            <span class="shopping-item-text">${escapeHtml(formatItemText(item))}${item.optional ? '<span class="shopping-optional-badge">optional</span>' : ''}</span>
           </button>`;
       }).join('');
 
@@ -201,12 +217,17 @@ export function createShoppingListController({ weekPlan, recipes, recipeLookup, 
     return getTotalCount() > 0;
   }
 
+  function getCheckedKeys() {
+    return [...checkedSet];
+  }
+
   return {
     build,
     render,
     toggleItem,
     clearChecked,
     getPlainText,
+    getCheckedKeys,
     setOverlayElements,
     hasItems,
     updateProgress,

@@ -172,12 +172,25 @@
       line-height: 1.4;
     }
 
+    .shopping-item-optional {
+      opacity: 0.6;
+    }
+    .shopping-optional-badge {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 10px;
+      font-style: italic;
+      color: var(--mirage-parchment-dim);
+      vertical-align: middle;
+    }
+
     /* ─── Footer ─── */
 
     .shopping-overlay-footer {
       display: flex;
       gap: 8px;
       padding: 14px 20px;
+      padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
       border-top: 1px solid var(--mirage-border);
       flex-shrink: 0;
     }

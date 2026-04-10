@@ -169,11 +169,11 @@
           <div class="days-grid" id="daysGrid"></div>
         </div>
         <div class="planner-shopping">
-          <h3>Einkaufsliste</h3>
-          <input type="text" id="shoppingSearchInput" placeholder="In Einkaufsliste suchen …" style="margin-bottom:10px; font-size:13px;">
-          <div class="shopping-list" id="shoppingList"></div>
-          <button class="btn-primary" id="exportShoppingBtn" style="width:100%; margin-top:14px;">Als Text exportieren</button>
+          <button type="button" class="btn-primary" id="openShoppingOverlayBtn" style="width:100%;" onclick="document.getElementById('shoppingFab')?.click()">🛒 Einkaufsliste öffnen</button>
           <button class="btn-ghost" id="clearPlanBtn" style="width:100%; margin-top:8px;">Woche leeren</button>
+          <div id="shoppingList" style="display:none"></div>
+          <input type="text" id="shoppingSearchInput" style="display:none">
+          <button id="exportShoppingBtn" style="display:none"></button>
         </div>
       </div>
     </div>

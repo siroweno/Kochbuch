@@ -710,11 +710,13 @@ const shoppingShareBtn = document.getElementById('shoppingShareBtn');
 let shoppingController = null;
 
 function refreshShoppingList() {
+  // Keep checked state from existing controller if available
+  const existingChecked = shoppingController?.getCheckedKeys?.() || null;
   shoppingController = createShoppingListController({
     weekPlan: state.weekPlan,
     recipes: state.recipes,
     recipeLookup: state.recipeLookup,
-    initialChecked: state.latestAppData?.checkedItems || null,
+    initialChecked: existingChecked || state.latestAppData?.checkedItems || null,
     onCheckedChange: (items) => repository.saveCheckedItems(items).catch(() => {}),
   });
   shoppingController.setOverlayElements({
@@ -737,7 +739,9 @@ function refreshShoppingList() {
 }
 
 function openShoppingOverlay() {
-  refreshShoppingList();
+  if (!shoppingController || !shoppingController.hasItems()) {
+    refreshShoppingList();
+  }
   shoppingController.render(shoppingOverlayBody);
   shoppingOverlay.classList.add('visible');
   document.body.style.overflow = 'hidden';
