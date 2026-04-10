@@ -192,7 +192,7 @@
 
     .shopping-overlay-footer {
       padding: 14px 20px;
-      padding-bottom: max(20px, calc(env(safe-area-inset-bottom, 14px) + 14px));
+      padding-bottom: max(28px, calc(env(safe-area-inset-bottom, 14px) + 20px));
       border-top: 1px solid var(--mirage-border);
       flex-shrink: 0;
     }
@@ -257,10 +257,11 @@
     @media (max-width: 768px) {
       .shopping-overlay-panel {
         max-width: 100%;
-        max-height: 100vh;
-        height: 100vh;
+        max-height: 100dvh;
+        height: 100dvh;
         border-radius: 0;
         border: none;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
       .shopping-overlay {
         align-items: stretch;
