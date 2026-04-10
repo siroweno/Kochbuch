@@ -160,3 +160,11 @@
       max-width: 620px;
       margin: 0 auto;
     }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 32px; margin-bottom: 4px; }
+      .subtitle { font-size: 13px; }
+      .h1-flourish { display: none; }
+      .header-inner { padding: 6px 16px 2px; }
+      header::after { margin: 4px 16px 0; height: 10px; }
+    }

@@ -717,7 +717,6 @@ function refreshShoppingList() {
     recipes: state.recipes,
     recipeLookup: state.recipeLookup,
     initialChecked: existingChecked || state.latestAppData?.checkedItems || null,
-    onCheckedChange: (items) => repository.saveCheckedItems(items).catch(() => {}),
   });
   shoppingController.setOverlayElements({
     overlay: shoppingOverlay,
@@ -739,9 +738,7 @@ function refreshShoppingList() {
 }
 
 function openShoppingOverlay() {
-  if (!shoppingController || !shoppingController.hasItems()) {
-    refreshShoppingList();
-  }
+  refreshShoppingList();
   shoppingController.render(shoppingOverlayBody);
   shoppingOverlay.classList.add('visible');
   document.body.style.overflow = 'hidden';
@@ -786,6 +783,16 @@ if (shoppingShareBtn) {
       anchor.click();
       URL.revokeObjectURL(url);
     }
+  });
+}
+const shoppingSaveBtn = document.getElementById('shoppingSaveBtn');
+if (shoppingSaveBtn) {
+  shoppingSaveBtn.addEventListener('click', () => {
+    if (shoppingController) {
+      const items = shoppingController.getCheckedKeys();
+      repository.saveCheckedItems(items).catch(() => {});
+    }
+    closeShoppingOverlay();
   });
 }
 if (shoppingOverlayBody) {

@@ -56,9 +56,10 @@
       font-size: 13px;
       color: var(--mirage-parchment-dim);
     }
+    .shopping-header-btn,
     .shopping-close {
       background: var(--mirage-lapis-light);
-      color: var(--mirage-parchment);
+      color: var(--mirage-parchment-dim);
       border: none;
       border-radius: 10px;
       width: 36px;
@@ -68,9 +69,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 16px;
       box-shadow: none;
+      flex-shrink: 0;
     }
+    .shopping-close { color: var(--mirage-parchment); font-size: 18px; }
+    .shopping-header-btn:hover,
     .shopping-close:hover { background: rgba(0, 0, 0, 0.3); transform: none; box-shadow: none; }
 
     .shopping-overlay-body {
@@ -187,17 +191,15 @@
     /* ─── Footer ─── */
 
     .shopping-overlay-footer {
-      display: flex;
-      gap: 8px;
       padding: 14px 20px;
-      padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+      padding-bottom: max(20px, calc(env(safe-area-inset-bottom, 14px) + 14px));
       border-top: 1px solid var(--mirage-border);
       flex-shrink: 0;
     }
     .shopping-overlay-footer button {
-      flex: 1;
-      font-size: 13px;
-      padding: 10px 14px;
+      width: 100%;
+      font-size: 15px;
+      padding: 14px 20px;
     }
 
     /* ─── Top-Bar Shopping Button ─── */
