@@ -102,7 +102,7 @@
     }
     .shopping-category-header {
       position: sticky;
-      top: 0;
+      top: -1px;
       z-index: 2;
       font-family: 'Cormorant Garamond', serif;
       font-size: 13px;
@@ -111,9 +111,10 @@
       text-transform: uppercase;
       color: var(--mirage-parchment);
       background: var(--mirage-lapis);
-      padding: 10px 20px 6px;
+      padding: 12px 20px 8px;
       margin: 0;
       border-bottom: 1px solid var(--mirage-border);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     /* ─── Items ─── */

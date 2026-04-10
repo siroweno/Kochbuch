@@ -737,7 +737,15 @@ function refreshShoppingList() {
   }
 }
 
-function openShoppingOverlay() {
+async function openShoppingOverlay() {
+  // Always reload from server to get latest checked state from other devices
+  try {
+    await dataController.refreshAppData({ silent: true });
+  } catch (_error) {
+    // Continue with local state if server unreachable
+  }
+  // Force fresh controller from server state
+  shoppingController = null;
   refreshShoppingList();
   shoppingController.render(shoppingOverlayBody);
   shoppingOverlay.classList.add('visible');
