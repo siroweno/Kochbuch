@@ -737,15 +737,7 @@ function refreshShoppingList() {
   }
 }
 
-async function openShoppingOverlay() {
-  // Always reload from server to get latest checked state from other devices
-  try {
-    await dataController.refreshAppData({ silent: true });
-  } catch (_error) {
-    // Continue with local state if server unreachable
-  }
-  // Force fresh controller from server state
-  shoppingController = null;
+function openShoppingOverlay() {
   refreshShoppingList();
   shoppingController.render(shoppingOverlayBody);
   shoppingOverlay.classList.add('visible');
@@ -795,12 +787,28 @@ if (shoppingShareBtn) {
 }
 const shoppingSaveBtn = document.getElementById('shoppingSaveBtn');
 if (shoppingSaveBtn) {
-  shoppingSaveBtn.addEventListener('click', () => {
+  shoppingSaveBtn.addEventListener('click', async () => {
     if (shoppingController) {
       const items = shoppingController.getCheckedKeys();
-      repository.saveCheckedItems(items).catch(() => {});
+      shoppingSaveBtn.disabled = true;
+      shoppingSaveBtn.textContent = 'Wird gespeichert...';
+      try {
+        await repository.saveCheckedItems(items);
+        // Update local state so next open preserves checks
+        if (state.latestAppData) state.latestAppData.checkedItems = items;
+        shoppingSaveBtn.textContent = '✓ Gespeichert!';
+        setTimeout(() => {
+          closeShoppingOverlay();
+          shoppingSaveBtn.textContent = '✓ Speichern & Schließen';
+          shoppingSaveBtn.disabled = false;
+        }, 600);
+      } catch (_error) {
+        shoppingSaveBtn.textContent = 'Fehler – nochmal versuchen';
+        shoppingSaveBtn.disabled = false;
+      }
+    } else {
+      closeShoppingOverlay();
     }
-    closeShoppingOverlay();
   });
 }
 if (shoppingOverlayBody) {
