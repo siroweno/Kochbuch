@@ -276,8 +276,10 @@ export function renderRecipeModalContent({
     );
   }
   modalIngredients.innerHTML = ingredientItems.join('');
-  modalIngredients.classList.add('ingredients-collapsed');
-  modalIngredients.classList.remove('ingredients-expanded');
+  const ingredientsWrapper = modalIngredients.parentElement;
+  if (ingredientsWrapper) {
+    ingredientsWrapper.classList.remove('ingredients-expanded');
+  }
 
   const ingredientsCount = elements.ingredientsCount;
   const ingredientsToggle = elements.ingredientsToggle;

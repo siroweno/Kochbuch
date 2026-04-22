@@ -689,10 +689,9 @@ if (ingredientsToggle) {
   ingredientsToggle.addEventListener('click', () => {
     const expanded = ingredientsToggle.getAttribute('aria-expanded') === 'true';
     ingredientsToggle.setAttribute('aria-expanded', String(!expanded));
-    const list = document.getElementById('modalIngredients');
-    if (list) {
-      list.classList.toggle('ingredients-collapsed', expanded);
-      list.classList.toggle('ingredients-expanded', !expanded);
+    const wrapper = document.getElementById('modalIngredientsWrapper');
+    if (wrapper) {
+      wrapper.classList.toggle('ingredients-expanded', !expanded);
     }
   });
 }
