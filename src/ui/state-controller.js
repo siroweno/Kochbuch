@@ -45,5 +45,6 @@ export function createUiState(authService) {
     inflightRefreshPromise: null,
     importMode: 'restore',
     pendingUpdates: new Map(),
+    modalIngredientsExpanded: false,
   };
 }

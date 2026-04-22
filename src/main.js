@@ -338,6 +338,7 @@ const modalRecipeController = createModalRecipeController({
   getCanAdmin: () => Boolean(state.latestAppData.capabilities?.canAdmin),
   renderServingOptions: renderModalServingOptions,
   syncModalPlanningUi: (...args) => lazy.recipeModalActions.syncModalPlanningUi(...args),
+  syncIngredientsToggleUi: () => lazy.syncIngredientsToggleUi(),
   restorePendingFocusTarget,
 });
 
@@ -685,14 +686,16 @@ if (tagBarExpand) {
 // Tag bar: delegate click on tags — handled by onDocumentClick in app-event-handlers.js
 
 // Ingredients toggle in recipe modal
+function syncIngredientsToggleUi() {
+  const wrapper = document.getElementById('modalIngredientsWrapper');
+  if (wrapper) wrapper.classList.toggle('ingredients-expanded', state.modalIngredientsExpanded);
+  if (ingredientsToggle) ingredientsToggle.setAttribute('aria-expanded', String(state.modalIngredientsExpanded));
+}
+lazy.syncIngredientsToggleUi = syncIngredientsToggleUi;
 if (ingredientsToggle) {
   ingredientsToggle.addEventListener('click', () => {
-    const expanded = ingredientsToggle.getAttribute('aria-expanded') === 'true';
-    ingredientsToggle.setAttribute('aria-expanded', String(!expanded));
-    const wrapper = document.getElementById('modalIngredientsWrapper');
-    if (wrapper) {
-      wrapper.classList.toggle('ingredients-expanded', !expanded);
-    }
+    state.modalIngredientsExpanded = !state.modalIngredientsExpanded;
+    syncIngredientsToggleUi();
   });
 }
 

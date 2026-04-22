@@ -6,6 +6,7 @@ export function createModalRecipeController({
   getCanAdmin,
   renderServingOptions,
   syncModalPlanningUi,
+  syncIngredientsToggleUi,
   restorePendingFocusTarget,
 }) {
   function render() {
@@ -22,6 +23,7 @@ export function createModalRecipeController({
       elements,
     });
 
+    syncIngredientsToggleUi();
     syncModalPlanningUi();
     restorePendingFocusTarget();
   }
