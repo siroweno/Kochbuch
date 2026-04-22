@@ -415,17 +415,18 @@
       color: var(--mirage-parchment);
       columns: 2;
       column-gap: 24px;
+      transition: max-height 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.25s ease;
     }
     .ingredients-collapsed {
       max-height: 0;
       overflow: hidden;
       opacity: 0;
-      transition: max-height 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.25s ease;
       margin-bottom: 0;
     }
     .ingredients-expanded {
       max-height: 2000px;
       opacity: 1;
+      overflow: visible;
     }
 
     .ingredient-item { display: flex; gap: 8px; margin-bottom: 4px; break-inside: avoid; }
