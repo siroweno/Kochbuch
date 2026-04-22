@@ -687,8 +687,7 @@ if (tagBarExpand) {
 
 // Ingredients toggle in recipe modal
 function syncIngredientsToggleUi() {
-  const wrapper = document.getElementById('modalIngredientsWrapper');
-  if (wrapper) wrapper.classList.toggle('ingredients-expanded', state.modalIngredientsExpanded);
+  if (modalIngredients) modalIngredients.classList.toggle('visible', state.modalIngredientsExpanded);
   if (ingredientsToggle) ingredientsToggle.setAttribute('aria-expanded', String(state.modalIngredientsExpanded));
 }
 lazy.syncIngredientsToggleUi = syncIngredientsToggleUi;
