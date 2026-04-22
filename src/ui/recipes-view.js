@@ -276,15 +276,9 @@ export function renderRecipeModalContent({
     );
   }
   modalIngredients.innerHTML = ingredientItems.join('');
-  const ingredientsWrapper = modalIngredients.parentElement;
-  if (ingredientsWrapper) {
-    ingredientsWrapper.classList.remove('ingredients-expanded');
-  }
 
   const ingredientsCount = elements.ingredientsCount;
-  const ingredientsToggle = elements.ingredientsToggle;
   if (ingredientsCount) ingredientsCount.textContent = `(${ingredientItems.length})`;
-  if (ingredientsToggle) ingredientsToggle.setAttribute('aria-expanded', 'false');
 
   // Instructions as numbered steps
   const steps = (recipe.instructions || '').split(/\n\n+/).filter(Boolean);

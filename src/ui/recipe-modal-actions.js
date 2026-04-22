@@ -64,6 +64,13 @@ export function createRecipeModalActions(deps) {
     syncModalPlanningUi();
   }
 
+  function collapseIngredients() {
+    const wrapper = document.getElementById('modalIngredientsWrapper');
+    if (wrapper) wrapper.classList.remove('ingredients-expanded');
+    const toggle = document.getElementById('ingredientsToggle');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+
   function openRecipeModal(recipeId, options = {}) {
     const recipe = state.recipeLookup.get(String(recipeId)) || state.recipes.find((item) => item.id === String(recipeId));
     if (!recipe) return;
@@ -71,6 +78,7 @@ export function createRecipeModalActions(deps) {
     state.currentModalServings = normalizePositiveInteger(options.servings, recipe.baseServings);
     initializeModalPlanningState();
     modalRecipeController.render();
+    collapseIngredients();
     modalController.open({
       trigger: options.trigger || document.activeElement,
     });
