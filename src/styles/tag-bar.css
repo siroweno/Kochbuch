@@ -29,8 +29,8 @@
       background: transparent;
       color: var(--mirage-parchment-dim);
       border: 1px solid var(--mirage-border);
-      border-radius: 12px;
-      font-family: 'Cormorant Garamond', serif;
+      border-radius: var(--radius-pill);
+      font-family: var(--font-body);
       transition: all var(--transition-fast);
       flex-shrink: 0;
     }

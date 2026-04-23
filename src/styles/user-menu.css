@@ -58,7 +58,7 @@
       z-index: 100;
       background: var(--mirage-lapis);
       border: 1px solid var(--mirage-border-strong);
-      border-radius: 14px;
+      border-radius: var(--radius-sm);
       padding: 12px 14px;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
       opacity: 0;

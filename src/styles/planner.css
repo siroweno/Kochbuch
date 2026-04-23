@@ -435,7 +435,7 @@
       min-width: 120px;
       padding: 8px 12px;
       border: 1px solid var(--mirage-border-strong);
-      border-radius: 14px;
+      border-radius: var(--radius-sm);
       font-family: 'Cormorant Garamond', serif;
       font-size: 14px;
       background: var(--mirage-lapis);
@@ -527,7 +527,7 @@
     .shopping-list {
       background: var(--mirage-midnight);
       padding: 14px 16px;
-      border-radius: 14px;
+      border-radius: var(--radius-sm);
       font-family: 'Cormorant Garamond', serif;
       font-size: 13px;
       color: var(--mirage-parchment);

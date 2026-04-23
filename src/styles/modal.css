@@ -26,7 +26,7 @@
     .modal-content {
       background: linear-gradient(180deg, var(--mirage-lapis-light) 0%, var(--mirage-lapis) 40%, var(--mirage-lapis) 100%);
       border: 1px solid var(--mirage-border-strong);
-      border-radius: 20px;
+      border-radius: var(--radius-xl);
       width: 100%;
       max-width: 750px;
       position: relative;
@@ -77,7 +77,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
+      border-radius: var(--radius-sm);
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       z-index: 10;
     }
@@ -86,19 +86,19 @@
     .modal-edit {
       position: absolute;
       top: 14px; right: 120px;
-      background: linear-gradient(135deg, #8B7442, #6B5A35);
-      color: var(--mirage-parchment);
-      border: 1px solid rgba(201, 168, 76, 0.3);
+      background: var(--mirage-gold);
+      color: var(--mirage-ink);
+      border: 1px solid var(--mirage-gold);
       padding: 8px 14px;
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      font-family: 'Cormorant Garamond', serif;
+      font-family: var(--font-body);
       transition: all var(--transition-base);
       z-index: 10;
     }
-    .modal-edit:hover { background: linear-gradient(135deg, #9B8452, #7B6A45); transform: none; }
+    .modal-edit:hover { background: var(--mirage-gold-bright); border-color: var(--mirage-gold-bright); transform: none; }
 
     .modal-cooked {
       background: transparent;
@@ -127,7 +127,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
+      border-radius: var(--radius-sm);
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       z-index: 10;
     }
@@ -163,7 +163,7 @@
       background: rgba(201, 168, 76, 0.1);
       border: 1px solid var(--mirage-border-strong);
       color: var(--mirage-gold);
-      border-radius: 20px;
+      border-radius: var(--radius-pill);
       font-size: 12px;
       font-family: 'Cormorant Garamond', serif;
     }
@@ -299,7 +299,7 @@
       min-height: 44px;
       padding: 10px 12px;
       border: 1px solid var(--mirage-border-strong);
-      border-radius: 12px;
+      border-radius: var(--radius-sm);
       font: inherit;
       background: var(--mirage-midnight);
       color: var(--mirage-parchment);
@@ -673,7 +673,7 @@
       align-items: start;
       gap: 12px;
       padding: 14px 16px;
-      border-radius: 18px;
+      border-radius: var(--radius-base);
       border: 1px solid var(--mirage-border);
       background: var(--mirage-lapis-light);
       box-shadow: 0 16px 38px rgba(0, 0, 0, 0.4);

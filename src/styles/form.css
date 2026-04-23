@@ -1,7 +1,7 @@
     /* ── Form ── */
     .form-container {
-      background: var(--mirage-lapis-light);
-      border-radius: 20px;
+      background: var(--mirage-lapis);
+      border-radius: var(--radius-xl);
       box-shadow: 0 12px 28px rgba(0,0,0,0.3);
       border: 1px solid var(--mirage-border-strong);
       display: none;
@@ -42,7 +42,7 @@
     .form-tip {
       background: var(--mirage-midnight);
       border: 1px solid var(--mirage-border);
-      border-radius: 8px;
+      border-radius: var(--radius-base);
       padding: 12px 14px;
     }
 
@@ -95,7 +95,7 @@
       background: var(--mirage-lapis) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23C9A84C' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
       color: var(--mirage-parchment);
       border: 1px solid var(--mirage-border-strong);
-      border-radius: 14px;
+      border-radius: var(--radius-sm);
       padding: 10px 36px 10px 14px;
       font-family: 'Cormorant Garamond', serif;
       font-size: 14px;
@@ -124,7 +124,8 @@
     .image-preview { margin-top: 8px; display: none; }
     .image-preview img { max-height: 130px; border-radius: 4px; object-fit: cover; }
 
-    #submitBtn { width: 100%; background: linear-gradient(135deg, #8B7442 0%, #6B5A35 100%); color: var(--mirage-parchment); border: 1px solid rgba(201, 168, 76, 0.3); font-size: 15px; padding: 13px; margin-top: 6px; }
+    #submitBtn { width: 100%; background: var(--mirage-gold); color: var(--mirage-ink); border: 1px solid var(--mirage-gold); font-size: 15px; padding: 13px; margin-top: 6px; border-radius: var(--radius-sm); }
+    #submitBtn:hover { background: var(--mirage-gold-bright); border-color: var(--mirage-gold-bright); }
 
     .form-top-actions {
       display: flex;

@@ -138,7 +138,7 @@
       background: rgba(201, 168, 76, 0.1);
       color: var(--mirage-gold);
       border: 1px solid var(--mirage-border);
-      border-radius: 12px;
+      border-radius: var(--radius-pill);
       padding: 3px 10px;
       font-size: 11px;
       cursor: inherit;
@@ -266,7 +266,7 @@
     .empty-step {
       background: var(--mirage-midnight);
       border: 1px solid var(--mirage-border);
-      border-radius: 12px;
+      border-radius: var(--radius-pill);
       padding: 16px;
     }
 
